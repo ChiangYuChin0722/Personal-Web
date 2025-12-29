@@ -1,9 +1,176 @@
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Hello World!!</title>
-    </head>
-    <body>
-        <h1>Hello World!</h1>
-    </body>
- <html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hebe Chiang | 江昱瑾</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a3728; /* 深木色 */
+            --accent-color: #a67c52;  /* 古銅金 */
+            --bg-color: #f9f6f0;      /* 宣紙米白 */
+            --text-color: #2c2c2c;
+        }
+
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.8;
+        }
+
+        /* 古典邊框裝飾 */
+        .page-border {
+            border: 1px solid var(--accent-color);
+            margin: 20px;
+            padding: 20px;
+            min-height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 0;
+            border-bottom: 2px double var(--accent-color);
+        }
+
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 10px;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-top: 10px;
+        }
+
+        nav {
+            text-align: center;
+            margin: 20px 0;
+            position: sticky;
+            top: 0;
+            background: rgba(249, 246, 240, 0.9);
+            z-index: 100;
+        }
+
+        nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        section {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            border-left: 5px solid var(--accent-color);
+            padding-left: 15px;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        /* 內容區塊樣式 */
+        .content-card {
+            background: white;
+            padding: 30px;
+            border-radius: 2px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .year-plan {
+            background-color: #fdfaf5;
+            border: 1px dashed var(--accent-color);
+            padding: 20px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* 作品集簡單排版 */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .portfolio-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-border">
+    <header>
+        <h1>Hebe Chiang</h1>
+        <div class="subtitle">靜水流深 · 藝文雅築</div>
+    </header>
+
+    <nav>
+        <a href="#edu">學歷經歷</a>
+        <a href="#portfolio">作品集</a>
+        <a href="#plan">年度計劃</a>
+    </nav>
+
+    <section id="edu">
+        <h2>學歷與經歷</h2>
+        <div class="content-card">
+            <h3>🎓 學歷背景</h3>
+            <p><strong>[某某大學] - [某某學系]</strong><br>20XX - 20XX</p>
+        </div>
+        <div class="content-card">
+            <h3>💼 專業經歷</h3>
+            <p><strong>[某某公司] - [職稱]</strong><br>負責項目、成就描述...</p>
+        </div>
+    </section>
+
+    <section id="portfolio">
+        <h2>精選作品集</h2>
+        <div class="portfolio-grid">
+            <div class="portfolio-item">
+                <div style="height: 150px; background: #eee; line-height: 150px;">作品圖片</div>
+                <p>作品名稱一</p>
+            </div>
+            <div class="portfolio-item">
+                <div style="height: 150px; background: #eee; line-height: 150px;">作品圖片</div>
+                <p>作品名稱二</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="plan">
+        <h2>庚子年 · 個人年度計劃</h2>
+        <div class="year-plan">
+            <ul>
+                <li><strong>第一季：</strong> 深耕網頁開發技術，完成個人品牌架設。</li>
+                <li><strong>第二季：</strong> 閱讀十本古典文學書籍，汲取美學養分。</li>
+                <li><strong>第三季：</strong> 參與業界展覽，擴展專業人脈。</li>
+                <li><strong>第四季：</strong> 總結全年成果，規劃未來展望。</li>
+            </ul>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2025 Hebe Chiang · 墨韻齋版權所有</p>
+    </footer>
+</div>
+
+</body>
+</html>
