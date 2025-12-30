@@ -1,0 +1,456 @@
+/* =========================
+   🎨 Museum Light Theme (Unified)
+   - Wall: warm ivory
+   - Accent: museum gold
+   - Ink: charcoal
+   ========================= */
+
+:root{
+  /* Wall background */
+  --bg0: #fbf8f1;     /* main wall */
+  --bg1: #f2eee6;     /* subtle shade */
+
+  /* Accent */
+  --gold: #b58a2a;    /* museum gold */
+  --violet: rgba(137,92,255,0.08); /* very subtle decorative */
+
+  /* Text */
+  --text: rgba(22,22,26,0.92);
+  --muted: rgba(22,22,26,0.62);
+
+  /* Surfaces (glass cards) */
+  --card: rgba(255,255,255,0.72);
+  --card-strong: rgba(255,255,255,0.88);
+
+  /* Borders */
+  --stroke: rgba(181,138,42,0.22);
+  --stroke-soft: rgba(0,0,0,0.08);
+
+  /* Shadows */
+  --shadow: 0 18px 60px rgba(0,0,0,0.12);
+  --shadow-soft: 0 10px 30px rgba(0,0,0,0.10);
+
+  /* Overlays */
+  --overlay: rgba(22,22,26,0.38); /* modal backdrop */
+
+  /* Photo frame */
+  --frame-outer: rgba(181,138,42,0.55);  /* gold rim */
+  --frame-inner: rgba(255,255,255,0.92); /* mat board */
+}
+
+/* =========================
+   Page / Background
+   ========================= */
+.page{
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 700px at 30% 10%, rgba(181,138,42,0.12), transparent 55%),
+    radial-gradient(900px 600px at 80% 70%, var(--violet), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-layer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* =========================
+   Topbar (Light)
+   ========================= */
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.92),
+    rgba(255,255,255,0.74)
+  );
+  backdrop-filter: blur(10px);
+
+  border-bottom: 1px solid var(--stroke-soft);
+  color: var(--text);
+}
+
+.brand{
+  color: var(--gold);
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.lang{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.lang-label{
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.lang-select{
+  background: rgba(255,255,255,0.78);
+  border: 1px solid var(--stroke);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 12px;
+  outline: none;
+  box-shadow: var(--shadow-soft);
+}
+
+/* =========================
+   Side Nav (Light)
+   ========================= */
+.sidenav{
+  position: fixed;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+
+  background: rgba(255,255,255,0.70);
+  border: 1px solid var(--stroke-soft);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+}
+
+.sidenav-link{
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  transition: 120ms ease;
+}
+.sidenav-link:hover{
+  color: var(--text);
+  background: rgba(181,138,42,0.10);
+}
+
+/* =========================
+   Layout / Sections
+   ========================= */
+.content{
+  position: relative;
+  z-index: 2;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 18px 80px;
+}
+
+.section{
+  padding: 64px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.hero{
+  padding-top: 74px;
+}
+
+.hero-center{
+  text-align: center;
+  padding: 54px 16px;
+
+  background: var(--card);
+  border: 1px solid var(--stroke-soft);
+  border-radius: 22px;
+
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.hero-name{
+  margin: 0;
+  font-size: 40px;
+  letter-spacing: 1px;
+}
+
+.hero-sub{
+  margin: 10px 0 14px;
+  color: var(--muted);
+}
+
+.hero-hint{
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hero-actions{
+  display:flex;
+  justify-content:center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.primary{
+  background: rgba(181,138,42,0.14);
+  border: 1px solid rgba(181,138,42,0.26);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: 120ms ease;
+  box-shadow: var(--shadow-soft);
+}
+.primary:hover{ transform: translateY(-1px); }
+
+.section-header{ margin-bottom: 18px; }
+.section-title{ margin: 0; font-size: 24px; }
+.section-desc{
+  margin: 10px 0 0;
+  color: var(--muted);
+  max-width: 760px;
+}
+
+/* =========================
+   Grid / Cards
+   ========================= */
+.grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 720px){
+  .grid{ grid-template-columns: 1fr; }
+  .sidenav{ display:none; }
+}
+
+.mini-card{
+  background: var(--card);
+  border: 1px solid rgba(181,138,42,0.14);
+  border-radius: 18px;
+  padding: 16px;
+  cursor: pointer;
+  text-align: left;
+
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
+  transition: 140ms ease;
+}
+.mini-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(181,138,42,0.26);
+}
+.mini-card-title{
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.mini-card-brief{
+  color: var(--muted);
+  font-size: 13px;
+}
+.mini-card-cta{
+  margin-top: 10px;
+  color: var(--gold);
+  opacity: 0.95;
+}
+
+/* =========================
+   Tables (Light)
+   ========================= */
+.table{
+  width: 100%;
+  border: 1px solid rgba(181,138,42,0.14);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+}
+
+.row{
+  display: grid;
+  grid-template-columns: 1.2fr 1.3fr 1fr 0.6fr;
+  gap: 10px;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.row:last-child{ border-bottom: none; }
+
+.row.head{
+  color: rgba(22,22,26,0.70);
+  font-size: 12px;
+  background: rgba(181,138,42,0.08);
+}
+
+#experience .row{ grid-template-columns: 1fr 1.2fr 1.4fr; }
+
+/* =========================
+   Modal (Light)
+   ========================= */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 18px;
+}
+
+.modal-shell{
+  width: min(760px, 96vw);
+  background: var(--card-strong);
+  border: 1px solid rgba(181,138,42,0.20);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  padding: 18px 18px 20px;
+  position: relative;
+  color: var(--text);
+}
+
+.modal-close{
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  border: 1px solid rgba(181,138,42,0.18);
+  background: rgba(255,255,255,0.75);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.modal-title{
+  margin: 6px 44px 12px 44px;
+  color: var(--gold);
+  font-size: 18px;
+}
+.modal-content{ padding: 2px 6px 6px; }
+.modal-text{ margin: 10px 0; color: var(--text); }
+.muted{ color: var(--muted); }
+
+/* =========================
+   Image Card (Light)
+   ========================= */
+.image-card{
+  border: 1px solid rgba(181,138,42,0.14);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.80);
+  box-shadow: var(--shadow-soft);
+}
+.image-card img{
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* =========================
+   Contacts (Light)
+   ========================= */
+.contact-row{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.contact-btn{
+  text-decoration: none;
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(181,138,42,0.20);
+  background: rgba(255,255,255,0.70);
+  box-shadow: var(--shadow-soft);
+  transition: 140ms ease;
+}
+.contact-btn:hover{
+  transform: translateY(-1px);
+  background: rgba(181,138,42,0.10);
+}
+
+.footer-note{
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* =========================
+   Floating Frames (Museum Frame + Drift L->R)
+   - Right -> Left drift
+   - Hover pause
+   ========================= */
+.float-frame{
+  position: absolute;
+  top: var(--y);
+  left: 0;
+  width: var(--size);
+  height: var(--size);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+
+  animation: driftLeft var(--duration) linear infinite;
+  animation-delay: var(--delay);
+  will-change: transform;
+
+  opacity: 0.92;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.16));
+}
+
+/* ✅ museum picture frame */
+.float-frame img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  border-radius: 16px;
+  user-select: none;
+  -webkit-user-drag: none;
+
+  /* frame illusion */
+  background: var(--frame-inner);
+  padding: 10px; /* mat board thickness */
+
+  border: 2px solid rgba(0,0,0,0.06);
+  outline: 2px solid var(--frame-outer);  /* gold rim */
+  outline-offset: -2px;
+
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.14),
+    inset 0 0 0 1px rgba(255,255,255,0.65);
+}
+
+.float-frame:hover{
+  animation-play-state: paused;
+  opacity: 1;
+  filter: drop-shadow(0 16px 28px rgba(0,0,0,0.22))
+          drop-shadow(0 0 16px rgba(181,138,42,0.18));
+}
+
+.float-frame:hover img{
+  transform: scale(1.02);
+  transition: transform 160ms ease;
+}
+.float-frame img{
+  transition: transform 160ms ease;
+}
+
+@keyframes driftLeft{
+  from { transform: translateX(calc(100vw + var(--extra))) rotate(var(--rotate)); }
+  to   { transform: translateX(calc(-1 * (var(--size) + var(--extra)))) rotate(var(--rotate)); }
+}
