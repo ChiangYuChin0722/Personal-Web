@@ -1,46 +1,50 @@
 /* =========================
-   🐍 SLYTHERIN + CANDLELIGHT (FULL OVERRIDE)
-   - Black stone wall base
-   - Emerald mist (cold)
-   - Subtle candle glow (warm)
+   🦅 RAVENCLAW NAVY + BRONZE (FULL OVERRIDE - COMPLETE)
+   - Deep navy wall (near-black)
+   - Cold arcane blue mist
+   - Subtle bronze candle glow
    - Cards pop-out (no blending)
+   - Keeps your layout/structure intact
    ========================= */
 
+/* =========================
+   Theme Variables
+   ========================= */
 :root{
   /* Wall background */
-  --bg0: #050706;     /* near-black */
-  --bg1: #0a0f0d;     /* deep stone */
+  --bg0: #05070c;     /* near-black navy */
+  --bg1: #0b1020;     /* deep blue stone */
 
   /* Accent */
-  --gold: #a7c2b3;    /* ancient silver-green */
-  --violet: rgba(46, 199, 142, 0.10); /* emerald mist */
+  --gold: #b79a63;    /* Ravenclaw bronze (reuses --gold var name) */
+  --violet: rgba(80, 130, 210, 0.12); /* arcane blue mist */
 
   /* Warm candle accent */
-  --candle: rgba(255, 185, 95, 0.14);
-  --candle-strong: rgba(255, 185, 95, 0.22);
+  --candle: rgba(220, 170, 95, 0.12);
+  --candle-strong: rgba(220, 170, 95, 0.20);
 
   /* Text */
-  --text: rgba(236,242,239,0.92);
-  --muted: rgba(236,242,239,0.62);
+  --text: rgba(232,238,245,0.94);
+  --muted: rgba(232,238,245,0.62);
 
-  /* Surfaces (make cards brighter than bg) */
-  --card: rgba(22, 34, 28, 0.80);
-  --card-strong: rgba(24, 38, 31, 0.90);
+  /* Surfaces */
+  --card: rgba(22, 30, 50, 0.82);
+  --card-strong: rgba(24, 34, 60, 0.92);
 
   /* Borders */
-  --stroke: rgba(167,194,179,0.30);
+  --stroke: rgba(183,154,99,0.30);        /* bronze */
   --stroke-soft: rgba(255,255,255,0.10);
 
-  /* Shadows (stronger separation) */
-  --shadow: 0 26px 86px rgba(0,0,0,0.70);
-  --shadow-soft: 0 14px 44px rgba(0,0,0,0.60);
+  /* Shadows */
+  --shadow: 0 28px 96px rgba(0,0,0,0.78);
+  --shadow-soft: 0 16px 48px rgba(0,0,0,0.62);
 
   /* Overlays */
-  --overlay: rgba(2, 4, 3, 0.82);
+  --overlay: rgba(3, 5, 12, 0.84);
 
-  /* Photo frame (kept for compatibility) */
-  --frame-outer: rgba(167,194,179,0.60);
-  --frame-inner: rgba(245,248,246,0.92);
+  /* Photo frame */
+  --frame-outer: rgba(183,154,99,0.65);
+  --frame-inner: rgba(245,248,252,0.92);
 }
 
 /* =========================
@@ -50,21 +54,21 @@
   min-height: 100vh;
   color: var(--text);
   background:
-    /* candle glow (warm, subtle) */
-    radial-gradient(900px 620px at 18% 18%, var(--candle), transparent 62%),
-    radial-gradient(560px 420px at 78% 16%, rgba(255,185,95,0.10), transparent 60%),
+    /* bronze candle glow */
+    radial-gradient(900px 600px at 18% 18%, var(--candle), transparent 62%),
+    radial-gradient(520px 380px at 80% 20%, rgba(220,170,95,0.10), transparent 60%),
 
-    /* emerald mist (cold) */
-    radial-gradient(1200px 760px at 30% 12%, rgba(46,199,142,0.14), transparent 60%),
+    /* cold ravenclaw blue mist */
+    radial-gradient(1200px 760px at 30% 12%, rgba(80,130,210,0.18), transparent 60%),
     radial-gradient(900px 650px at 82% 74%, var(--violet), transparent 64%),
 
-    /* base black wall */
+    /* base navy wall */
     linear-gradient(180deg, var(--bg0), var(--bg1));
   position: relative;
   overflow-x: hidden;
 }
 
-/* light stone texture (very subtle, no image) */
+/* subtle stone / parchment texture */
 .page::before{
   content:"";
   position: fixed;
@@ -75,15 +79,15 @@
   background:
     repeating-linear-gradient(
       0deg,
-      rgba(255,255,255,0.03) 0px,
-      rgba(255,255,255,0.03) 1px,
+      rgba(255,255,255,0.035) 0px,
+      rgba(255,255,255,0.035) 1px,
       transparent 2px,
       transparent 7px
     ),
     repeating-linear-gradient(
       90deg,
-      rgba(0,0,0,0.18) 0px,
-      rgba(0,0,0,0.18) 1px,
+      rgba(0,0,0,0.22) 0px,
+      rgba(0,0,0,0.22) 1px,
       transparent 2px,
       transparent 9px
     );
@@ -98,7 +102,7 @@
 }
 
 /* =========================
-   Topbar (Slytherin)
+   Topbar
    ========================= */
 .topbar{
   position: sticky;
@@ -112,8 +116,8 @@
 
   background: linear-gradient(
     180deg,
-    rgba(10, 14, 12, 0.92),
-    rgba(10, 14, 12, 0.72)
+    rgba(10,14,26,0.92),
+    rgba(10,14,26,0.72)
   );
   backdrop-filter: blur(10px);
 
@@ -139,7 +143,7 @@
 }
 
 .lang-select{
-  background: rgba(8, 12, 10, 0.78);
+  background: rgba(10,14,26,0.78);
   border: 1px solid var(--stroke);
   color: var(--text);
   padding: 8px 10px;
@@ -149,7 +153,7 @@
 }
 
 /* =========================
-   Side Nav (Slytherin)
+   Side Nav
    ========================= */
 .sidenav{
   position: fixed;
@@ -163,7 +167,7 @@
   gap: 10px;
   padding: 10px;
 
-  background: rgba(14, 22, 18, 0.78);
+  background: rgba(18,24,46,0.78);
   border: 1px solid rgba(255,255,255,0.10);
   border-radius: 16px;
   backdrop-filter: blur(10px);
@@ -180,7 +184,7 @@
 }
 .sidenav-link:hover{
   color: var(--text);
-  background: rgba(46, 199, 142, 0.14);
+  background: rgba(80,130,210,0.18);
 }
 
 /* =========================
@@ -203,22 +207,25 @@
   padding-top: 74px;
 }
 
-/* ✅ Card pop-out: brighter + silver rim + inner glow + stronger shadow */
+/* =========================
+   Hero Card
+   ========================= */
 .hero-center{
   text-align: center;
   padding: 54px 16px;
 
   background: var(--card);
-  border: 1px solid rgba(167,194,179,0.24);
+  border: 1px solid rgba(183,154,99,0.24);
   border-radius: 22px;
 
   box-shadow:
-    0 30px 96px rgba(0,0,0,0.78),
+    0 30px 100px rgba(0,0,0,0.82),
     0 1px 0 rgba(255,255,255,0.06) inset;
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
 
   position: relative;
 }
+
 .hero-center::after{
   content:"";
   position:absolute;
@@ -226,15 +233,15 @@
   border-radius: inherit;
   pointer-events:none;
   box-shadow:
-    0 0 0 1px rgba(46,199,142,0.10) inset,
-    0 0 34px rgba(46,199,142,0.06) inset,
-    0 0 26px rgba(255,185,95,0.04) inset; /* faint candle warmth */
+    0 0 0 1px rgba(80,130,210,0.10) inset,
+    0 0 28px rgba(183,154,99,0.05) inset;
 }
 
 .hero-name{
   margin: 0;
   font-size: 40px;
   letter-spacing: 2px;
+  color: var(--text);
 }
 
 .hero-sub{
@@ -256,8 +263,8 @@
 }
 
 .primary{
-  background: rgba(46, 199, 142, 0.16);
-  border: 1px solid rgba(167,194,179,0.28);
+  background: rgba(80,130,210,0.16);
+  border: 1px solid rgba(183,154,99,0.28);
   color: var(--text);
   padding: 10px 14px;
   border-radius: 14px;
@@ -267,7 +274,7 @@
 }
 .primary:hover{
   transform: translateY(-1px);
-  background: rgba(46, 199, 142, 0.20);
+  background: rgba(80,130,210,0.22);
 }
 
 .section-header{ margin-bottom: 18px; }
@@ -293,23 +300,21 @@
 
 .mini-card{
   background: var(--card);
-  border: 1px solid rgba(167,194,179,0.20);
+  border: 1px solid rgba(183,154,99,0.22);
   border-radius: 18px;
   padding: 16px;
   cursor: pointer;
   text-align: left;
 
   box-shadow:
-    0 22px 70px rgba(0,0,0,0.70),
-    0 1px 0 rgba(255,255,255,0.05) inset;
-  backdrop-filter: blur(14px);
+    0 22px 70px rgba(0,0,0,0.72),
+    0 1px 0 rgba(255,255,255,0.06) inset;
+  backdrop-filter: blur(16px);
   transition: 140ms ease;
 
   position: relative;
 }
-.mini-card-title{
-  color: var(--text) !important;
-}
+
 .mini-card::after{
   content:"";
   position:absolute;
@@ -317,26 +322,30 @@
   border-radius: inherit;
   pointer-events:none;
   box-shadow:
-    0 0 0 1px rgba(46,199,142,0.08) inset,
-    0 0 22px rgba(255,185,95,0.03) inset;
+    0 0 0 1px rgba(80,130,210,0.10) inset,
+    0 0 28px rgba(183,154,99,0.04) inset;
 }
 
 .mini-card:hover{
   transform: translateY(-3px);
-  border-color: rgba(46,199,142,0.28);
+  border-color: rgba(80,130,210,0.30);
   box-shadow:
-    0 28px 90px rgba(0,0,0,0.78),
-    0 0 0 1px rgba(46,199,142,0.10) inset;
+    0 28px 90px rgba(0,0,0,0.80),
+    0 0 0 1px rgba(80,130,210,0.10) inset;
 }
 
 .mini-card-title{
+  color: var(--text) !important;
   font-weight: 700;
   margin-bottom: 6px;
+  letter-spacing: 1px;
 }
+
 .mini-card-brief{
   color: var(--muted);
   font-size: 13px;
 }
+
 .mini-card-cta{
   margin-top: 10px;
   color: var(--gold);
@@ -344,20 +353,21 @@
 }
 
 /* =========================
-   Tables (Slytherin)
+   Tables
    ========================= */
 .table{
   width: 100%;
-  border: 1px solid rgba(167,194,179,0.20);
+  border: 1px solid rgba(183,154,99,0.22);
   border-radius: 18px;
   overflow: hidden;
   background: var(--card);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
   box-shadow:
-    0 24px 80px rgba(0,0,0,0.74),
-    0 1px 0 rgba(255,255,255,0.05) inset;
+    0 24px 80px rgba(0,0,0,0.76),
+    0 1px 0 rgba(255,255,255,0.06) inset;
   position: relative;
 }
+
 .table::after{
   content:"";
   position:absolute;
@@ -365,8 +375,8 @@
   border-radius: inherit;
   pointer-events:none;
   box-shadow:
-    0 0 0 1px rgba(46,199,142,0.08) inset,
-    0 0 20px rgba(255,185,95,0.03) inset;
+    0 0 0 1px rgba(80,130,210,0.10) inset,
+    0 0 24px rgba(183,154,99,0.04) inset;
 }
 
 .row{
@@ -379,15 +389,15 @@
 .row:last-child{ border-bottom: none; }
 
 .row.head{
-  color: rgba(236,242,239,0.76);
+  color: rgba(232,238,245,0.76);
   font-size: 12px;
-  background: rgba(46,199,142,0.12);
+  background: rgba(80,130,210,0.14);
 }
 
 #experience .row{ grid-template-columns: 1fr 1.2fr 1.4fr; }
 
 /* =========================
-   Modal (Slytherin)
+   Modal
    ========================= */
 .modal-backdrop{
   position: fixed;
@@ -402,16 +412,17 @@
 .modal-shell{
   width: min(760px, 96vw);
   background: var(--card-strong);
-  border: 1px solid rgba(167,194,179,0.24);
+  border: 1px solid rgba(183,154,99,0.24);
   border-radius: 22px;
   box-shadow:
     0 32px 110px rgba(0,0,0,0.86),
     0 1px 0 rgba(255,255,255,0.06) inset;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px);
   padding: 18px 18px 20px;
   position: relative;
   color: var(--text);
 }
+
 .modal-shell::after{
   content:"";
   position:absolute;
@@ -419,8 +430,8 @@
   border-radius: inherit;
   pointer-events:none;
   box-shadow:
-    0 0 0 1px rgba(46,199,142,0.10) inset,
-    0 0 28px rgba(255,185,95,0.04) inset;
+    0 0 0 1px rgba(80,130,210,0.10) inset,
+    0 0 28px rgba(183,154,99,0.05) inset;
 }
 
 .modal-close{
@@ -430,8 +441,8 @@
   width: 36px;
   height: 36px;
   border-radius: 14px;
-  border: 1px solid rgba(167,194,179,0.18);
-  background: rgba(8,12,10,0.78);
+  border: 1px solid rgba(183,154,99,0.18);
+  background: rgba(10,14,26,0.78);
   color: var(--text);
   cursor: pointer;
 }
@@ -441,23 +452,25 @@
   color: var(--gold);
   font-size: 18px;
 }
+
 .modal-content{ padding: 2px 6px 6px; }
 .modal-text{ margin: 10px 0; color: var(--text); }
 .muted{ color: var(--muted); }
 
 /* =========================
-   Image Card (Slytherin)
+   Image Card
    ========================= */
 .image-card{
-  border: 1px solid rgba(167,194,179,0.20);
+  border: 1px solid rgba(183,154,99,0.22);
   border-radius: 18px;
   overflow: hidden;
-  background: rgba(18, 28, 23, 0.82);
+  background: rgba(16, 22, 44, 0.84);
   box-shadow:
-    0 22px 70px rgba(0,0,0,0.72),
-    0 1px 0 rgba(255,255,255,0.05) inset;
+    0 22px 70px rgba(0,0,0,0.74),
+    0 1px 0 rgba(255,255,255,0.06) inset;
   position: relative;
 }
+
 .image-card::after{
   content:"";
   position:absolute;
@@ -465,8 +478,9 @@
   border-radius: inherit;
   pointer-events:none;
   box-shadow:
-    0 0 0 1px rgba(46,199,142,0.08) inset;
+    0 0 0 1px rgba(80,130,210,0.10) inset;
 }
+
 .image-card img{
   width: 100%;
   height: auto;
@@ -474,26 +488,28 @@
 }
 
 /* =========================
-   Contacts (Slytherin)
+   Contacts
    ========================= */
 .contact-row{
   display:flex;
   flex-wrap: wrap;
   gap: 10px;
 }
+
 .contact-btn{
   text-decoration: none;
   color: var(--text);
   padding: 10px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(167,194,179,0.22);
-  background: rgba(18, 28, 23, 0.80);
+  border: 1px solid rgba(183,154,99,0.22);
+  background: rgba(18, 24, 46, 0.80);
   box-shadow: var(--shadow-soft);
   transition: 140ms ease;
 }
+
 .contact-btn:hover{
   transform: translateY(-1px);
-  background: rgba(46,199,142,0.14);
+  background: rgba(80,130,210,0.18);
 }
 
 .footer-note{
@@ -506,9 +522,8 @@
    Floating Frames (PNG Museum Frame)
    - 3 lanes support
    - Hover pause
-   - Emerald glow + candle hint
+   - Ravenclaw blue glow + bronze hint
    ========================= */
-
 .float-frame{
   position: absolute;
   top: var(--y);
@@ -527,7 +542,7 @@
   will-change: transform;
 
   opacity: 0.95;
-  filter: drop-shadow(0 12px 30px rgba(0,0,0,0.70));
+  filter: drop-shadow(0 14px 34px rgba(0,0,0,0.80));
 }
 
 /* Frame PNG (top layer) */
@@ -543,7 +558,7 @@
   z-index: 3;
 }
 
-/* Emerald glow (bottom layer) + tiny candle warmth */
+/* Glow (bottom layer) */
 .float-frame::after{
   content: "";
   position: absolute;
@@ -554,10 +569,10 @@
 
   background: radial-gradient(
     circle at center,
-    rgba(40, 220, 150, 0.55),
-    rgba(40, 220, 150, 0.30),
-    rgba(255, 185, 95, 0.10),
-    rgba(40, 220, 150, 0.10),
+    rgba(80,130,210,0.55),
+    rgba(80,130,210,0.30),
+    rgba(183,154,99,0.12),
+    rgba(80,130,210,0.10),
     transparent 72%
   );
 
@@ -582,7 +597,7 @@
   -webkit-user-drag: none;
 
   z-index: 2;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.55);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.58);
   transform: scale(1);
   transition: transform 160ms ease;
 }
@@ -594,7 +609,7 @@
   animation-play-state: paused;
   transform: translateY(-8px);
   transition: transform 220ms ease;
-  filter: drop-shadow(0 24px 56px rgba(0,0,0,0.88));
+  filter: drop-shadow(0 26px 60px rgba(0,0,0,0.90));
   z-index: 10;
 }
 

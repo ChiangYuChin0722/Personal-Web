@@ -5,4 +5,13 @@ export const framesConfig = [
   { src: "/images/frame4.png" },
   { src: "/images/frame5.png" },
   { src: "/images/frame6.png" },
+  { src: "/images/frame7.png" },
+  { src: "/images/frame8.png" },
+  { src: "/images/frame9.png" },
+  { src: "/images/frame10.png" },
+  { src: "/images/frame11.png" },
+  { src: "/images/frame12.png" },
+  { src: "/images/frame13.png" },
+  { src: "/images/frame14.png" },
+  { src: "/images/frame15.png" },
 ];

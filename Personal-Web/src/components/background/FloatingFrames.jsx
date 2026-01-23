@@ -1,58 +1,71 @@
-import React, { useMemo } from "react";
-import { framesConfig } from "./framesConfig.js";
+import React, { useState, useMemo, useCallback } from "react";
 
-export default function FloatingFrames({ onFrameClick, count = 18 }) {
-  // 生成很多張：從 framesConfig 輪流取圖，但每張高度/速度/大小/延遲都不同
-  const frames = useMemo(() => {
-    const base = framesConfig?.length ? framesConfig : [];
-    const rand = (min, max) => Math.random() * (max - min) + min;
+export default function FloatingFrames({ onFrameClick }) {
+  const randInt = (min, max) =>
+    Math.floor(Math.random() * (max - min + 1)) + min;
 
-    return Array.from({ length: count }).map((_, i) => {
-      const src = base[i % base.length]?.src ?? "/images/frame1.png";
+  const FIXED_SIZE = 300;
 
-      const size = Math.round(rand(90, 170));           // 大小
-      const y = `${Math.round(rand(6, 84))}vh`;         // 高度分布
-      const duration = rand(10, 22).toFixed(2) + "s";   // 飄的速度（越大越慢）
-      const delay = (-rand(0, 18)).toFixed(2) + "s";    // 負延遲：一開始就分散在路上
-      const rotate = `${rand(-8, 8).toFixed(2)}deg`;    // 微旋轉
-      const extra = `${Math.round(rand(80, 240))}px`;   // 進出場距離更自然
+  // 每個軌道的圖片池
+  const lanes = useMemo(() => ([
+    { lane: "top", y: "5vh", range: [1, 10] },
+    { lane: "mid", y: "35vh", range: [11, 20] },
+    { lane: "bottom", y: "65vh", range: [21, 30] },
+  ]), []);
+
+  // 每個軌道目前用第幾張
+  const [indexByLane, setIndexByLane] = useState(() => ({
+    top: randInt(1, 10),
+    mid: randInt(11, 20),
+    bottom: randInt(21, 30),
+  }));
+
+  // 動畫跑完一圈 → 換下一張
+  const nextImage = useCallback((lane) => {
+    setIndexByLane((prev) => {
+      const ln = lanes.find(l => l.lane === lane);
+      if (!ln) return prev;
 
       return {
-        id: `float-${i}`,
-        src,
-        size: `${size}px`,
-        y,
-        duration,
-        delay,
-        rotate,
-        extra,
+        ...prev,
+        [lane]: randInt(ln.range[0], ln.range[1]),
       };
     });
-  }, [count]);
+  }, [lanes]);
 
   return (
-    <div className="bg-layer" aria-hidden="true">
-      {frames.map((f) => (
-        <button
-          key={f.id}
-          className="float-frame"
-          style={{
-            ["--size"]: f.size,
-            ["--y"]: f.y,
-            ["--duration"]: f.duration,
-            ["--delay"]: f.delay,
-            ["--rotate"]: f.rotate,
-            ["--extra"]: f.extra,
-          }}
-          onClick={(e) => {
-            e.preventDefault();
-            onFrameClick?.(f);
-          }}
-          title="Click"
-        >
-          <img src={f.src} alt="" draggable="false" />
-        </button>
-      ))}
+    <div
+      className="bg-layer"
+      style={{ "--frameUrl": `url(${import.meta.env.BASE_URL}photo.png)` }}
+      aria-hidden="true"
+    >
+      {lanes.map((ln) => {
+        const index = indexByLane[ln.lane];
+        const src = `/images/frame${index}.png`;
+
+        return (
+          <button
+            key={ln.lane}
+            className="float-frame"
+            data-lane={ln.lane}
+            style={{
+              "--size": `${FIXED_SIZE}px`,
+              "--duration": "8s",
+              "--rotate": "0deg",
+              "--extra": "120px",
+              top: ln.y,
+            }}
+            onAnimationIteration={() => nextImage(ln.lane)}
+            onClick={(e) => {
+              e.preventDefault();
+              onFrameClick?.({ lane: ln.lane, src });
+            }}
+            title="Click"
+          >
+            <img src={src} alt="" draggable="false" />
+          </button>
+        );
+      })}
     </div>
   );
 }
