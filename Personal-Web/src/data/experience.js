@@ -21,7 +21,7 @@ export const experience = [
   {
     id: "x2",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
-    company: { "zh-Hant": "萬人娛樂國際", en: "Wanin International Co." },
+    company: { "zh-Hant": "網銀國際", en: "Wanin International Co." },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "遊戲數據分析師 & 網頁開發", en: "Game Data Analyst & Web Developer" },
     bullets: {
@@ -34,25 +34,6 @@ export const experience = [
         "Analysed 50,000+ events to validate RNG fairness and detect anomalies",
         "Improved reward algorithms, raising fairness perception by 15%",
         "Delivered balanced recommendations with Python and Excel",
-      ],
-    },
-  },
-  {
-    id: "x3",
-    period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
-    company: { "zh-Hant": "童日 Kidsday Xgree", en: "Kidsday Xgree.Co" },
-    location: { "zh-Hant": "台灣", en: "Taiwan" },
-    role: { "zh-Hant": "數據分析師（軟體部門）", en: "Data Analyst (Software Division)" },
-    bullets: {
-      "zh-Hant": [
-        "以 Python 建立留存率、健康指標及產品表現分析工具",
-        "建立儀表板及自動化報表供利害關係人使用",
-        "跨部門協作，推動數據驅動的產品決策",
-      ],
-      en: [
-        "Built Python analytics to track retention, health metrics, and product performance",
-        "Created dashboards and automated reporting for stakeholders",
-        "Partnered cross-functionally to drive data-informed product decisions",
       ],
     },
   },

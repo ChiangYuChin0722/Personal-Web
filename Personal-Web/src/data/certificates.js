@@ -20,7 +20,7 @@ export const certificates = [
   {
     id: "c4",
     title: { "zh-Hant": "AWS 認證雲端從業者", en: "AWS Certified Cloud Practitioner" },
-    brief: { "zh-Hant": "進行中，預計 2026 年 2 月", en: "In progress · Expected Feb 2026" },
+    brief: { "zh-Hant": "進行中，預計 2026 年 4 月", en: "In progress · Expected Apr 2026" },
     image: "/images/cert_sample.png",
   },
   {
