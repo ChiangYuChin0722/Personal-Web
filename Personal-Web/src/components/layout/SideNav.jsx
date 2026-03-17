@@ -17,8 +17,7 @@ export default function SideNav() {
   return (
     <nav className="sidenav" aria-label="Section navigation">
       {items.map((it) => (
-        <a key={it.id} className="sidenav-link" href={`#${it.id}`}>
-          {t(it.key)}
+        <a key={it.id} className="sidenav-link" href={`#${it.id}`} aria-label={t(it.key)} title={t(it.key)}>
         </a>
       ))}
     </nav>

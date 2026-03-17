@@ -35,11 +35,15 @@ export default function HeroSection() {
           {badgeText}
         </div>
 
-        {/* Gradient name */}
-        <h1 className="hero-name">江昱瑾</h1>
+        {/* Name — switches with language */}
+        <h1 className="hero-name">
+          {lang === "zh-Hant" ? "江昱瑾" : "Yu-Chin Chiang"}
+        </h1>
 
-        {/* English name */}
-        <p className="hero-name-en">Yu-Jin Chiang</p>
+        {/* Secondary name in the other language */}
+        <p className="hero-name-en">
+          {lang === "zh-Hant" ? "Yu-Chin Chiang" : "江昱瑾"}
+        </p>
 
         {/* Typewriter subtitle */}
         <p className="hero-sub">
