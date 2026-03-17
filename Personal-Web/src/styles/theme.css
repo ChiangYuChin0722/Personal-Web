@@ -148,7 +148,15 @@ body {
   background: rgba(255,255,255,0.18);
   text-decoration: none;
   display: block;
+  overflow: hidden;
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.sidenav-label {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
 }
 .sidenav-link:hover,
 .sidenav-link.active {
