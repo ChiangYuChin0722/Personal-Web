@@ -7,12 +7,16 @@ import { profileCards } from "../../data/profileCards.js";
 
 const skillsData = {
   "zh-Hant": [
-    "Python", "SQL", "A/B 測試", "數據視覺化", "機器學習",
-    "遊戲數據分析", "Tableau", "BigQuery", "流程自動化", "產品分析",
+    "Python", "SQL", "Java", "JavaScript", "React",
+    "Databricks", "AWS", "Pandas", "NumPy", "scikit-learn",
+    "時間序列分析", "迴歸分析", "A/B 測試",
+    "Tableau", "Power BI", "ETL 管道", "資料建模",
   ],
   en: [
-    "Python", "SQL", "A/B Testing", "Data Visualization", "Machine Learning",
-    "Game Analytics", "Tableau", "BigQuery", "Workflow Automation", "Product Analytics",
+    "Python", "SQL", "Java", "JavaScript", "React",
+    "Databricks", "AWS", "Pandas", "NumPy", "scikit-learn",
+    "Time-Series Analysis", "Regression", "A/B Testing",
+    "Tableau", "Power BI", "ETL Pipelines", "Data Modelling",
   ],
 };
 

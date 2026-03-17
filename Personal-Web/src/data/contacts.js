@@ -1,7 +1,7 @@
 export const contacts = {
-  email: "mailto:yourname@email.com",
-  linkedin: "https://www.linkedin.com/in/your-id",
-  github: "https://github.com/your-id",
-  leetcode: "https://leetcode.com/your-id",
-  ig: "https://instagram.com/your-id",
+  email: "mailto:hebe4090409@gmail.com",
+  linkedin: "https://www.linkedin.com/in/yuchinchiang",
+  github: "https://github.com/yuchinchiang",
+  leetcode: "https://leetcode.com/yuchinchiang",
+  ig: "https://instagram.com/yuchin_chiang",
 };

@@ -8,22 +8,25 @@ export default function ExperienceSection() {
 
   return (
     <section id="experience" className="section">
-      <SectionHeader
-        titleZh={t("experience_title")}
-        titleEn="Experience"
-      />
+      <SectionHeader titleZh={t("experience_title")} titleEn="Experience" />
 
       <div className="timeline">
         {experience.map((x, i) => (
-          <div
-            key={x.id}
-            className={`timeline-item reveal reveal-delay-${Math.min(i + 1, 4)}`}
-          >
+          <div key={x.id} className={`timeline-item reveal reveal-delay-${Math.min(i + 1, 4)}`}>
             <div className="timeline-dot" />
             <div className="timeline-card">
-              <div className="timeline-period">{x.period[lang]}</div>
+              <div className="timeline-period">
+                {x.period[lang]}{x.location ? ` · ${x.location[lang]}` : ""}
+              </div>
               <div className="timeline-company">{x.company[lang]}</div>
               <div className="timeline-role">{x.role[lang]}</div>
+              {x.bullets?.[lang]?.length > 0 && (
+                <ul className="timeline-bullets">
+                  {x.bullets[lang].map((b, j) => (
+                    <li key={j} className="timeline-bullet">{b}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         ))}

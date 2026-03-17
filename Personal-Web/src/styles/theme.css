@@ -705,6 +705,132 @@ body {
 .reveal-delay-4        { transition-delay: 0.32s; }
 
 /* =============================================
+   Timeline bullet points
+   ============================================= */
+.timeline-location {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+.timeline-bullets {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.timeline-bullet {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  padding-left: 12px;
+  position: relative;
+}
+.timeline-bullet::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+/* =============================================
+   Theme toggle button
+   ============================================= */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: var(--bg-3);
+  border-color: var(--border-hover);
+  transform: rotate(20deg);
+}
+
+/* =============================================
+   Light theme overrides  [data-theme="light"]
+   ============================================= */
+[data-theme="light"] {
+  --bg:    #ffffff;
+  --bg-1:  #f8f9fa;
+  --bg-2:  #f1f3f4;
+  --bg-3:  #e8eaed;
+
+  --text:  #202124;
+  --muted: #5f6368;
+  --dim:   #9aa0a6;
+
+  --accent:       #4f46e5;
+  --accent-light: #4338ca;
+  --accent-glow:  rgba(99, 102, 241, 0.12);
+
+  --green:      #059669;
+  --green-dim:  rgba(5, 150, 105, 0.08);
+  --green-ring: rgba(5, 150, 105, 0.20);
+
+  --border:       rgba(0, 0, 0, 0.10);
+  --border-hover: rgba(99, 102, 241, 0.40);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+
+  --card:    #ffffff;
+  --overlay: rgba(0, 0, 0, 0.60);
+}
+
+[data-theme="light"] .page {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.06), transparent 55%),
+    radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: auto, 28px 28px;
+}
+[data-theme="light"] .topbar {
+  background: rgba(255,255,255,0.90);
+}
+[data-theme="light"] .topbar.at-top {
+  background: rgba(255,255,255,0.70);
+}
+[data-theme="light"] .lang-select {
+  background: var(--bg-1);
+}
+[data-theme="light"] .modal-shell {
+  border-color: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .modal-close {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .section-divider-line {
+  background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+}
+[data-theme="light"] .timeline {
+  border-left-color: rgba(0,0,0,0.12);
+}
+[data-theme="light"] .timeline-dot {
+  border-color: #ffffff;
+}
+[data-theme="light"] .mini-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12), 0 0 0 1px var(--border-hover);
+}
+
+/* =============================================
    Responsive
    ============================================= */
 @media (max-width: 720px) {
@@ -719,4 +845,5 @@ body {
   .timeline-dot { left: -31px; }
   .contact-row  { flex-direction: column; }
   .hero-scroll-indicator { display: none; }
+  .topbar-right { gap: 6px; }
 }

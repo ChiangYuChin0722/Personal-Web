@@ -10,32 +10,26 @@ export const translations = {
     nav_contact: "聯絡",
 
     // Hero
-    hero_subtitle: "遊戲策劃玩家 × 數據魔術師",
-    hero_hint: "點擊漂浮相框，會出現資訊卡。滑鼠移上去會停住。",
+    hero_subtitle: "資料分析師 · 量化研究 · 金融市場",
+    hero_hint: "使用右側導覽點跳轉各區塊",
 
     // About
     about_title: "個人簡介",
     about_desc:
-      "我喜歡把『好像可以』變成『數字說可以』：分析、實驗、機器學習、儀表板，以及把好點子落地。",
+      "華威大學資料分析碩士生，具備機器學習與統計建模經驗，專注大規模市場及經濟數據分析。對大宗商品市場、宏觀經濟分析與長期情境建模充滿熱情，是快速學習、善於跨國協作的團隊貢獻者。",
 
     // Education
     education_title: "學歷",
-    edu_school: "學校",
-    edu_major: "科系",
-    edu_period: "就讀時間",
     edu_gpa: "GPA",
 
     // Experience
     experience_title: "工作經歷",
-    exp_period: "上班時間",
-    exp_company: "公司名稱",
-    exp_role: "崗位",
 
     // Certificates
-    certificates_title: "證書",
+    certificates_title: "證書與認證",
 
     // Portfolio
-    portfolio_title: "作品集",
+    portfolio_title: "專案作品",
 
     // Contact
     contact_title: "聯絡我",
@@ -43,14 +37,17 @@ export const translations = {
     contact_linkedin: "LinkedIn",
     contact_github: "GitHub",
     contact_leetcode: "LeetCode",
-    contact_ig: "IG",
+    contact_ig: "Instagram",
 
     // UI
     close: "關閉",
     language: "語言",
     lang_zh: "繁體中文",
     lang_en: "English",
-    view_more: "查看",
+    view_more: "查看更多",
+    theme_dark: "深色",
+    theme_light: "淺色",
+    open_to: "開放求職機會",
   },
 
   en: {
@@ -58,30 +55,24 @@ export const translations = {
     nav_about: "About",
     nav_education: "Education",
     nav_experience: "Experience",
-    nav_certificates: "Certificates",
-    nav_portfolio: "Portfolio",
+    nav_certificates: "Certifications",
+    nav_portfolio: "Projects",
     nav_contact: "Contact",
 
-    hero_subtitle: "Game Designer × Data Magician",
-    hero_hint: "Click floating frames to open info cards. Hover to pause.",
+    hero_subtitle: "Data Analytics · Quant Research · Financial Markets",
+    hero_hint: "Use the navigation dots on the right to jump between sections",
 
     about_title: "About Me",
     about_desc:
-      "I turn 'maybe' into 'the numbers say yes'—analysis, experiments, ML, dashboards, and shipping ideas into reality.",
+      "MSc Data Analytics student at the University of Warwick with experience applying statistical modelling and machine learning to large-scale market and economic datasets. Passionate about commodities markets, macroeconomic analysis, and long-term scenario modelling.",
 
     education_title: "Education",
-    edu_school: "School",
-    edu_major: "Major",
-    edu_period: "Period",
     edu_gpa: "GPA",
 
     experience_title: "Experience",
-    exp_period: "Period",
-    exp_company: "Company",
-    exp_role: "Role",
 
-    certificates_title: "Certificates",
-    portfolio_title: "Portfolio",
+    certificates_title: "Certifications",
+    portfolio_title: "Projects",
 
     contact_title: "Contact",
     contact_email: "Email",
@@ -94,6 +85,9 @@ export const translations = {
     language: "Language",
     lang_zh: "繁體中文",
     lang_en: "English",
-    view_more: "View",
+    view_more: "View More",
+    theme_dark: "Dark",
+    theme_light: "Light",
+    open_to: "Open to opportunities",
   },
 };

@@ -8,26 +8,27 @@ export default function EducationSection() {
 
   return (
     <section id="education" className="section">
-      <SectionHeader
-        titleZh={t("education_title")}
-        titleEn="Education"
-      />
+      <SectionHeader titleZh={t("education_title")} titleEn="Education" />
 
       <div className="timeline">
         {education.map((e, i) => (
-          <div
-            key={e.id}
-            className={`timeline-item reveal reveal-delay-${i + 1}`}
-          >
+          <div key={e.id} className={`timeline-item reveal reveal-delay-${i + 1}`}>
             <div className="timeline-dot" />
             <div className="timeline-card">
-              <div className="timeline-period">{e.period[lang]}</div>
+              <div className="timeline-period">
+                {e.period[lang]}{e.location ? ` · ${e.location[lang]}` : ""}
+              </div>
               <div className="timeline-school">{e.school[lang]}</div>
               <div className="timeline-major">{e.major[lang]}</div>
               {e.gpa && (
-                <div className="timeline-gpa">
-                  {t("edu_gpa")}: {e.gpa[lang]}
-                </div>
+                <div className="timeline-gpa">{t("edu_gpa")}: {e.gpa[lang]}</div>
+              )}
+              {e.bullets?.[lang]?.length > 0 && (
+                <ul className="timeline-bullets">
+                  {e.bullets[lang].map((b, j) => (
+                    <li key={j} className="timeline-bullet">{b}</li>
+                  ))}
+                </ul>
               )}
             </div>
           </div>
