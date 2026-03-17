@@ -1,15 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useI18n } from "../../i18n/LanguageContext.jsx";
 import Modal from "../ui/Modal.jsx";
 
+// Deterministic particles — no random re-renders
+const PARTICLES = Array.from({ length: 22 }, (_, i) => ({
+  id: i,
+  left: 5  + ((i * 47 + 11) % 90),
+  top:  10 + ((i * 61 +  7) % 75),
+  size: 1.5 + (i % 3) * 0.9,
+  delay: (i * 0.38) % 5,
+  duration: 8 + (i % 6) * 1.5,
+}));
+
 export default function HeroSection() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  const nameZh = "江昱瑾";
-  const nameEn = "Yu-Jin Chiang";
+  const nameZh   = "江昱瑾";
+  const nameEn   = "Yu-Jin Chiang";
+  const nameChars = Array.from(nameZh);
 
-  // Typewriter — delayed to sync with name entrance animation
+  // Typewriter — starts after char-reveal finishes
   const subtitleText = t("hero_subtitle");
   const [displayed, setDisplayed] = useState("");
 
@@ -21,22 +33,81 @@ export default function HeroSection() {
         i++;
         setDisplayed(subtitleText.slice(0, i));
         if (i >= subtitleText.length) clearInterval(id);
-      }, 48);
+      }, 50);
       return () => clearInterval(id);
-    }, 1400); // starts after name finishes appearing
+    }, 1700);
     return () => clearTimeout(timeout);
   }, [subtitleText]);
 
+  // 3D perspective tilt on mouse move
+  useEffect(() => {
+    const onMove = (e) => {
+      setTilt({
+        x: (e.clientX / window.innerWidth  - 0.5) * 2,
+        y: (e.clientY / window.innerHeight - 0.5) * 2,
+      });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   return (
     <section id="home" className="section hero">
-      {/* Ambient glow */}
-      <div className="hero-glow" aria-hidden="true" />
 
-      <div className="hero-center">
+      {/* Aurora colour washes */}
+      <div className="hero-aurora" aria-hidden="true" />
+
+      {/* Floating particles */}
+      <div className="hero-particles" aria-hidden="true">
+        {PARTICLES.map((p) => (
+          <div
+            key={p.id}
+            className="hero-particle"
+            style={{
+              left:             `${p.left}%`,
+              top:              `${p.top}%`,
+              width:            `${p.size}px`,
+              height:           `${p.size}px`,
+              animationDelay:   `${p.delay}s`,
+              animationDuration:`${p.duration}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Glow blob — follows mouse */}
+      <div
+        className="hero-glow"
+        aria-hidden="true"
+        style={{
+          transform: `translate(calc(-50% + ${tilt.x * 45}px), calc(-50% + ${tilt.y * 32}px))`,
+          transition: "transform 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        }}
+      />
+
+      {/* Content — 3D perspective tilt */}
+      <div
+        className="hero-center"
+        style={{
+          transform:  `perspective(900px) rotateY(${tilt.x * 6}deg) rotateX(${-tilt.y * 4}deg)`,
+          transition: "transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        }}
+      >
         <div className="hero-ornament">✦ · · · ✦</div>
 
         <h1 className="hero-name">
-          {nameZh}
+          {/* data-text used by glitch pseudo-elements */}
+          <span className="hero-name-zh" data-text={nameZh}>
+            {nameChars.map((char, i) => (
+              <span
+                key={i}
+                className="hero-char"
+                style={{ animationDelay: `${0.45 + i * 0.2}s` }}
+              >
+                {char}
+              </span>
+            ))}
+          </span>
           <span className="hero-name-en">/ {nameEn}</span>
         </h1>
 
