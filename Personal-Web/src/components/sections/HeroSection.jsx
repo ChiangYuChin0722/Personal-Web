@@ -2,14 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "../../i18n/LanguageContext.jsx";
 import Modal from "../ui/Modal.jsx";
 
-// Google brand colors cycling through name characters
-const G_COLORS = ["#4285F4", "#EA4335", "#34A853", "#FBBC05"];
-
 export default function HeroSection() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
-
-  const nameChars = Array.from("江昱瑾");
 
   const subtitleText = t("hero_subtitle");
   const [displayed, setDisplayed] = useState("");
@@ -24,32 +19,29 @@ export default function HeroSection() {
         if (i >= subtitleText.length) clearInterval(id);
       }, 55);
       return () => clearInterval(id);
-    }, 900);
+    }, 750);
     return () => clearTimeout(timeout);
   }, [subtitleText]);
+
+  const badgeText = lang === "zh-Hant" ? "開放求職機會" : "Open to opportunities";
 
   return (
     <section id="home" className="section hero">
       <div className="hero-center">
 
-        {/* Colorful name — each char a Google color */}
-        <h1 className="hero-name">
-          {nameChars.map((char, i) => (
-            <span
-              key={i}
-              className="hero-char"
-              style={{
-                color: G_COLORS[i % G_COLORS.length],
-                animationDelay: `${0.1 + i * 0.15}s`,
-              }}
-            >
-              {char}
-            </span>
-          ))}
-        </h1>
+        {/* Status badge */}
+        <div className="hero-badge">
+          <span className="hero-badge-dot" />
+          {badgeText}
+        </div>
 
+        {/* Gradient name */}
+        <h1 className="hero-name">江昱瑾</h1>
+
+        {/* English name */}
         <p className="hero-name-en">Yu-Jin Chiang</p>
 
+        {/* Typewriter subtitle */}
         <p className="hero-sub">
           {displayed}
           <span className="typewriter-cursor" aria-hidden="true" />
@@ -73,7 +65,9 @@ export default function HeroSection() {
       <Modal open={open} onClose={() => setOpen(false)} title="江昱瑾 / Yu-Jin Chiang">
         <p className="modal-text">{t("about_desc")}</p>
         <p className="modal-text muted">
-          Use the navigation dots on the right to jump between sections.
+          {lang === "zh-Hant"
+            ? "使用右側導覽點跳轉各區塊。"
+            : "Use the navigation dots on the right to jump between sections."}
         </p>
       </Modal>
     </section>
