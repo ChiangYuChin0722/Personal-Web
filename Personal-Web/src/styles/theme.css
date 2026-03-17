@@ -1004,9 +1004,148 @@ h1, h2, h3 {
    Mobile adjustments
    ========================= */
 @media (max-width: 720px) {
-  .hero-name { font-size: 36px; }
+  .hero-name { font-size: 40px; }
   .hero-name-en { font-size: 16px; }
   .section-title { font-size: 22px; white-space: normal; }
   .timeline { padding-left: 32px; }
   .timeline-dot { left: -26px; }
+}
+
+/* =========================
+   CINEMATIC HERO — Netflix-style
+   Full viewport, dramatic entrance,
+   transparent topbar, scroll indicator
+   ========================= */
+
+/* Override base hero to full viewport */
+.hero {
+  min-height: 100vh;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Remove card style from hero-center */
+.hero .hero-center {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 24px 18px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ambient golden glow behind name */
+.hero-glow {
+  position: absolute;
+  width: 700px;
+  height: 400px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(183,154,99,0.10) 0%,
+    rgba(80,130,210,0.06) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: ambientPulse 5s ease-in-out infinite;
+}
+
+@keyframes ambientPulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.18); }
+}
+
+/* ── Entrance animations ── */
+@keyframes cinematicIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.hero-ornament {
+  animation: cinematicIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+.hero-name {
+  font-size: 76px;
+  line-height: 1.1;
+  animation: cinematicIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+.hero-name-en {
+  animation: cinematicIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+}
+.hero-sub {
+  animation: cinematicIn 1.2s ease 1.4s both;
+}
+.hero-divider {
+  animation: cinematicIn 1s ease 1.8s both;
+}
+.hero-actions {
+  animation: cinematicIn 1s ease 2.0s both;
+}
+.hero-hint {
+  animation: cinematicIn 1s ease 2.2s both;
+}
+
+/* ── Scroll indicator ── */
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: cinematicIn 1s ease 2.8s both;
+}
+.hero-scroll-label {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+.hero-scroll-line {
+  width: 1px;
+  height: 52px;
+  background: linear-gradient(to bottom, rgba(183,154,99,0.7), transparent);
+  animation: scanDown 2.2s ease-in-out 3s infinite;
+  transform-origin: top;
+}
+@keyframes scanDown {
+  0%   { transform: scaleY(0); opacity: 1;   transform-origin: top; }
+  50%  { transform: scaleY(1); opacity: 1;   transform-origin: top; }
+  51%  { transform-origin: bottom; }
+  100% { transform: scaleY(0); opacity: 0.2; transform-origin: bottom; }
+}
+
+/* ── Transparent topbar when at top ── */
+.topbar {
+  transition: background 500ms ease, border-color 500ms ease, backdrop-filter 500ms ease;
+}
+.topbar.at-top {
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .hero-name { font-size: 42px; }
+  .hero-scroll-indicator { display: none; }
 }

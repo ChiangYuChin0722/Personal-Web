@@ -9,23 +9,29 @@ export default function HeroSection() {
   const nameZh = "江昱瑾";
   const nameEn = "Yu-Jin Chiang";
 
-  // Typewriter effect — re-runs when language changes
+  // Typewriter — delayed to sync with name entrance animation
   const subtitleText = t("hero_subtitle");
   const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
     setDisplayed("");
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setDisplayed(subtitleText.slice(0, i));
-      if (i >= subtitleText.length) clearInterval(id);
-    }, 48);
-    return () => clearInterval(id);
+    const timeout = setTimeout(() => {
+      let i = 0;
+      const id = setInterval(() => {
+        i++;
+        setDisplayed(subtitleText.slice(0, i));
+        if (i >= subtitleText.length) clearInterval(id);
+      }, 48);
+      return () => clearInterval(id);
+    }, 1400); // starts after name finishes appearing
+    return () => clearTimeout(timeout);
   }, [subtitleText]);
 
   return (
     <section id="home" className="section hero">
+      {/* Ambient glow */}
+      <div className="hero-glow" aria-hidden="true" />
+
       <div className="hero-center">
         <div className="hero-ornament">✦ · · · ✦</div>
 
@@ -48,6 +54,12 @@ export default function HeroSection() {
         </div>
 
         <p className="hero-hint">{t("hero_hint")}</p>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="hero-scroll-indicator" aria-hidden="true">
+        <span className="hero-scroll-label">SCROLL</span>
+        <div className="hero-scroll-line" />
       </div>
 
       <Modal open={open} onClose={() => setOpen(false)} title={`${nameZh} / ${nameEn}`}>

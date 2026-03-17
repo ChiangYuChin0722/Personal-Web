@@ -16,6 +16,7 @@ import ContactSection from "../sections/ContactSection.jsx";
 
 export default function PageLayout() {
   const [bgModal, setBgModal] = useState(null);
+  const [atTop, setAtTop] = useState(true);
 
   const bgInfo = useMemo(
     () => ({
@@ -28,7 +29,14 @@ export default function PageLayout() {
     []
   );
 
-  // Scroll reveal — IntersectionObserver on .section and .reveal elements
+  // Transparent topbar when at top of page
+  useEffect(() => {
+    const onScroll = () => setAtTop(window.scrollY < 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Scroll reveal — IntersectionObserver
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -51,7 +59,7 @@ export default function PageLayout() {
     <div className="page">
       <FloatingFrames count={7} onFrameClick={() => setBgModal(bgInfo)} />
 
-      <header className="topbar">
+      <header className={`topbar${atTop ? " at-top" : ""}`}>
         <div className="brand">✦ YJ</div>
         <LanguageSwitcher />
       </header>
