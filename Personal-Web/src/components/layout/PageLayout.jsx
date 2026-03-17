@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 import SideNav from "./SideNav.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
@@ -15,7 +15,6 @@ import ContactSection from "../sections/ContactSection.jsx";
 
 
 export default function PageLayout() {
-  // 每個區塊共用：背景漂浮相框 + 點擊也可跳 modal
   const [bgModal, setBgModal] = useState(null);
 
   const bgInfo = useMemo(
@@ -29,12 +28,31 @@ export default function PageLayout() {
     []
   );
 
+  // Scroll reveal — IntersectionObserver on .section and .reveal elements
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    const targets = document.querySelectorAll(".section, .reveal");
+    targets.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="page">
       <FloatingFrames count={7} onFrameClick={() => setBgModal(bgInfo)} />
 
       <header className="topbar">
-        <div className="brand">✦</div>
+        <div className="brand">✦ YJ</div>
         <LanguageSwitcher />
       </header>
 
@@ -50,7 +68,6 @@ export default function PageLayout() {
         <ContactSection />
       </main>
 
-      {/* 背景的 modal（可選） */}
       {bgModal && (
         <div className="modal-backdrop" onMouseDown={() => setBgModal(null)}>
           <div className="modal-shell" onMouseDown={(e) => e.stopPropagation()}>

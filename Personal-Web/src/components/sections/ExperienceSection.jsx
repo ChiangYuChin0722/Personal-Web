@@ -13,17 +13,18 @@ export default function ExperienceSection() {
         titleEn="Experience"
       />
 
-      <div className="table">
-        <div className="row head">
-          <div>{t("exp_period")}</div>
-          <div>{t("exp_company")}</div>
-          <div>{t("exp_role")}</div>
-        </div>
-        {experience.map((x) => (
-          <div className="row" key={x.id}>
-            <div>{x.period[lang]}</div>
-            <div>{x.company[lang]}</div>
-            <div>{x.role[lang]}</div>
+      <div className="timeline">
+        {experience.map((x, i) => (
+          <div
+            key={x.id}
+            className={`timeline-item reveal reveal-delay-${Math.min(i + 1, 4)}`}
+          >
+            <div className="timeline-dot" />
+            <div className="timeline-card">
+              <div className="timeline-period">{x.period[lang]}</div>
+              <div className="timeline-company">{x.company[lang]}</div>
+              <div className="timeline-role">{x.role[lang]}</div>
+            </div>
           </div>
         ))}
       </div>

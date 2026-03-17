@@ -13,19 +13,23 @@ export default function EducationSection() {
         titleEn="Education"
       />
 
-      <div className="table">
-        <div className="row head">
-          <div>{t("edu_school")}</div>
-          <div>{t("edu_major")}</div>
-          <div>{t("edu_period")}</div>
-          <div>{t("edu_gpa")}</div>
-        </div>
-        {education.map((e) => (
-          <div className="row" key={e.id}>
-            <div>{e.school[lang]}</div>
-            <div>{e.major[lang]}</div>
-            <div>{e.period[lang]}</div>
-            <div>{e.gpa[lang]}</div>
+      <div className="timeline">
+        {education.map((e, i) => (
+          <div
+            key={e.id}
+            className={`timeline-item reveal reveal-delay-${i + 1}`}
+          >
+            <div className="timeline-dot" />
+            <div className="timeline-card">
+              <div className="timeline-period">{e.period[lang]}</div>
+              <div className="timeline-school">{e.school[lang]}</div>
+              <div className="timeline-major">{e.major[lang]}</div>
+              {e.gpa && (
+                <div className="timeline-gpa">
+                  {t("edu_gpa")}: {e.gpa[lang]}
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>

@@ -1,10 +1,10 @@
 /* =========================
-   🦅 RAVENCLAW NAVY + BRONZE (FULL OVERRIDE - COMPLETE)
-   - Deep navy wall (near-black)
-   - Cold arcane blue mist
-   - Subtle bronze candle glow
-   - Cards pop-out (no blending)
-   - Keeps your layout/structure intact
+   🦅 RAVENCLAW NAVY + BRONZE — PREMIUM EDITION
+   - Playfair Display typography
+   - Scroll reveal animations
+   - Bento grid layout
+   - Timeline for experience/education
+   - Skills tags
    ========================= */
 
 /* =========================
@@ -16,7 +16,8 @@
   --bg1: #0b1020;     /* deep blue stone */
 
   /* Accent */
-  --gold: #b79a63;    /* Ravenclaw bronze (reuses --gold var name) */
+  --gold: #b79a63;    /* Ravenclaw bronze */
+  --gold-bright: #d4b87a;
   --violet: rgba(80, 130, 210, 0.12); /* arcane blue mist */
 
   /* Warm candle accent */
@@ -32,7 +33,7 @@
   --card-strong: rgba(24, 34, 60, 0.92);
 
   /* Borders */
-  --stroke: rgba(183,154,99,0.30);        /* bronze */
+  --stroke: rgba(183,154,99,0.30);
   --stroke-soft: rgba(255,255,255,0.10);
 
   /* Shadows */
@@ -45,6 +46,10 @@
   /* Photo frame */
   --frame-outer: rgba(183,154,99,0.65);
   --frame-inner: rgba(245,248,252,0.92);
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* =========================
@@ -666,4 +671,342 @@
 /* Mid: Right → Left */
 .float-frame[data-lane="mid"]{
   animation: driftLeft var(--duration, 8s) linear infinite;
+}
+
+/* =========================
+   Typography — Premium
+   ========================= */
+body {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+
+/* =========================
+   Scroll Reveal Animations
+   ========================= */
+.section:not(.hero) {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 750ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 750ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.section.visible {
+  opacity: 1;
+  transform: none;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+.reveal-delay-1 { transition-delay: 100ms; }
+.reveal-delay-2 { transition-delay: 200ms; }
+.reveal-delay-3 { transition-delay: 300ms; }
+.reveal-delay-4 { transition-delay: 400ms; }
+
+/* =========================
+   Hero — Premium Upgrade
+   ========================= */
+.hero-ornament {
+  color: var(--gold);
+  font-size: 18px;
+  margin-bottom: 20px;
+  letter-spacing: 12px;
+  opacity: 0.8;
+}
+
+.hero-name {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.15;
+  margin: 0;
+  color: var(--text);
+}
+
+.hero-name-en {
+  display: block;
+  font-size: 22px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--muted);
+  letter-spacing: 5px;
+  margin-top: 6px;
+}
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--gold);
+  letter-spacing: 2.5px;
+  margin: 22px 0 0;
+  min-height: 1.6em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.hero-divider {
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  margin: 20px auto 16px;
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.85em;
+  background: var(--gold);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: blink 0.9s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* =========================
+   Section Header — Ornament
+   ========================= */
+.section-header {
+  margin-bottom: 32px;
+}
+.section-header-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--text);
+}
+.section-title-en {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+.section-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(183,154,99,0.45), transparent);
+  min-width: 20px;
+}
+.section-ornament {
+  color: var(--gold);
+  font-size: 13px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* =========================
+   Bento Grid (About)
+   ========================= */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.bento-grid .mini-card:nth-child(1) {
+  grid-column: span 2;
+  min-height: 150px;
+}
+.bento-grid .mini-card:nth-child(4) {
+  grid-column: span 2;
+}
+@media (max-width: 780px) {
+  .bento-grid { grid-template-columns: 1fr; }
+  .bento-grid .mini-card:nth-child(1),
+  .bento-grid .mini-card:nth-child(4) { grid-column: span 1; min-height: unset; }
+}
+
+.mini-card-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+/* =========================
+   Skills Tags
+   ========================= */
+.skills-section {
+  margin-top: 28px;
+}
+.skills-label {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skill-tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(183,154,99,0.25);
+  background: rgba(183,154,99,0.07);
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  font-family: var(--font-body);
+  transition: 150ms ease;
+}
+.skill-tag:hover {
+  background: rgba(183,154,99,0.14);
+  border-color: rgba(183,154,99,0.45);
+  color: var(--gold-bright);
+}
+
+/* =========================
+   Timeline (Education / Experience)
+   ========================= */
+.timeline {
+  position: relative;
+  padding-left: 46px;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--gold) 0%,
+    rgba(183,154,99,0.25) 70%,
+    transparent 100%
+  );
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 18px;
+}
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+.timeline-dot {
+  position: absolute;
+  left: -40px;
+  top: 20px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg0);
+  border: 2px solid var(--gold);
+  box-shadow:
+    0 0 14px rgba(183,154,99,0.55),
+    0 0 5px rgba(183,154,99,0.35);
+  z-index: 1;
+}
+.timeline-card {
+  background: var(--card);
+  border: 1px solid rgba(183,154,99,0.20);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow:
+    0 18px 60px rgba(0,0,0,0.68),
+    0 1px 0 rgba(255,255,255,0.06) inset;
+  backdrop-filter: blur(14px);
+  transition: 150ms ease;
+  position: relative;
+}
+.timeline-card:hover {
+  border-color: rgba(183,154,99,0.38);
+  transform: translateX(4px);
+}
+.timeline-period {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.timeline-school,
+.timeline-company {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.timeline-major,
+.timeline-role {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.timeline-gpa {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  opacity: 0.8;
+}
+
+/* =========================
+   Enhanced Mini-Card hover
+   ========================= */
+.mini-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(183,154,99,0.35);
+  box-shadow:
+    0 28px 90px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(183,154,99,0.12) inset;
+}
+
+/* =========================
+   Contact Buttons — Enhanced
+   ========================= */
+.contact-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(183,154,99,0.12);
+  border-color: rgba(183,154,99,0.40);
+  color: var(--gold-bright);
+}
+
+/* =========================
+   Topbar Brand — Enhanced
+   ========================= */
+.brand {
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 6px;
+  font-style: italic;
+}
+
+/* =========================
+   Mobile adjustments
+   ========================= */
+@media (max-width: 720px) {
+  .hero-name { font-size: 36px; }
+  .hero-name-en { font-size: 16px; }
+  .section-title { font-size: 22px; white-space: normal; }
+  .timeline { padding-left: 32px; }
+  .timeline-dot { left: -26px; }
 }

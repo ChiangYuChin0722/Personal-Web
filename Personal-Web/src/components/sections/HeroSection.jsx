@@ -1,23 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "../../i18n/LanguageContext.jsx";
 import Modal from "../ui/Modal.jsx";
 
 export default function HeroSection() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
 
-  // 你名字（雙語其實名字可同一個）
   const nameZh = "江昱瑾";
   const nameEn = "Yu-Jin Chiang";
+
+  // Typewriter effect — re-runs when language changes
+  const subtitleText = t("hero_subtitle");
+  const [displayed, setDisplayed] = useState("");
+
+  useEffect(() => {
+    setDisplayed("");
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(subtitleText.slice(0, i));
+      if (i >= subtitleText.length) clearInterval(id);
+    }, 48);
+    return () => clearInterval(id);
+  }, [subtitleText]);
 
   return (
     <section id="home" className="section hero">
       <div className="hero-center">
+        <div className="hero-ornament">✦ · · · ✦</div>
+
         <h1 className="hero-name">
           {nameZh}
-          <span className="muted"> / {nameEn}</span>
+          <span className="hero-name-en">/ {nameEn}</span>
         </h1>
-        <p className="hero-sub">{t("hero_subtitle")}</p>
+
+        <p className="hero-sub">
+          {displayed}
+          <span className="typewriter-cursor" aria-hidden="true" />
+        </p>
+
+        <div className="hero-divider" />
 
         <div className="hero-actions">
           <button className="primary" onClick={() => setOpen(true)}>
@@ -29,9 +51,7 @@ export default function HeroSection() {
       </div>
 
       <Modal open={open} onClose={() => setOpen(false)} title={`${nameZh} / ${nameEn}`}>
-        <p className="modal-text">
-          {t("about_desc")}
-        </p>
+        <p className="modal-text">{t("about_desc")}</p>
         <p className="modal-text muted">
           Click the right-side menu to jump between sections.
         </p>

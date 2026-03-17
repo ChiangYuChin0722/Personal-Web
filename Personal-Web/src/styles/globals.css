@@ -1,6 +1,11 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  background: #f6f4ef !important;
-  color: #1f1f1f;
+  background: #05070c;
+  color: rgba(232,238,245,0.94);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
