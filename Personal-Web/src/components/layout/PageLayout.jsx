@@ -60,7 +60,9 @@ export default function PageLayout() {
       <FloatingFrames count={7} onFrameClick={() => setBgModal(bgInfo)} />
 
       <header className={`topbar${atTop ? " at-top" : ""}`}>
-        <div className="brand">✦ YJ</div>
+        <div className="brand">
+          <span>江</span><span>昱</span><span>瑾</span>
+        </div>
         <LanguageSwitcher />
       </header>
 
