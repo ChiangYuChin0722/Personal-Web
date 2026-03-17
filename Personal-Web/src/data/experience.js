@@ -21,7 +21,7 @@ export const experience = [
   {
     id: "x2",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
-    company: { "zh-Hant": "萬人娛樂國際", en: "Wanin International Co." },
+    company: { "zh-Hant": "網銀娛樂國際", en: "Wanin International Co." },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "遊戲數據分析師 & 網頁開發", en: "Game Data Analyst & Web Developer" },
     bullets: {
@@ -40,7 +40,7 @@ export const experience = [
   {
     id: "x3",
     period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
-    company: { "zh-Hant": "童日 Kidsday Xgree", en: "Kidsday Xgree.Co" },
+    company: { "zh-Hant": " Kidsday Xgree", en: "Kidsday Xgree.Co" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "數據分析師（軟體部門）", en: "Data Analyst (Software Division)" },
     bullets: {

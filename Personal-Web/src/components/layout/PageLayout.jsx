@@ -39,7 +39,7 @@ export default function PageLayout() {
     <div className="page">
       <header className={`topbar${atTop ? " at-top" : ""}`}>
         <div className="brand">
-          YJ<span className="brand-dot">.</span>
+          YC<span className="brand-dot">.</span>
         </div>
         <LanguageSwitcher />
       </header>
