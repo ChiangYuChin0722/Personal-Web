@@ -17,8 +17,8 @@
   --dim:   #475569;
 
   /* Accent — Indigo / Violet */
-  --accent:       #6366f1;
-  --accent-light: #a5b4fc;
+  --accent:       #1d4ed8;
+  --accent-light: #93c5fd;
   --accent-glow:  rgba(99, 102, 241, 0.25);
 
   /* Status */
@@ -62,7 +62,7 @@ body {
   min-height: 100vh;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.10), transparent 55%),
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,78,216,0.10), transparent 55%),
     radial-gradient(rgba(255,255,255,0.032) 1px, transparent 1px);
   background-size: auto, 28px 28px;
   color: var(--text);
@@ -245,7 +245,7 @@ body {
   top: 48%;
   transform: translate(-50%, -50%);
   background: radial-gradient(ellipse,
-    rgba(99,102,241,0.13) 0%,
+    rgba(29,78,216,0.13) 0%,
     rgba(59,130,246,0.07) 40%,
     transparent 70%);
   pointer-events: none;
@@ -305,7 +305,7 @@ body {
   font-weight: 800;
   letter-spacing: -4px;
   line-height: 1.0;
-  background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 45%, #a5b4fc 75%, #818cf8 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #bfdbfe 45%, #93c5fd 75%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -408,7 +408,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -423,7 +423,7 @@ body {
 .primary:hover {
   opacity: 0.88;
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(99,102,241,0.45);
+  box-shadow: 0 8px 28px rgba(29,78,216,0.45);
 }
 .primary:active { transform: none; opacity: 1; }
 
@@ -507,9 +507,9 @@ body {
 }
 .skills-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .skill-tag {
-  background: rgba(99,102,241,0.08);
+  background: rgba(29,78,216,0.08);
   color: var(--accent-light);
-  border: 1px solid rgba(99,102,241,0.20);
+  border: 1px solid rgba(29,78,216,0.20);
   border-radius: 6px;
   padding: 4px 12px;
   font-size: 12px;
@@ -517,8 +517,8 @@ body {
   transition: background 0.15s, border-color 0.15s;
 }
 .skill-tag:hover {
-  background: rgba(99,102,241,0.16);
-  border-color: rgba(99,102,241,0.4);
+  background: rgba(29,78,216,0.16);
+  border-color: rgba(29,78,216,0.4);
 }
 
 /* =============================================
@@ -605,7 +605,7 @@ body {
   background: var(--bg-2);
   border: 1px solid rgba(255,255,255,0.10);
   border-radius: 18px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(99,102,241,0.1);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(29,78,216,0.1);
   padding: 32px;
   max-width: 520px;
   width: 100%;
@@ -680,7 +680,7 @@ body {
 }
 .contact-btn:hover {
   border-color: var(--border-hover);
-  background: rgba(99,102,241,0.07);
+  background: rgba(29,78,216,0.07);
   color: var(--accent-light);
   transform: translateY(-2px);
 }
@@ -783,8 +783,8 @@ body {
   --muted: #5f6368;
   --dim:   #9aa0a6;
 
-  --accent:       #4f46e5;
-  --accent-light: #4338ca;
+  --accent:       #1d4ed8;
+  --accent-light: #1e40af;
   --accent-glow:  rgba(99, 102, 241, 0.12);
 
   --green:      #059669;
@@ -805,7 +805,7 @@ body {
 [data-theme="light"] .page {
   background-color: #ffffff;
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.06), transparent 55%),
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,78,216,0.06), transparent 55%),
     radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
   background-size: auto, 28px 28px;
 }
