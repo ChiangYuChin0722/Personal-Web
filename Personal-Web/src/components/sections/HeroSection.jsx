@@ -66,7 +66,7 @@ export default function HeroSection() {
         <div className="hero-scroll-line" />
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="江昱瑾 / Yu-Jin Chiang">
+      <Modal open={open} onClose={() => setOpen(false)} title="YuChin Chiang">
         <p className="modal-text">{t("about_desc")}</p>
         <p className="modal-text muted">
           {lang === "zh-Hant"
