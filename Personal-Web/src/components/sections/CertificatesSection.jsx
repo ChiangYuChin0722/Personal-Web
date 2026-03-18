@@ -26,9 +26,11 @@ export default function CertificatesSection() {
 
       <Modal open={!!active} onClose={() => setActive(null)} title={active?.title}>
         {active && (
-          <div className="image-card">
-            <img src={active.image} alt={active.title} />
-          </div>
+          active.image
+            ? <div className="image-card"><img src={active.image} alt={active.title} /></div>
+            : <p className="modal-text muted" style={{ textAlign: "center", padding: "24px 0" }}>
+                {lang === "zh-Hant" ? "證書尚未取得" : "Certificate not yet obtained"}
+              </p>
         )}
       </Modal>
     </section>

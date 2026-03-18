@@ -304,17 +304,35 @@ body {
   font-size: 100px;
   font-weight: 800;
   letter-spacing: -4px;
-  line-height: 1.0;
+  line-height: 1.1;
+  padding-bottom: 0.1em;
   background: linear-gradient(135deg, #ffffff 0%, #bfdbfe 45%, #93c5fd 75%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   opacity: 0;
   animation: heroIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
+/* CJK name — remove tight letter-spacing, use suitable font */
+.hero-name--cjk {
+  letter-spacing: 0.05em;
+  font-size: 80px;
+}
 
-/* ── English name ── */
+/* ── Secondary name (opposite language) ── */
+.hero-name-sub {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: heroIn 0.7s ease 0.55s both;
+}
+
+/* ── English name (legacy, kept for compat) ── */
 .hero-name-en {
   display: block;
   font-size: 20px;
@@ -354,6 +372,18 @@ body {
 @keyframes heroIn {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: none; }
+}
+
+/* ── Hero avatar ── */
+.hero-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.4);
+  margin-bottom: 20px;
+  animation: heroIn 0.7s ease 0.05s both;
 }
 
 /* ── Typewriter cursor ── */
@@ -581,6 +611,22 @@ body {
   border: 1px solid var(--green-ring);
   border-radius: 6px;
   padding: 2px 10px;
+}
+
+/* ── Timeline logo ── */
+.timeline-logo {
+  height: 36px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 10px;
+  opacity: 0.85;
+  filter: brightness(0) invert(1);
+}
+[data-theme="light"] .timeline-logo {
+  filter: none;
+  opacity: 1;
 }
 
 /* =============================================
@@ -837,16 +883,22 @@ body {
 [data-theme="light"] .mini-card:hover {
   box-shadow: 0 8px 28px rgba(0,0,0,0.12), 0 0 0 1px var(--border-hover);
 }
-[data-theme="light"] .hero-name {
+[data-theme="light"] .hero-name,
+[data-theme="light"] .hero-name--cjk {
   background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #2563eb 75%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* =============================================
    Responsive
    ============================================= */
 @media (max-width: 720px) {
-  .hero-name    { font-size: 62px; letter-spacing: -2px; }
-  .hero-name-en { font-size: 14px; letter-spacing: 2px; }
+  .hero-name         { font-size: 62px; letter-spacing: -2px; }
+  .hero-name--cjk    { font-size: 52px; letter-spacing: 0.04em; }
+  .hero-name-en      { font-size: 14px; letter-spacing: 2px; }
+  .hero-name-sub     { font-size: 13px; letter-spacing: 2px; }
   .grid         { grid-template-columns: 1fr; }
   .bento-grid   { grid-template-columns: 1fr; }
   .bento-grid .mini-card:nth-child(1),

@@ -1,6 +1,7 @@
 export const experience = [
   {
     id: "x1",
+    logo: "/images/logo_warwick.svg",
     period: { "zh-Hant": "2025 – 至今", en: "2025 – Present" },
     company: { "zh-Hant": "華威大學", en: "University of Warwick" },
     location: { "zh-Hant": "英國", en: "UK" },
@@ -20,12 +21,9 @@ export const experience = [
   },
   {
     id: "x2",
+    logo: "/images/logo_wanin.png",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
-<<<<<<< HEAD
-    company: { "zh-Hant": "網銀娛樂國際", en: "Wanin International Co." },
-=======
     company: { "zh-Hant": "網銀國際", en: "Wanin International Co." },
->>>>>>> origin/claude/enhance-web-design-bhLyn
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "遊戲數據分析師 & 網頁開發", en: "Game Data Analyst & Web Developer" },
     bullets: {
@@ -42,17 +40,33 @@ export const experience = [
     },
   },
   {
-<<<<<<< HEAD
     id: "x3",
+    logo: "/images/logo_KBI.webp",
+    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
+    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
+    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
+    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
+    bullets: {
+      "zh-Hant": [
+        "導入大數據處理技術，優化網站效能、安全性與即時分析",
+      ],
+      en: [
+        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
+      ],
+    },
+  },
+  {
+    id: "x6",
+    logo: "/images/logo_KiDSDAY.png",
     period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
-    company: { "zh-Hant": " Kidsday Xgree", en: "Kidsday Xgree.Co" },
+    company: { "zh-Hant": "Kidsday Xgree Co.", en: "Kidsday Xgree Co." },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "數據分析師（軟體部門）", en: "Data Analyst (Software Division)" },
     bullets: {
       "zh-Hant": [
-        "以 Python 建立留存率、健康指標及產品表現分析工具",
-        "建立儀表板及自動化報表供利害關係人使用",
-        "跨部門協作，推動數據驅動的產品決策",
+        "以 Python 建立分析工具追蹤用戶留存、健康指標與產品表現",
+        "建立儀表板與自動化報表，供利害關係人使用",
+        "跨部門協作，推動數據導向的產品決策",
       ],
       en: [
         "Built Python analytics to track retention, health metrics, and product performance",
@@ -62,9 +76,8 @@ export const experience = [
     },
   },
   {
-=======
->>>>>>> origin/claude/enhance-web-design-bhLyn
     id: "x4",
+    logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
@@ -84,6 +97,7 @@ export const experience = [
   },
   {
     id: "x5",
+    logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2023 – 2024", en: "2023 – 2024" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },

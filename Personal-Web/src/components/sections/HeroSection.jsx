@@ -6,72 +6,63 @@ export default function HeroSection() {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
 
+  const nameZh = "江昱瑾";
+  const nameEn = "Yu-Jin Chiang";
+
+  // Typewriter effect — re-runs when language changes
   const subtitleText = t("hero_subtitle");
   const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
     setDisplayed("");
-    const timeout = setTimeout(() => {
-      let i = 0;
-      const id = setInterval(() => {
-        i++;
-        setDisplayed(subtitleText.slice(0, i));
-        if (i >= subtitleText.length) clearInterval(id);
-      }, 55);
-      return () => clearInterval(id);
-    }, 750);
-    return () => clearTimeout(timeout);
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(subtitleText.slice(0, i));
+      if (i >= subtitleText.length) clearInterval(id);
+    }, 48);
+    return () => clearInterval(id);
   }, [subtitleText]);
-
-  const badgeText = lang === "zh-Hant" ? "開放求職機會" : "Open to opportunities";
 
   return (
     <section id="home" className="section hero">
       <div className="hero-center">
+        <div className="hero-ornament">✦ · · · ✦</div>
 
-        {/* Status badge */}
-        <div className="hero-badge">
-          <span className="hero-badge-dot" />
-          {badgeText}
-        </div>
+        {/* Avatar */}
+        <img
+          src="/images/avatar.HEIC"
+          alt="Yu-Chin Chiang"
+          className="hero-avatar"
+        />
 
-        {/* Name — switches with language */}
-        <h1 className="hero-name">
-          {lang === "zh-Hant" ? "江昱瑾" : "Yu-Chin Chiang"}
+        <h1 className={`hero-name${lang === "zh-Hant" ? " hero-name--cjk" : ""}`}>
+          {lang === "zh-Hant" ? nameZh : nameEn}
         </h1>
-
-        {/* Secondary name in the other language */}
-        <p className="hero-name-en">
-          {lang === "zh-Hant" ? "Yu-Chin Chiang" : "江昱瑾"}
+        <p className="hero-name-sub">
+          {lang === "zh-Hant" ? nameEn : nameZh}
         </p>
 
-        {/* Typewriter subtitle */}
         <p className="hero-sub">
           {displayed}
           <span className="typewriter-cursor" aria-hidden="true" />
         </p>
 
+        <div className="hero-divider" />
+
         <div className="hero-actions">
           <button className="primary" onClick={() => setOpen(true)}>
-            {t("view_more")}
+            {t("view_more")} / View
           </button>
         </div>
 
         <p className="hero-hint">{t("hero_hint")}</p>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="hero-scroll-indicator" aria-hidden="true">
-        <span className="hero-scroll-label">scroll</span>
-        <div className="hero-scroll-line" />
-      </div>
-
-      <Modal open={open} onClose={() => setOpen(false)} title="YuChin Chiang">
+      <Modal open={open} onClose={() => setOpen(false)} title={`${nameZh} / ${nameEn}`}>
         <p className="modal-text">{t("about_desc")}</p>
         <p className="modal-text muted">
-          {lang === "zh-Hant"
-            ? "使用右側導覽點跳轉各區塊。"
-            : "Use the navigation dots on the right to jump between sections."}
+          Click the right-side menu to jump between sections.
         </p>
       </Modal>
     </section>
