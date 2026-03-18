@@ -837,6 +837,9 @@ body {
 [data-theme="light"] .mini-card:hover {
   box-shadow: 0 8px 28px rgba(0,0,0,0.12), 0 0 0 1px var(--border-hover);
 }
+[data-theme="light"] .hero-name {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #2563eb 75%, #3b82f6 100%);
+}
 
 /* =============================================
    Responsive

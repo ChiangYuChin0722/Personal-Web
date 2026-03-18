@@ -21,7 +21,11 @@ export const experience = [
   {
     id: "x2",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
+<<<<<<< HEAD
     company: { "zh-Hant": "網銀娛樂國際", en: "Wanin International Co." },
+=======
+    company: { "zh-Hant": "網銀國際", en: "Wanin International Co." },
+>>>>>>> origin/claude/enhance-web-design-bhLyn
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "遊戲數據分析師 & 網頁開發", en: "Game Data Analyst & Web Developer" },
     bullets: {
@@ -38,6 +42,7 @@ export const experience = [
     },
   },
   {
+<<<<<<< HEAD
     id: "x3",
     period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
     company: { "zh-Hant": " Kidsday Xgree", en: "Kidsday Xgree.Co" },
@@ -57,6 +62,8 @@ export const experience = [
     },
   },
   {
+=======
+>>>>>>> origin/claude/enhance-web-design-bhLyn
     id: "x4",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },

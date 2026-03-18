@@ -20,7 +20,11 @@ export const certificates = [
   {
     id: "c4",
     title: { "zh-Hant": "AWS 認證雲端從業者", en: "AWS Certified Cloud Practitioner" },
+<<<<<<< HEAD
     brief: { "zh-Hant": "進行中，預計 2026 年 4 月", en: "In progress · Expected April 2026" },
+=======
+    brief: { "zh-Hant": "進行中，預計 2026 年 4 月", en: "In progress · Expected Apr 2026" },
+>>>>>>> origin/claude/enhance-web-design-bhLyn
     image: "/images/cert_sample.png",
   },
   {
