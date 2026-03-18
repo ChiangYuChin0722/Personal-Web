@@ -40,6 +40,42 @@ export const experience = [
     },
   },
   {
+    id: "x3",
+    logo: "/images/logo_KBI.webp",
+    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
+    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
+    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
+    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
+    bullets: {
+      "zh-Hant": [
+        "導入大數據處理技術，優化網站效能、安全性與即時分析",
+      ],
+      en: [
+        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
+      ],
+    },
+  },
+  {
+    id: "x6",
+    logo: "/images/logo_KiDSDAY.png",
+    period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
+    company: { "zh-Hant": "Kidsday Xgree Co.", en: "Kidsday Xgree Co." },
+    location: { "zh-Hant": "台灣", en: "Taiwan" },
+    role: { "zh-Hant": "數據分析師（軟體部門）", en: "Data Analyst (Software Division)" },
+    bullets: {
+      "zh-Hant": [
+        "以 Python 建立分析工具追蹤用戶留存、健康指標與產品表現",
+        "建立儀表板與自動化報表，供利害關係人使用",
+        "跨部門協作，推動數據導向的產品決策",
+      ],
+      en: [
+        "Built Python analytics to track retention, health metrics, and product performance",
+        "Created dashboards and automated reporting for stakeholders",
+        "Partnered cross-functionally to drive data-informed product decisions",
+      ],
+    },
+  },
+  {
     id: "x4",
     logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },

@@ -36,10 +36,12 @@ export default function HeroSection() {
           className="hero-avatar"
         />
 
-        <h1 className="hero-name">
-          {nameZh}
-          <span className="hero-name-en">/ {nameEn}</span>
+        <h1 className={`hero-name${lang === "zh-Hant" ? " hero-name--cjk" : ""}`}>
+          {lang === "zh-Hant" ? nameZh : nameEn}
         </h1>
+        <p className="hero-name-sub">
+          {lang === "zh-Hant" ? nameEn : nameZh}
+        </p>
 
         <p className="hero-sub">
           {displayed}
