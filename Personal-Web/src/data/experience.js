@@ -1,6 +1,7 @@
 export const experience = [
   {
     id: "x1",
+    logo: "/images/logo_warwick.svg",
     period: { "zh-Hant": "2025 – 至今", en: "2025 – Present" },
     company: { "zh-Hant": "華威大學", en: "University of Warwick" },
     location: { "zh-Hant": "英國", en: "UK" },
@@ -20,6 +21,7 @@ export const experience = [
   },
   {
     id: "x2",
+    logo: "/images/logo_wanin.png",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
     company: { "zh-Hant": "網銀國際", en: "Wanin International Co." },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
@@ -39,6 +41,7 @@ export const experience = [
   },
   {
     id: "x4",
+    logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
@@ -58,6 +61,7 @@ export const experience = [
   },
   {
     id: "x5",
+    logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2023 – 2024", en: "2023 – 2024" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
