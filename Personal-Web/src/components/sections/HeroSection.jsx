@@ -39,9 +39,9 @@ export default function HeroSection() {
         <h1 className={`hero-name${lang === "zh-Hant" ? " hero-name--cjk" : ""}`}>
           {lang === "zh-Hant" ? nameZh : nameEn}
         </h1>
-        <p className="hero-name-sub">
-          {lang === "zh-Hant" ? nameEn : nameZh}
-        </p>
+        {lang === "zh-Hant" && (
+          <p className="hero-name-sub">{nameEn}</p>
+        )}
 
         <p className="hero-sub">
           {displayed}
@@ -52,18 +52,16 @@ export default function HeroSection() {
 
         <div className="hero-actions">
           <button className="primary" onClick={() => setOpen(true)}>
-            {t("view_more")} / View
+            {t("view_more")}
           </button>
         </div>
 
         <p className="hero-hint">{t("hero_hint")}</p>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={`${nameZh} / ${nameEn}`}>
+      <Modal open={open} onClose={() => setOpen(false)} title={lang === "zh-Hant" ? nameZh : nameEn}>
         <p className="modal-text">{t("about_desc")}</p>
-        <p className="modal-text muted">
-          Click the right-side menu to jump between sections.
-        </p>
+        <p className="modal-text muted">{t("hero_hint")}</p>
       </Modal>
     </section>
   );
