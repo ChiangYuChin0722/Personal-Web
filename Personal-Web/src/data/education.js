@@ -27,11 +27,8 @@ export const education = [
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     major: { "zh-Hant": "資訊管理（雙主修：資訊工程）", en: "BA Information Management (Double Major: Computer Science)" },
     period: { "zh-Hant": "2021 – 2025", en: "2021 – 2025" },
-<<<<<<< HEAD
     gpa: { "zh-Hant": " 3.8 / 4.0", en: " 3.8 / 4.0" },
-=======
     gpa: { "zh-Hant": "3.8 / 4.0", en: "3.8 / 4.0" },
->>>>>>> origin/claude/enhance-web-design-bhLyn
     bullets: { "zh-Hant": [], en: [] },
   },
 ];
