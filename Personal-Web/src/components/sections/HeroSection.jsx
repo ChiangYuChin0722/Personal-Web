@@ -7,7 +7,7 @@ export default function HeroSection() {
   const [open, setOpen] = useState(false);
 
   const nameZh = "江昱瑾";
-  const nameEn = "Yu-Jin Chiang";
+  const nameEn = "Yu-Chin Chiang";
 
   // Typewriter effect — re-runs when language changes
   const subtitleText = t("hero_subtitle");

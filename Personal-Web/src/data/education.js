@@ -1,7 +1,7 @@
 export const education = [
   {
     id: "e1",
-    logo: "/images/logo_warwick.svg",
+    logo: null,
     school: { "zh-Hant": "華威大學", en: "University of Warwick" },
     location: { "zh-Hant": "英國", en: "UK" },
     major: { "zh-Hant": "資料分析碩士", en: "MSc Data Analytics" },
@@ -22,7 +22,7 @@ export const education = [
   },
   {
     id: "e2",
-    logo: "/images/logo_CGU.png",
+    logo: null,
     school: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     major: { "zh-Hant": "資訊管理（雙主修：資訊工程）", en: "BA Information Management (Double Major: Computer Science)" },
