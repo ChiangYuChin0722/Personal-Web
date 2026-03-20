@@ -31,8 +31,6 @@ export default function AboutSection() {
       title: c.titleKey[lang],
       brief: c.briefKey[lang],
       full: c.contentKey[lang],
-      zh: c.contentKey["zh-Hant"],
-      en: c.contentKey.en,
     }));
   }, [lang]);
 
@@ -62,10 +60,7 @@ export default function AboutSection() {
         title={active ? `${active.title}` : ""}
       >
         {active && (
-          <>
-            <p className="modal-text">{active.zh}</p>
-            <p className="modal-text muted">{active.en}</p>
-          </>
+          <p className="modal-text">{active.full}</p>
         )}
       </Modal>
     </section>
