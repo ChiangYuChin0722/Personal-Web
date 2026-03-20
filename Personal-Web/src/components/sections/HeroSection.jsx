@@ -31,7 +31,7 @@ export default function HeroSection() {
 
         {/* Avatar */}
         <img
-          src="/photo.png"
+          src="/images/avatar.jpg"
           alt="Yu-Chin Chiang"
           className="hero-avatar"
         />
