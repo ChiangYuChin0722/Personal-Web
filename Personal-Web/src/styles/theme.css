@@ -730,6 +730,13 @@ body {
   color: var(--accent-light);
   transform: translateY(-2px);
 }
+.contact-btn-icon {
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
 .footer-note {
   margin-top: 52px;
   font-size: 12px;

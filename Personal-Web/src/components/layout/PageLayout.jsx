@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 import SideNav from "./SideNav.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
+import ScrollProgress from "./ScrollProgress.jsx";
 
 import HeroSection from "../sections/HeroSection.jsx";
 import AboutSection from "../sections/AboutSection.jsx";
@@ -37,6 +38,7 @@ export default function PageLayout() {
 
   return (
     <div className="page">
+      <ScrollProgress />
       <header className={`topbar${atTop ? " at-top" : ""}`}>
         <div className="brand">
           YC<span className="brand-dot">.</span>
