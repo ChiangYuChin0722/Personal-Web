@@ -656,6 +656,12 @@ body {
   margin-bottom: 10px;
   opacity: 0.9;
 }
+.timeline-logo--light-bg {
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  opacity: 1;
+}
 
 /* =============================================
    Modal

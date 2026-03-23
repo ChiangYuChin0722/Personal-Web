@@ -42,6 +42,7 @@ export const experience = [
   {
     id: "x3",
     logo: "/images/logo_KBI.webp",
+    logoBg: true,
     period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
     company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
     location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },

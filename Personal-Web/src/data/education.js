@@ -2,6 +2,7 @@ export const education = [
   {
     id: "e1",
     logo: "/images/logo_warwick.svg",
+    logoBg: true,
     school: { "zh-Hant": "華威大學", en: "University of Warwick" },
     location: { "zh-Hant": "英國", en: "UK" },
     major: { "zh-Hant": "資料分析碩士", en: "MSc Data Analytics" },
