@@ -274,7 +274,9 @@ body {
 
 /* ── Available badge ── */
 .hero-badge {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 32px;
   align-items: center;
   gap: 8px;
   padding: 6px 16px;
@@ -284,7 +286,6 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: var(--green);
-  margin-bottom: 32px;
   letter-spacing: 0.2px;
 }
 .hero-badge-dot {
@@ -376,13 +377,15 @@ body {
 
 /* ── Hero avatar ── */
 .hero-avatar {
+  display: block;
+  margin: 0 auto 20px;
   width: 160px;
   height: 160px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center top;
   border: 3px solid var(--accent);
   box-shadow: 0 0 0 6px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.4);
-  margin-bottom: 20px;
   animation: heroIn 0.7s ease 0.05s both;
 }
 
