@@ -22,7 +22,12 @@ export default function EducationSection() {
             <div className="timeline-dot" />
             <div className="timeline-card">
               {e.logo && (
-                <img src={e.logo} alt={e.school[lang]} className="timeline-logo" />
+                <img
+                  src={e.logo}
+                  alt={e.school[lang]}
+                  className="timeline-logo"
+                  onError={(ev) => { ev.currentTarget.style.display = "none"; }}
+                />
               )}
               <div className="timeline-period">
                 {e.period[lang]}{e.location ? ` · ${e.location[lang]}` : ""}

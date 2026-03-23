@@ -22,7 +22,12 @@ export default function ExperienceSection() {
             <div className="timeline-dot" />
             <div className="timeline-card">
               {x.logo && (
-                <img src={x.logo} alt={x.company[lang]} className="timeline-logo" />
+                <img
+                  src={x.logo}
+                  alt={x.company[lang]}
+                  className="timeline-logo"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
               )}
               <div className="timeline-period">
                 {x.period[lang]}{x.location ? ` · ${x.location[lang]}` : ""}
