@@ -1,24 +1,24 @@
 export const experience = [
-  {
-    id: "x1",
-    logo: "/images/logo_warwick.svg",
-    period: { "zh-Hant": "2025 – 至今", en: "2025 – Present" },
-    company: { "zh-Hant": "華威大學", en: "University of Warwick" },
-    location: { "zh-Hant": "英國", en: "UK" },
-    role: { "zh-Hant": "資料分析研究助理", en: "Data Analytics Research Assistant" },
-    bullets: {
-      "zh-Hant": [
-        "協助課程及畢業論文專案，運用機器學習與統計建模",
-        "以 Python 和 SQL 建立大型資料集的分析管道",
-        "向學術督導及同儕呈現分析洞見",
-      ],
-      en: [
-        "Supported coursework and dissertation projects using machine learning and statistical modelling",
-        "Built analytical pipelines for large datasets in Python and SQL",
-        "Presented insights to academic supervisors and peers",
-      ],
-    },
-  },
+  // {
+  //   id: "x1",
+  //   logo: "/images/logo_warwick.svg",
+  //   period: { "zh-Hant": "2025 – 至今", en: "2025 – Present" },
+  //   company: { "zh-Hant": "華威大學", en: "University of Warwick" },
+  //   location: { "zh-Hant": "英國", en: "UK" },
+  //   role: { "zh-Hant": "資料分析研究助理", en: "Data Analytics Research Assistant" },
+  //   bullets: {
+  //     "zh-Hant": [
+  //       "協助課程及畢業論文專案，運用機器學習與統計建模",
+  //       "以 Python 和 SQL 建立大型資料集的分析管道",
+  //       "向學術督導及同儕呈現分析洞見",
+  //     ],
+  //     en: [
+  //       "Supported coursework and dissertation projects using machine learning and statistical modelling",
+  //       "Built analytical pipelines for large datasets in Python and SQL",
+  //       "Presented insights to academic supervisors and peers",
+  //     ],
+  //   },
+  // },
   {
     id: "x2",
     logo: "/images/logo_wanin.png",
