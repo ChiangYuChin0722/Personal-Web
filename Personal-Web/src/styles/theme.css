@@ -621,12 +621,7 @@ body {
   object-fit: contain;
   display: block;
   margin-bottom: 10px;
-  opacity: 0.85;
-  filter: brightness(0) invert(1);
-}
-[data-theme="light"] .timeline-logo {
-  filter: none;
-  opacity: 1;
+  opacity: 0.9;
 }
 
 /* =============================================
