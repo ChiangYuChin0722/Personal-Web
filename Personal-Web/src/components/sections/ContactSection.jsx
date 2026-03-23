@@ -7,11 +7,11 @@ export default function ContactSection() {
   const { t } = useI18n();
 
   const btns = [
-    { key: "contact_email", href: contacts.email },
-    { key: "contact_linkedin", href: contacts.linkedin },
-    { key: "contact_github", href: contacts.github },
-    { key: "contact_leetcode", href: contacts.leetcode },
-    { key: "contact_ig", href: contacts.ig },
+    { key: "contact_email", href: contacts.email, icon: "✉" },
+    { key: "contact_linkedin", href: contacts.linkedin, icon: "in" },
+    { key: "contact_github", href: contacts.github, icon: "⌥" },
+    { key: "contact_leetcode", href: contacts.leetcode, icon: "⚡" },
+    { key: "contact_ig", href: contacts.ig, icon: "◎" },
   ];
 
   return (
@@ -21,6 +21,7 @@ export default function ContactSection() {
       <div className="contact-row">
         {btns.map((b) => (
           <a key={b.key} className="contact-btn" href={b.href} target="_blank" rel="noreferrer">
+            <span className="contact-btn-icon">{b.icon}</span>
             {t(b.key)}
           </a>
         ))}

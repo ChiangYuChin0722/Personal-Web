@@ -29,6 +29,12 @@ export default function HeroSection() {
       <div className="hero-center">
         <div className="hero-ornament">✦ · · · ✦</div>
 
+        {/* Available badge */}
+        <div className="hero-badge">
+          <span className="hero-badge-dot" />
+          {t("open_to")}
+        </div>
+
         {/* Avatar */}
         <img
           src="/images/avatar.jpg"
@@ -57,6 +63,12 @@ export default function HeroSection() {
         </div>
 
         <p className="hero-hint">{t("hero_hint")}</p>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="hero-scroll-indicator">
+        <span className="hero-scroll-label">scroll</span>
+        <span className="hero-scroll-line" />
       </div>
 
       <Modal open={open} onClose={() => setOpen(false)} title={lang === "zh-Hant" ? nameZh : nameEn}>

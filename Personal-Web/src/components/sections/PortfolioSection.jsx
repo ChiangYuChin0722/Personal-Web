@@ -15,8 +15,7 @@ export default function PortfolioSection() {
       title: p.title[lang],
       brief: p.brief[lang],
       image: p.image,
-      descZh: p.desc["zh-Hant"],
-      descEn: p.desc.en,
+      desc: p.desc[lang],
     }));
   }, [lang]);
 
@@ -32,8 +31,7 @@ export default function PortfolioSection() {
             <div className="image-card">
               <img src={active.image} alt={active.title} />
             </div>
-            <p className="modal-text">{active.descZh}</p>
-            <p className="modal-text muted">{active.descEn}</p>
+            <p className="modal-text">{active.desc}</p>
           </>
         )}
       </Modal>
