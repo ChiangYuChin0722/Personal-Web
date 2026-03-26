@@ -5,6 +5,7 @@ import Modal from "../ui/Modal.jsx";
 export default function HeroSection() {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   const nameZh = "江昱瑾";
   const nameEn = "Yu-Chin Chiang";
@@ -39,7 +40,8 @@ export default function HeroSection() {
         <img
           src="/images/avatar.jpg"
           alt="Yu-Chin Chiang"
-          className="hero-avatar"
+          className="hero-avatar hero-avatar--clickable"
+          onClick={() => setPhotoOpen(true)}
         />
 
         <h1 className={`hero-name${lang === "zh-Hant" ? " hero-name--cjk" : ""}`}>
@@ -75,6 +77,18 @@ export default function HeroSection() {
         <p className="modal-text">{t("about_desc")}</p>
         <p className="modal-text muted">{t("hero_hint")}</p>
       </Modal>
+
+      {/* Photo lightbox */}
+      {photoOpen && (
+        <div className="photo-backdrop" onClick={() => setPhotoOpen(false)}>
+          <img
+            src="/images/avatar.jpg"
+            alt="Yu-Chin Chiang"
+            className="photo-lightbox"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </section>
   );
 }

@@ -25,7 +25,7 @@ export default function EducationSection() {
                 <img
                   src={e.logo}
                   alt={e.school[lang]}
-                  className="timeline-logo"
+                  className={`timeline-logo${e.logoBg ? " timeline-logo--light-bg" : ""}`}
                   onError={(ev) => { ev.currentTarget.style.display = "none"; }}
                 />
               )}

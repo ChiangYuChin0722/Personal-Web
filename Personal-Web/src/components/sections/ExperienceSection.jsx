@@ -25,7 +25,7 @@ export default function ExperienceSection() {
                 <img
                   src={x.logo}
                   alt={x.company[lang]}
-                  className="timeline-logo"
+                  className={`timeline-logo${x.logoBg ? " timeline-logo--light-bg" : ""}`}
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               )}
