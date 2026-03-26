@@ -266,6 +266,9 @@ body {
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 /* Decorative elements hidden */
