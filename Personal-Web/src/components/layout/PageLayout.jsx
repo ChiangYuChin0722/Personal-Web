@@ -48,8 +48,8 @@ export default function PageLayout() {
 
       <SideNav />
 
+      <HeroSection />
       <main className="content">
-        <HeroSection />
         <AboutSection />
         <EducationSection />
         <ExperienceSection />
@@ -57,6 +57,7 @@ export default function PageLayout() {
         <PortfolioSection />
         <ContactSection />
       </main>
+
     </div>
   );
 }
