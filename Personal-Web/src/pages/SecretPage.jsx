@@ -253,7 +253,6 @@ export default function SecretPage() {
   const [loginError, setLoginError] = useState(false);
 
   const [links, setLinks] = useState([]);
-  const [music, setMusic] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [timeline, setTimeline] = useState({});
@@ -283,7 +282,6 @@ export default function SecretPage() {
         return isStr ? text : JSON.parse(text);
       };
       setLinks(await load("yc2_links", []));
-      setMusic(await load("yc2_music", []));
       setDeadlines(await load("yc2_deadlines", []));
       setTasks(await load("yc2_tasks", []));
       setTimeline(await load("yc2_timeline", {}));
@@ -311,13 +309,12 @@ export default function SecretPage() {
   function handleLogout() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
-    setLinks([]); setMusic([]);
+    setLinks([]);
     setDeadlines([]); setTasks([]); setTimeline({});
     setImportantDraft(""); setGroceries([]);
   }
 
   const updateLinks = v => { setLinks(v); save("yc2_links", v); };
-  const updateMusic = v => { setMusic(v); save("yc2_music", v); };
   const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
   const updateTasks    = v => { setTasks(v);     save("yc2_tasks", v); };
   const updateTimeline = v => { setTimeline(v);  save("yc2_timeline", v); };
@@ -370,10 +367,9 @@ export default function SecretPage() {
             onAdd={l => updateLinks([...links, l])}
             onRemove={i => updateLinks(links.filter((_, idx) => idx !== i))}
           />
-          <PillSection icon="🎵" label="Music Playlist" items={music}
-            onAdd={t => updateMusic([...music, t])}
-            onRemove={i => updateMusic(music.filter((_, idx) => idx !== i))}
-            placeholder="Add track..." />
+          <a href="https://music.youtube.com" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
+            <span>🎵</span>Music Playlist<span className="sp-pill-caret">→</span>
+          </a>
           <a href="/secret/fun" className="sp-pill sp-pill-link">
             <span>🎉</span>Fun Things<span className="sp-pill-caret">→</span>
           </a>
