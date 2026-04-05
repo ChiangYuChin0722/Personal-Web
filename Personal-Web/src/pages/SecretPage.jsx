@@ -528,7 +528,6 @@ function GroceriesSection({ items, onAdd, onToggle, onRemove }) {
 
 // ── Main Component ────────────────────────────────────────────
 export default function SecretPage() {
-  const [theme, setTheme] = useState(() => localStorage.getItem("yc_theme") || "dark");
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -636,20 +635,11 @@ export default function SecretPage() {
     );
   }
 
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("yc_theme", next);
-  }
-
   return (
-    <div className={`sp-root${theme === "light" ? " sp-light" : ""}`}>
+    <div className="sp-root">
       <div className="sp-topbar">
         <div className="sp-brand">YC<span>.</span> Private</div>
         <div className="sp-topbar-right">
-          <button className="sp-theme-btn" onClick={toggleTheme} title="Toggle theme">
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
           <span className="sp-username">{currentUser}</span>
           <button className="sp-logout-btn" onClick={handleLogout}>Sign Out</button>
         </div>
