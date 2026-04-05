@@ -180,112 +180,214 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
 }
 
 // ── Eisenhower Matrix ─────────────────────────────────────────
-const QUADRANTS = [
-  { key: "q3", label: "Not Important × Urgent",     color: "#d97706", sub: "Delegate" },
-  { key: "q1", label: "Important × Urgent",         color: "#dc2626", sub: "Do Now" },
-  { key: "q4", label: "Not Important × Not Urgent", color: "#475569", sub: "Eliminate" },
-  { key: "q2", label: "Important × Not Urgent",     color: "#2563eb", sub: "Schedule" },
-];
+function getQuadrantInfo(x, y) {
+  // x: 0=Not Urgent(left)  100=Urgent(right)
+  // y: 0=Important(top)    100=Not Important(bottom)
+  if (x >= 50 && y < 50)  return { label: "Important × Urgent",         color: "#dc2626", sub: "Do Now" };
+  if (x < 50  && y < 50)  return { label: "Important × Not Urgent",     color: "#2563eb", sub: "Schedule" };
+  if (x >= 50 && y >= 50) return { label: "Not Important × Urgent",     color: "#d97706", sub: "Delegate" };
+  return                          { label: "Not Important × Not Urgent", color: "#475569", sub: "Eliminate" };
+}
 
 function EisenhowerMatrix({ matrix, onUpdate }) {
-  const [expanded, setExpanded] = useState(null); // "q1-id"
-  const [editing, setEditing] = useState(null);   // same key when editing note
-  const [inputs, setInputs] = useState({ q1: "", q2: "", q3: "", q4: "" });
-  const [noteVal, setNoteVal] = useState("");
+  const plotRef   = useRef(null);
+  const itemsRef  = useRef([]);
+  const dragId    = useRef(null);
+  const dragMoved = useRef(false);
 
-  function addItem(qKey) {
-    const title = inputs[qKey].trim();
-    if (!title) return;
-    const updated = { ...matrix, [qKey]: [...(matrix[qKey] || []), { id: Date.now().toString(), title, note: "" }] };
-    onUpdate(updated);
-    setInputs(p => ({ ...p, [qKey]: "" }));
-  }
+  // matrix is now an array; migrate if old format
+  const items = Array.isArray(matrix) ? matrix : [];
+  itemsRef.current = items;
 
-  function removeItem(qKey, id) {
-    const updated = { ...matrix, [qKey]: matrix[qKey].filter(i => i.id !== id) };
-    onUpdate(updated);
-    if (expanded === `${qKey}-${id}`) setExpanded(null);
-  }
+  const [, forceRender] = useState(0);
+  const [addModal, setAddModal]   = useState(null); // { x, y }
+  const [viewCard, setViewCard]   = useState(null); // item id
+  const [form, setForm]           = useState({ title: "", deadline: "", details: "" });
 
-  function toggleExpand(qKey, id) {
-    const key = `${qKey}-${id}`;
-    if (expanded === key) { setExpanded(null); setEditing(null); }
-    else { setExpanded(key); setEditing(null); }
-  }
-
-  function startEditNote(qKey, item) {
-    setEditing(`${qKey}-${item.id}`);
-    setNoteVal(item.note || "");
-  }
-
-  function saveNote(qKey, id) {
-    const updated = {
-      ...matrix,
-      [qKey]: matrix[qKey].map(i => i.id === id ? { ...i, note: noteVal } : i)
+  function getPos(clientX, clientY) {
+    const r = plotRef.current.getBoundingClientRect();
+    return {
+      x: Math.max(2, Math.min(98, ((clientX - r.left)  / r.width)  * 100)),
+      y: Math.max(2, Math.min(98, ((clientY - r.top)   / r.height) * 100)),
     };
-    onUpdate(updated);
-    setEditing(null);
   }
+
+  // Drag handlers on window
+  useEffect(() => {
+    function onMove(e) {
+      if (!dragId.current) return;
+      dragMoved.current = true;
+      const pos = getPos(e.clientX, e.clientY);
+      const next = itemsRef.current.map(it =>
+        it.id === dragId.current ? { ...it, ...pos } : it
+      );
+      itemsRef.current = next;
+      forceRender(n => n + 1);
+    }
+    function onUp() {
+      if (!dragId.current) return;
+      if (dragMoved.current) onUpdate([...itemsRef.current]);
+      dragId.current  = null;
+      dragMoved.current = false;
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup",   onUp);
+    };
+  }, [onUpdate]);
+
+  function handlePlotClick(e) {
+    if (dragMoved.current) return;
+    if (e.target.closest(".em-dot")) return;
+    const pos = getPos(e.clientX, e.clientY);
+    setAddModal(pos);
+    setForm({ title: "", deadline: "", details: "" });
+  }
+
+  function handleDotMouseDown(e, id) {
+    e.stopPropagation();
+    dragId.current    = id;
+    dragMoved.current = false;
+    setViewCard(null);
+  }
+
+  function handleDotClick(e, id) {
+    e.stopPropagation();
+    if (dragMoved.current) return;
+    setViewCard(id);
+  }
+
+  function addItem() {
+    if (!form.title.trim()) return;
+    const newItem = { id: Date.now().toString(), ...form, title: form.title.trim(), x: addModal.x, y: addModal.y };
+    onUpdate([...items, newItem]);
+    setAddModal(null);
+  }
+
+  function deleteItem(id) {
+    onUpdate(items.filter(i => i.id !== id));
+    setViewCard(null);
+  }
+
+  const viewItem = viewCard ? items.find(i => i.id === viewCard) : null;
 
   return (
     <div className="sp-matrix">
-      <div className="sp-section-title">Eisenhower Matrix</div>
-      <div className="sp-matrix-grid">
-        {QUADRANTS.map(q => (
-          <div key={q.key} className="sp-matrix-quad" style={{ "--qcolor": q.color }}>
-            <div className="sp-matrix-quad-header">
-              <span className="sp-matrix-quad-label">{q.label}</span>
-              <span className="sp-matrix-quad-sub">{q.sub}</span>
+      <div className="sp-section-title">Eisenhower Matrix
+        <span className="sp-matrix-hint">click anywhere to add</span>
+      </div>
+
+      {/* Plot */}
+      <div className="em-plot-wrap">
+        {/* Y axis labels */}
+        <div className="em-axis-y-top">Important</div>
+        <div className="em-axis-y-bot">Not Important</div>
+
+        <div ref={plotRef} className="em-plot" onClick={handlePlotClick}
+          style={{ cursor: dragId.current ? "grabbing" : "crosshair" }}>
+
+          {/* Quadrant backgrounds */}
+          <div className="em-bg em-bg-tl" />
+          <div className="em-bg em-bg-tr" />
+          <div className="em-bg em-bg-bl" />
+          <div className="em-bg em-bg-br" />
+
+          {/* Axis lines */}
+          <div className="em-line em-line-h" />
+          <div className="em-line em-line-v" />
+
+          {/* Corner labels */}
+          <span className="em-qlabel" style={{ top:"6%", left:"4%",  color:"#2563eb" }}>Schedule</span>
+          <span className="em-qlabel" style={{ top:"6%", right:"4%", color:"#dc2626" }}>Do Now</span>
+          <span className="em-qlabel" style={{ bottom:"6%", left:"4%",  color:"#475569" }}>Eliminate</span>
+          <span className="em-qlabel" style={{ bottom:"6%", right:"4%", color:"#d97706" }}>Delegate</span>
+
+          {/* Dots */}
+          {items.map(item => {
+            const q = getQuadrantInfo(item.x, item.y);
+            return (
+              <div key={item.id} className="em-dot"
+                style={{ left: `${item.x}%`, top: `${item.y}%`, background: q.color,
+                  boxShadow: `0 0 10px ${q.color}88`,
+                  cursor: dragId.current === item.id ? "grabbing" : "grab" }}
+                onMouseDown={e => handleDotMouseDown(e, item.id)}
+                onClick={e => handleDotClick(e, item.id)}
+              >
+                <span className="em-dot-label">{item.title}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* X axis labels */}
+        <div className="em-axis-x">
+          <span>← Not Urgent</span>
+          <span>Urgent →</span>
+        </div>
+      </div>
+
+      {/* Add Modal */}
+      {addModal && (
+        <div className="em-overlay" onClick={() => setAddModal(null)}>
+          <div className="em-modal" onClick={e => e.stopPropagation()}>
+            <div className="em-modal-header">
+              <h3>New Task</h3>
+              <span className="em-modal-quad" style={{ color: getQuadrantInfo(addModal.x, addModal.y).color }}>
+                {getQuadrantInfo(addModal.x, addModal.y).label}
+              </span>
             </div>
-            <div className="sp-matrix-tags">
-              {(matrix[q.key] || []).map(item => {
-                const expKey = `${q.key}-${item.id}`;
-                const isOpen = expanded === expKey;
-                const isEditingNote = editing === expKey;
-                return (
-                  <div key={item.id} className={`sp-matrix-tag-wrap${isOpen ? " open" : ""}`}>
-                    <div className="sp-matrix-tag">
-                      <span onClick={() => toggleExpand(q.key, item.id)} className="sp-matrix-tag-title">
-                        {item.title}
-                      </span>
-                      <button onClick={() => removeItem(q.key, item.id)} className="sp-del">✕</button>
-                    </div>
-                    {isOpen && (
-                      <div className="sp-matrix-note">
-                        {isEditingNote ? (
-                          <>
-                            <textarea
-                              autoFocus
-                              className="sp-matrix-note-input"
-                              value={noteVal}
-                              onChange={e => setNoteVal(e.target.value)}
-                              placeholder="Add notes..."
-                            />
-                            <button className="sp-matrix-save-btn" onClick={() => saveNote(q.key, item.id)}>Save</button>
-                          </>
-                        ) : (
-                          <p className="sp-matrix-note-text" onClick={() => startEditNote(q.key, item)}>
-                            {item.note || <span className="sp-matrix-note-empty">Click to add notes...</span>}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="em-modal-field">
+              <label>Title</label>
+              <input autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && addItem()} placeholder="Task title..." />
             </div>
-            <div className="sp-matrix-add">
-              <input
-                value={inputs[q.key]}
-                onChange={e => setInputs(p => ({ ...p, [q.key]: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && addItem(q.key)}
-                placeholder="Add item..."
-              />
-              <button onClick={() => addItem(q.key)}>+</button>
+            <div className="em-modal-field">
+              <label>Deadline</label>
+              <input value={form.deadline} onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))}
+                placeholder="e.g. 2025/06/01" />
+            </div>
+            <div className="em-modal-field">
+              <label>Details</label>
+              <textarea value={form.details} onChange={e => setForm(p => ({ ...p, details: e.target.value }))}
+                placeholder="Notes, subtasks..." rows={3} />
+            </div>
+            <div className="em-modal-actions">
+              <button className="em-btn-cancel" onClick={() => setAddModal(null)}>Cancel</button>
+              <button className="em-btn-add" onClick={addItem}>Add</button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* View Card */}
+      {viewItem && (() => {
+        const q = getQuadrantInfo(viewItem.x, viewItem.y);
+        return (
+          <div className="em-overlay" onClick={() => setViewCard(null)}>
+            <div className="em-modal" onClick={e => e.stopPropagation()}>
+              <div className="em-modal-header">
+                <div>
+                  <span className="em-modal-quad" style={{ color: q.color }}>{q.label} · {q.sub}</span>
+                  <h3>{viewItem.title}</h3>
+                </div>
+                <button className="em-close" onClick={() => setViewCard(null)}>✕</button>
+              </div>
+              {viewItem.deadline && (
+                <div className="em-card-row"><span className="em-card-key">Deadline</span><span>{viewItem.deadline}</span></div>
+              )}
+              {viewItem.details && (
+                <div className="em-card-row"><span className="em-card-key">Details</span><span>{viewItem.details}</span></div>
+              )}
+              <div className="em-modal-actions">
+                <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
+                <button className="em-btn-cancel" onClick={() => setViewCard(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -366,7 +468,7 @@ export default function SecretPage() {
   const [links, setLinks] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [matrix, setMatrix] = useState({ q1: [], q2: [], q3: [], q4: [] });
+  const [matrix, setMatrix] = useState([]);
   const [timeline, setTimeline] = useState({});
   const [importantDraft, setImportantDraft] = useState("");
   const [groceries, setGroceries] = useState([]);
@@ -396,7 +498,8 @@ export default function SecretPage() {
       setLinks(await load("yc2_links", []));
       setDeadlines(await load("yc2_deadlines", []));
       setTasks(await load("yc2_tasks", []));
-      setMatrix(await load("yc2_matrix", { q1: [], q2: [], q3: [], q4: [] }));
+      const rawMatrix = await load("yc2_matrix", []);
+      setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
       setTimeline(await load("yc2_timeline", {}));
       setImportantDraft(await load("yc2_important", "", true));
       setGroceries(await load("yc2_groceries", []));
@@ -423,7 +526,7 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setDeadlines([]); setTasks([]); setMatrix({ q1: [], q2: [], q3: [], q4: [] }); setTimeline({});
+    setDeadlines([]); setTasks([]); setMatrix([]); setTimeline({});
     setImportantDraft(""); setGroceries([]);
   }
 
