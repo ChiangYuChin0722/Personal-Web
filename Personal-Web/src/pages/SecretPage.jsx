@@ -181,10 +181,10 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
 
 // ── Eisenhower Matrix ─────────────────────────────────────────
 const QUADRANTS = [
-  { key: "q1", label: "重要 × 緊急",     color: "#dc2626", sub: "立刻處理" },
   { key: "q2", label: "重要 × 不緊急",   color: "#2563eb", sub: "排程計畫" },
-  { key: "q3", label: "不重要 × 緊急",   color: "#d97706", sub: "委派他人" },
+  { key: "q1", label: "重要 × 緊急",     color: "#dc2626", sub: "立刻處理" },
   { key: "q4", label: "不重要 × 不緊急", color: "#475569", sub: "考慮刪除" },
+  { key: "q3", label: "不重要 × 緊急",   color: "#d97706", sub: "委派他人" },
 ];
 
 function EisenhowerMatrix({ matrix, onUpdate }) {
