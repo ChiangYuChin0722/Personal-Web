@@ -40,23 +40,6 @@ export const experience = [
     },
   },
   {
-    id: "x3",
-    logo: "/images/logo_KBI.webp",
-    logoBg: true,
-    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
-    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
-    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
-    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
-    bullets: {
-      "zh-Hant": [
-        "導入大數據處理技術，優化網站效能、安全性與即時分析",
-      ],
-      en: [
-        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
-      ],
-    },
-  },
-  {
     id: "x6",
     logo: "/images/logo_KiDSDAY.png",
     period: { "zh-Hant": "2023 – 2025", en: "2023 – 2025" },
@@ -77,9 +60,29 @@ export const experience = [
     },
   },
   {
+    id: "x5",
+    logo: "/images/logo_CGU.png",
+    period: { "zh-Hant": "2023 – 2024", en: "2023 – 2024" },
+    company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
+    location: { "zh-Hant": "台灣", en: "Taiwan" },
+    role: { "zh-Hant": "數據分析師（學生滿意度研究）", en: "Data Analyst (Student Satisfaction Study)" },
+    bullets: {
+      "zh-Hant": [
+        "分析大規模學生問卷資料集，找出滿意度與留存率驅動因素",
+        "建立儀表板和統計摘要，支持機構決策",
+        "向學術及行政團隊提供數據支持的建議",
+      ],
+      en: [
+        "Analysed large-scale student survey datasets to identify drivers of satisfaction and retention",
+        "Built dashboards and statistical summaries to support institutional decision-making",
+        "Delivered data-backed recommendations to academic and administrative teams",
+      ],
+    },
+  },
+  {
     id: "x4",
     logo: "/images/logo_CGU.png",
-    period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
+    period: { "zh-Hant": "2022 – 2023", en: "2022 – 2023" },
     company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
     location: { "zh-Hant": "台灣", en: "Taiwan" },
     role: { "zh-Hant": "量化交易研究助理", en: "Trading Research Assistant" },
@@ -97,22 +100,19 @@ export const experience = [
     },
   },
   {
-    id: "x5",
-    logo: "/images/logo_CGU.png",
-    period: { "zh-Hant": "2023 – 2024", en: "2023 – 2024" },
-    company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
-    location: { "zh-Hant": "台灣", en: "Taiwan" },
-    role: { "zh-Hant": "數據分析師（學生滿意度研究）", en: "Data Analyst (Student Satisfaction Study)" },
+    id: "x3",
+    logo: "/images/logo_KBI.webp",
+    logoBg: true,
+    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
+    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
+    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
+    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
     bullets: {
       "zh-Hant": [
-        "分析大規模學生問卷資料集，找出滿意度與留存率驅動因素",
-        "建立儀表板和統計摘要，支持機構決策",
-        "向學術及行政團隊提供數據支持的建議",
+        "導入大數據處理技術，優化網站效能、安全性與即時分析",
       ],
       en: [
-        "Analysed large-scale student survey datasets to identify drivers of satisfaction and retention",
-        "Built dashboards and statistical summaries to support institutional decision-making",
-        "Delivered data-backed recommendations to academic and administrative teams",
+        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
       ],
     },
   },
