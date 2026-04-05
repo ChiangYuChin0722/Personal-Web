@@ -8,4 +8,7 @@ export default defineConfig({
     outDir: "../docs",     // ✅ 輸出到 repo 根目錄的 /docs
     emptyOutDir: true,
   },
+  server: {
+    historyApiFallback: true,
+  },
 });
