@@ -39,12 +39,8 @@ const LINK_PRESETS = [
   { icon: "🐙", label: "GitHub",    url: "https://github.com" },
   { icon: "💼", label: "LinkedIn",  url: "https://linkedin.com" },
   { icon: "💻", label: "LeetCode",  url: "https://leetcode.com" },
-  { icon: "🐦", label: "X",         url: "https://x.com" },
   { icon: "📷", label: "Instagram", url: "https://instagram.com" },
-  { icon: "💬", label: "Discord",   url: "https://discord.com" },
   { icon: "📝", label: "Notion",    url: "https://notion.so" },
-  { icon: "🎮", label: "Steam",     url: "https://store.steampowered.com" },
-  { icon: "📊", label: "Sheets",    url: "https://sheets.google.com" },
 ];
 
 const ICON_OPTIONS = ["🔗","📧","▶️","🎵","🐙","💼","💻","🐦","📷","💬","📝","🎮","📊","🌐","🎬","📚","💰","🏠","⚡","🔑","📌","🛒","🎨","📱","🖥️","👽"];
