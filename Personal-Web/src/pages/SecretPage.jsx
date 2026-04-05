@@ -367,7 +367,7 @@ export default function SecretPage() {
             onAdd={l => updateLinks([...links, l])}
             onRemove={i => updateLinks(links.filter((_, idx) => idx !== i))}
           />
-          <a href="https://music.youtube.com" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
+          <a href="https://music.youtube.com/playlist?list=PLdpw4c3Tb8_i87buXxix9KI3KS1JbPfl5&si=YqcEhZpE700XF6c6" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
             <span>🎵</span>Music Playlist<span className="sp-pill-caret">→</span>
           </a>
           <a href="/secret/fun" className="sp-pill sp-pill-link">
