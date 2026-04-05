@@ -32,33 +32,98 @@ function WorldClocks() {
 }
 
 // ── Quick Links ───────────────────────────────────────────────
-function QuickLinks({ links, onAdd, onRemove }) {
-  const [label, setLabel] = useState("");
-  const [url, setUrl] = useState("");
+const LINK_PRESETS = [
+  { icon: "📧", label: "Gmail",     url: "https://mail.google.com" },
+  { icon: "▶️",  label: "YouTube",  url: "https://youtube.com" },
+  { icon: "🎵", label: "YT Music",  url: "https://music.youtube.com" },
+  { icon: "🐙", label: "GitHub",    url: "https://github.com" },
+  { icon: "💼", label: "LinkedIn",  url: "https://linkedin.com" },
+  { icon: "💻", label: "LeetCode",  url: "https://leetcode.com" },
+  { icon: "🐦", label: "X",         url: "https://x.com" },
+  { icon: "📷", label: "Instagram", url: "https://instagram.com" },
+  { icon: "💬", label: "Discord",   url: "https://discord.com" },
+  { icon: "📝", label: "Notion",    url: "https://notion.so" },
+  { icon: "🎮", label: "Steam",     url: "https://store.steampowered.com" },
+  { icon: "📊", label: "Sheets",    url: "https://sheets.google.com" },
+];
 
-  function add() {
+const ICON_OPTIONS = ["🔗","📧","▶️","🎵","🐙","💼","💻","🐦","📷","💬","📝","🎮","📊","🌐","🎬","📚","💰","🏠","⚡","🔑","📌","🛒","🎨","📱","🖥️","👽"];
+
+function QuickLinks({ links, onAdd, onRemove }) {
+  const [showCustom, setShowCustom] = useState(false);
+  const [icon, setIcon]   = useState("🔗");
+  const [label, setLabel] = useState("");
+  const [url, setUrl]     = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+
+  // Which preset IDs are already added
+  const addedUrls = new Set(links.map(l => l.url));
+
+  function addPreset(preset) {
+    if (addedUrls.has(preset.url)) return;
+    onAdd({ id: Date.now().toString(), ...preset });
+  }
+
+  function addCustom() {
     if (!url.trim()) return;
     const fullUrl = url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`;
-    onAdd({ id: Date.now().toString(), label: label.trim() || fullUrl, url: fullUrl });
-    setLabel(""); setUrl("");
+    onAdd({ id: Date.now().toString(), icon, label: label.trim() || fullUrl, url: fullUrl });
+    setIcon("🔗"); setLabel(""); setUrl(""); setShowCustom(false);
   }
 
   return (
     <div className="sp-box">
-      <div className="sp-box-title">URL</div>
-      <div className="sp-link-list">
-        {links.map((l, i) => (
-          <div key={l.id || i} className="sp-link-item">
-            <a href={l.url} target="_blank" rel="noreferrer">{l.label}</a>
-            <button onClick={() => onRemove(i)} className="sp-del">✕</button>
-          </div>
+      <div className="sp-box-title">Quick Links</div>
+
+      {/* Preset chips */}
+      <div className="ql-presets">
+        {LINK_PRESETS.map(p => (
+          <button key={p.url}
+            className={`ql-preset${addedUrls.has(p.url) ? " added" : ""}`}
+            onClick={() => addPreset(p)}
+            title={p.label}
+          >
+            <span>{p.icon}</span><span>{p.label}</span>
+          </button>
         ))}
       </div>
-      <div className="sp-link-inputs">
-        <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
-        <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="URL" />
-        <button onClick={add}>+</button>
-      </div>
+
+      {/* Added links */}
+      {links.length > 0 && (
+        <div className="sp-link-list">
+          {links.map((l, i) => (
+            <div key={l.id || i} className="sp-link-item">
+              <span className="ql-link-icon">{l.icon || "🔗"}</span>
+              <a href={l.url} target="_blank" rel="noreferrer">{l.label}</a>
+              <button onClick={() => onRemove(i)} className="sp-del">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Custom add */}
+      {showCustom ? (
+        <div className="ql-custom-row">
+          <div className="ql-icon-picker-wrap">
+            <button className="ql-icon-btn" onClick={() => setShowPicker(p => !p)}>{icon}</button>
+            {showPicker && (
+              <div className="ql-icon-grid">
+                {ICON_OPTIONS.map(ic => (
+                  <button key={ic} onClick={() => { setIcon(ic); setShowPicker(false); }}
+                    className={ic === icon ? "selected" : ""}>{ic}</button>
+                ))}
+              </div>
+            )}
+          </div>
+          <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
+          <input value={url} onChange={e => setUrl(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addCustom()} placeholder="URL" />
+          <button onClick={addCustom} className="ql-add-btn">+</button>
+          <button onClick={() => setShowCustom(false)} className="sp-del">✕</button>
+        </div>
+      ) : (
+        <button className="ql-custom-toggle" onClick={() => setShowCustom(true)}>+ Custom URL</button>
+      )}
     </div>
   );
 }
