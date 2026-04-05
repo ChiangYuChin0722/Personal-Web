@@ -190,19 +190,24 @@ function getQuadrantInfo(x, y) {
 }
 
 function EisenhowerMatrix({ matrix, onUpdate }) {
-  const plotRef   = useRef(null);
-  const itemsRef  = useRef([]);
-  const dragId    = useRef(null);
-  const dragMoved = useRef(false);
+  const plotRef        = useRef(null);
+  const dragId         = useRef(null);
+  const dragMoved      = useRef(false);
+  const localItemsRef  = useRef([]);
 
-  // matrix is now an array; migrate if old format
-  const items = Array.isArray(matrix) ? matrix : [];
-  itemsRef.current = items;
+  const [localItems, setLocalItems] = useState([]);
+  const [addModal, setAddModal]     = useState(null);
+  const [viewCard, setViewCard]     = useState(null);
+  const [form, setForm]             = useState({ title: "", deadline: "", details: "" });
 
-  const [, forceRender] = useState(0);
-  const [addModal, setAddModal]   = useState(null); // { x, y }
-  const [viewCard, setViewCard]   = useState(null); // item id
-  const [form, setForm]           = useState({ title: "", deadline: "", details: "" });
+  // Sync from parent when not dragging
+  useEffect(() => {
+    if (!dragId.current) {
+      const arr = Array.isArray(matrix) ? matrix : [];
+      localItemsRef.current = arr;
+      setLocalItems(arr);
+    }
+  }, [matrix]);
 
   function getPos(clientX, clientY) {
     const r = plotRef.current.getBoundingClientRect();
@@ -212,22 +217,21 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
     };
   }
 
-  // Drag handlers on window
   useEffect(() => {
     function onMove(e) {
-      if (!dragId.current) return;
+      if (!dragId.current || !plotRef.current) return;
       dragMoved.current = true;
       const pos = getPos(e.clientX, e.clientY);
-      const next = itemsRef.current.map(it =>
+      const next = localItemsRef.current.map(it =>
         it.id === dragId.current ? { ...it, ...pos } : it
       );
-      itemsRef.current = next;
-      forceRender(n => n + 1);
+      localItemsRef.current = next;
+      setLocalItems([...next]);
     }
     function onUp() {
       if (!dragId.current) return;
-      if (dragMoved.current) onUpdate([...itemsRef.current]);
-      dragId.current  = null;
+      if (dragMoved.current) onUpdate([...localItemsRef.current]);
+      dragId.current    = null;
       dragMoved.current = false;
     }
     window.addEventListener("mousemove", onMove);
@@ -262,16 +266,22 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
   function addItem() {
     if (!form.title.trim()) return;
     const newItem = { id: Date.now().toString(), ...form, title: form.title.trim(), x: addModal.x, y: addModal.y };
-    onUpdate([...items, newItem]);
+    const next = [...localItemsRef.current, newItem];
+    localItemsRef.current = next;
+    setLocalItems(next);
+    onUpdate(next);
     setAddModal(null);
   }
 
   function deleteItem(id) {
-    onUpdate(items.filter(i => i.id !== id));
+    const next = localItemsRef.current.filter(i => i.id !== id);
+    localItemsRef.current = next;
+    setLocalItems(next);
+    onUpdate(next);
     setViewCard(null);
   }
 
-  const viewItem = viewCard ? items.find(i => i.id === viewCard) : null;
+  const viewItem = viewCard ? localItems.find(i => i.id === viewCard) : null;
 
   return (
     <div className="sp-matrix">
@@ -304,8 +314,7 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
           <span className="em-qlabel" style={{ bottom:"6%", left:"4%",  color:"#475569" }}>Eliminate</span>
           <span className="em-qlabel" style={{ bottom:"6%", right:"4%", color:"#d97706" }}>Delegate</span>
 
-          {/* Dots */}
-          {items.map(item => {
+          {localItems.map(item => {
             const q = getQuadrantInfo(item.x, item.y);
             return (
               <div key={item.id} className="em-dot"
