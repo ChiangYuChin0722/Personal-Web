@@ -475,21 +475,22 @@ export default function SecretPage() {
       <div className="sp-body">
         {/* ── LEFT ── */}
         <div className="sp-left">
-          <WorldClocks />
-          <QuickLinks
-            links={links}
-            onAdd={l => updateLinks([...links, l])}
-            onRemove={i => updateLinks(links.filter((_, idx) => idx !== i))}
+          <TodayTimeline timeline={timeline} onUpdate={updateTimeline} />
+          <div className="sp-important-box">
+            <div className="sp-section-title">Important</div>
+            <textarea
+              className="sp-important-area"
+              value={importantDraft}
+              onChange={e => handleImportantChange(e.target.value)}
+              placeholder="Important notes..."
+            />
+          </div>
+          <GroceriesSection
+            items={groceries}
+            onAdd={g => updateGroceries([...groceries, g])}
+            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
+            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
           />
-          <a href="https://music.youtube.com/playlist?list=PLdpw4c3Tb8_i87buXxix9KI3KS1JbPfl5&si=YqcEhZpE700XF6c6" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
-            <span>🎵</span>Music Playlist<span className="sp-pill-caret">→</span>
-          </a>
-          <a href="/secret/fun" className="sp-pill sp-pill-link">
-            <span>🎉</span>Fun Things<span className="sp-pill-caret">→</span>
-          </a>
-          <a href="/secret/friend" className="sp-pill sp-pill-link">
-            <span>👥</span>Friends<span className="sp-pill-caret">→</span>
-          </a>
         </div>
 
         {/* ── MIDDLE ── */}
@@ -510,22 +511,21 @@ export default function SecretPage() {
 
         {/* ── RIGHT ── */}
         <div className="sp-right">
-          <TodayTimeline timeline={timeline} onUpdate={updateTimeline} />
-          <div className="sp-important-box">
-            <div className="sp-section-title">Important</div>
-            <textarea
-              className="sp-important-area"
-              value={importantDraft}
-              onChange={e => handleImportantChange(e.target.value)}
-              placeholder="Important notes..."
-            />
-          </div>
-          <GroceriesSection
-            items={groceries}
-            onAdd={g => updateGroceries([...groceries, g])}
-            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
-            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
+          <WorldClocks />
+          <QuickLinks
+            links={links}
+            onAdd={l => updateLinks([...links, l])}
+            onRemove={i => updateLinks(links.filter((_, idx) => idx !== i))}
           />
+          <a href="https://music.youtube.com/playlist?list=PLdpw4c3Tb8_i87buXxix9KI3KS1JbPfl5&si=YqcEhZpE700XF6c6" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
+            <span>🎵</span>Music Playlist<span className="sp-pill-caret">→</span>
+          </a>
+          <a href="/secret/fun" className="sp-pill sp-pill-link">
+            <span>🎉</span>Fun Things<span className="sp-pill-caret">→</span>
+          </a>
+          <a href="/secret/friend" className="sp-pill sp-pill-link">
+            <span>👥</span>Friends<span className="sp-pill-caret">→</span>
+          </a>
         </div>
       </div>
     </div>
