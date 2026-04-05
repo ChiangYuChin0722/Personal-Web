@@ -463,21 +463,57 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
 }
 
 // ── Today Timeline ────────────────────────────────────────────
+function dateKey(d) { return d.toISOString().slice(0, 10); }
+
 function TodayTimeline({ timeline, onUpdate }) {
   const [editing, setEditing] = useState(null);
   const [val, setVal] = useState("");
-  const currentHour = new Date().getHours();
+  const [offset, setOffset] = useState(0); // 0=today, negative=past, positive=future
 
-  function startEdit(h) { setEditing(h); setVal(timeline[h] || ""); }
-  function save() {
+  const today = new Date();
+  const selected = new Date(today);
+  selected.setDate(today.getDate() + offset);
+  const selKey = dateKey(selected);
+  const currentHour = offset === 0 ? today.getHours() : -1;
+
+  // Migrate old flat format { hour: text } → new { dateKey: { hour: text } }
+  function normalize(tl) {
+    if (!tl || typeof tl !== "object") return {};
+    const vals = Object.values(tl);
+    if (vals.length > 0 && typeof vals[0] === "string") {
+      return { [dateKey(today)]: tl };
+    }
+    return tl;
+  }
+  const norm = normalize(timeline);
+  const dayData = norm[selKey] || {};
+
+  function startEdit(h) { setEditing(h); setVal(dayData[h] || ""); }
+  function commitEdit() {
     if (editing == null) return;
-    onUpdate({ ...timeline, [editing]: val });
+    const base = normalize(timeline);
+    const dayUpdated = { ...(base[selKey] || {}), [editing]: val };
+    if (!val.trim()) delete dayUpdated[editing];
+    onUpdate({ ...base, [selKey]: dayUpdated });
     setEditing(null);
   }
 
+  const dayLabel = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow"
+    : selected.toLocaleDateString("en-US", { weekday: "short" });
+  const dateLabel = selected.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
   return (
     <div className="sp-timeline">
-      <div className="sp-section-title">Today <span className="sp-tl-sub">timeline</span></div>
+      <div className="sp-tl-header">
+        <div className="sp-section-title">
+          {dayLabel} <span className="sp-tl-sub">timeline</span>
+        </div>
+        <div className="sp-tl-nav">
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o - 1)} disabled={offset <= -3}>‹</button>
+          <span className="sp-tl-date">{dateLabel}</span>
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o + 1)} disabled={offset >= 7}>›</button>
+        </div>
+      </div>
       {HOURS.map(h => (
         <div key={h} className={`sp-tl-row${h === currentHour ? " sp-tl-now" : ""}`} onClick={() => startEdit(h)}>
           <span className="sp-tl-hour">{h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`}</span>
@@ -486,11 +522,11 @@ function TodayTimeline({ timeline, onUpdate }) {
             <input
               autoFocus className="sp-tl-input"
               value={val} onChange={e => setVal(e.target.value)}
-              onBlur={save} onKeyDown={e => e.key === "Enter" && save()}
+              onBlur={commitEdit} onKeyDown={e => e.key === "Enter" && commitEdit()}
               onClick={e => e.stopPropagation()}
             />
           ) : (
-            <span className="sp-tl-event">{timeline[h]}</span>
+            <span className="sp-tl-event">{dayData[h]}</span>
           )}
         </div>
       ))}
