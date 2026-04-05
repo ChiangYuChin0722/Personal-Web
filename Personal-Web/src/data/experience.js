@@ -40,19 +40,22 @@ export const experience = [
     },
   },
   {
-    id: "x3",
-    logo: "/images/logo_KBI.webp",
-    logoBg: true,
-    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
-    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
-    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
-    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
+    id: "x4",
+    logo: "/images/logo_CGU.png",
+    period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
+    company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
+    location: { "zh-Hant": "台灣", en: "Taiwan" },
+    role: { "zh-Hant": "量化交易研究助理", en: "Trading Research Assistant" },
     bullets: {
       "zh-Hant": [
-        "導入大數據處理技術，優化網站效能、安全性與即時分析",
+        "以 Python 分析資產報酬與策略行為，支援量化市場研究",
+        "建立回測流程並評估模擬投資組合的風險回報指標",
+        "向學術督導呈現研究結果，輔助模型開發",
       ],
       en: [
-        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
+        "Supported quantitative market research using Python to analyse asset returns and strategy behaviour",
+        "Built backtesting workflows and evaluated risk–return metrics across simulated portfolios",
+        "Presented results to academic supervisors to inform model development",
       ],
     },
   },
@@ -77,26 +80,6 @@ export const experience = [
     },
   },
   {
-    id: "x4",
-    logo: "/images/logo_CGU.png",
-    period: { "zh-Hant": "2024 – 2025", en: "2024 – 2025" },
-    company: { "zh-Hant": "長庚大學", en: "Chang Gung University" },
-    location: { "zh-Hant": "台灣", en: "Taiwan" },
-    role: { "zh-Hant": "量化交易研究助理", en: "Trading Research Assistant" },
-    bullets: {
-      "zh-Hant": [
-        "以 Python 分析資產報酬與策略行為，支援量化市場研究",
-        "建立回測流程並評估模擬投資組合的風險回報指標",
-        "向學術督導呈現研究結果，輔助模型開發",
-      ],
-      en: [
-        "Supported quantitative market research using Python to analyse asset returns and strategy behaviour",
-        "Built backtesting workflows and evaluated risk–return metrics across simulated portfolios",
-        "Presented results to academic supervisors to inform model development",
-      ],
-    },
-  },
-  {
     id: "x5",
     logo: "/images/logo_CGU.png",
     period: { "zh-Hant": "2023 – 2024", en: "2023 – 2024" },
@@ -113,6 +96,23 @@ export const experience = [
         "Analysed large-scale student survey datasets to identify drivers of satisfaction and retention",
         "Built dashboards and statistical summaries to support institutional decision-making",
         "Delivered data-backed recommendations to academic and administrative teams",
+      ],
+    },
+  },
+  {
+    id: "x3",
+    logo: "/images/logo_KBI.webp",
+    logoBg: true,
+    period: { "zh-Hant": "2021 – 2023", en: "Jul 2021 – Sep 2023" },
+    company: { "zh-Hant": "KBI Food Machinery Co.", en: "KBI Food Machinery Co." },
+    location: { "zh-Hant": "台中，台灣", en: "Taichung, Taiwan" },
+    role: { "zh-Hant": "軟體工程師", en: "Software Engineer" },
+    bullets: {
+      "zh-Hant": [
+        "導入大數據處理技術，優化網站效能、安全性與即時分析",
+      ],
+      en: [
+        "Implemented big data processing techniques to optimize website performance, security, and real-time analytics",
       ],
     },
   },
