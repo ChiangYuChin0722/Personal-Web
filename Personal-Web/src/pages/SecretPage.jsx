@@ -254,8 +254,6 @@ export default function SecretPage() {
 
   const [links, setLinks] = useState([]);
   const [music, setMusic] = useState([]);
-  const [funThings, setFunThings] = useState([]);
-  const [friends, setFriends] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [timeline, setTimeline] = useState({});
@@ -286,8 +284,6 @@ export default function SecretPage() {
       };
       setLinks(await load("yc2_links", []));
       setMusic(await load("yc2_music", []));
-      setFunThings(await load("yc2_fun", []));
-      setFriends(await load("yc2_friends", []));
       setDeadlines(await load("yc2_deadlines", []));
       setTasks(await load("yc2_tasks", []));
       setTimeline(await load("yc2_timeline", {}));
@@ -315,15 +311,13 @@ export default function SecretPage() {
   function handleLogout() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
-    setLinks([]); setMusic([]); setFunThings([]); setFriends([]);
+    setLinks([]); setMusic([]);
     setDeadlines([]); setTasks([]); setTimeline({});
     setImportantDraft(""); setGroceries([]);
   }
 
-  const updateLinks    = v => { setLinks(v);     save("yc2_links", v); };
-  const updateMusic    = v => { setMusic(v);     save("yc2_music", v); };
-  const updateFun      = v => { setFunThings(v); save("yc2_fun", v); };
-  const updateFriends  = v => { setFriends(v);   save("yc2_friends", v); };
+  const updateLinks = v => { setLinks(v); save("yc2_links", v); };
+  const updateMusic = v => { setMusic(v); save("yc2_music", v); };
   const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
   const updateTasks    = v => { setTasks(v);     save("yc2_tasks", v); };
   const updateTimeline = v => { setTimeline(v);  save("yc2_timeline", v); };
@@ -380,14 +374,12 @@ export default function SecretPage() {
             onAdd={t => updateMusic([...music, t])}
             onRemove={i => updateMusic(music.filter((_, idx) => idx !== i))}
             placeholder="Add track..." />
-          <PillSection icon="🎉" label="Fun Things" items={funThings}
-            onAdd={t => updateFun([...funThings, t])}
-            onRemove={i => updateFun(funThings.filter((_, idx) => idx !== i))}
-            placeholder="Add fun thing..." />
-          <PillSection icon="👥" label="Friends" items={friends}
-            onAdd={t => updateFriends([...friends, t])}
-            onRemove={i => updateFriends(friends.filter((_, idx) => idx !== i))}
-            placeholder="Add friend..." />
+          <a href="/secret/fun" className="sp-pill sp-pill-link">
+            <span>🎉</span>Fun Things<span className="sp-pill-caret">→</span>
+          </a>
+          <a href="/secret/friend" className="sp-pill sp-pill-link">
+            <span>👥</span>Friends<span className="sp-pill-caret">→</span>
+          </a>
         </div>
 
         {/* ── MIDDLE ── */}
