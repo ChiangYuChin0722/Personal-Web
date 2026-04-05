@@ -143,7 +143,7 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
   return (
     <div className="sp-tasks">
       <div className="sp-tasks-head">
-        <span>任務欄</span><span>標籤</span><span>進度條</span><span></span>
+        <span>Task</span><span>Tags</span><span>Progress</span><span></span>
       </div>
       {tasks.map((t, i) => (
         <div key={t.id || i} className={`sp-task-row${t.urgent ? " sp-urgent" : ""}`}>
@@ -181,10 +181,10 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
 
 // ── Eisenhower Matrix ─────────────────────────────────────────
 const QUADRANTS = [
-  { key: "q3", label: "不重要 × 緊急",   color: "#d97706", sub: "委派他人" },
-  { key: "q1", label: "重要 × 緊急",     color: "#dc2626", sub: "立刻處理" },
-  { key: "q4", label: "不重要 × 不緊急", color: "#475569", sub: "考慮刪除" },
-  { key: "q2", label: "重要 × 不緊急",   color: "#2563eb", sub: "排程計畫" },
+  { key: "q3", label: "Not Important × Urgent",     color: "#d97706", sub: "Delegate" },
+  { key: "q1", label: "Important × Urgent",         color: "#dc2626", sub: "Do Now" },
+  { key: "q4", label: "Not Important × Not Urgent", color: "#475569", sub: "Eliminate" },
+  { key: "q2", label: "Important × Not Urgent",     color: "#2563eb", sub: "Schedule" },
 ];
 
 function EisenhowerMatrix({ matrix, onUpdate }) {
@@ -229,7 +229,7 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
 
   return (
     <div className="sp-matrix">
-      <div className="sp-section-title">四象限工作法</div>
+      <div className="sp-section-title">Eisenhower Matrix</div>
       <div className="sp-matrix-grid">
         {QUADRANTS.map(q => (
           <div key={q.key} className="sp-matrix-quad" style={{ "--qcolor": q.color }}>
@@ -279,7 +279,7 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
                 value={inputs[q.key]}
                 onChange={e => setInputs(p => ({ ...p, [q.key]: e.target.value }))}
                 onKeyDown={e => e.key === "Enter" && addItem(q.key)}
-                placeholder="新增..."
+                placeholder="Add item..."
               />
               <button onClick={() => addItem(q.key)}>+</button>
             </div>
