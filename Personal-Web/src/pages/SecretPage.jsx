@@ -179,6 +179,117 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
   );
 }
 
+// ── Eisenhower Matrix ─────────────────────────────────────────
+const QUADRANTS = [
+  { key: "q1", label: "重要 × 緊急",     color: "#dc2626", sub: "立刻處理" },
+  { key: "q2", label: "重要 × 不緊急",   color: "#2563eb", sub: "排程計畫" },
+  { key: "q3", label: "不重要 × 緊急",   color: "#d97706", sub: "委派他人" },
+  { key: "q4", label: "不重要 × 不緊急", color: "#475569", sub: "考慮刪除" },
+];
+
+function EisenhowerMatrix({ matrix, onUpdate }) {
+  const [expanded, setExpanded] = useState(null); // "q1-id"
+  const [editing, setEditing] = useState(null);   // same key when editing note
+  const [inputs, setInputs] = useState({ q1: "", q2: "", q3: "", q4: "" });
+  const [noteVal, setNoteVal] = useState("");
+
+  function addItem(qKey) {
+    const title = inputs[qKey].trim();
+    if (!title) return;
+    const updated = { ...matrix, [qKey]: [...(matrix[qKey] || []), { id: Date.now().toString(), title, note: "" }] };
+    onUpdate(updated);
+    setInputs(p => ({ ...p, [qKey]: "" }));
+  }
+
+  function removeItem(qKey, id) {
+    const updated = { ...matrix, [qKey]: matrix[qKey].filter(i => i.id !== id) };
+    onUpdate(updated);
+    if (expanded === `${qKey}-${id}`) setExpanded(null);
+  }
+
+  function toggleExpand(qKey, id) {
+    const key = `${qKey}-${id}`;
+    if (expanded === key) { setExpanded(null); setEditing(null); }
+    else { setExpanded(key); setEditing(null); }
+  }
+
+  function startEditNote(qKey, item) {
+    setEditing(`${qKey}-${item.id}`);
+    setNoteVal(item.note || "");
+  }
+
+  function saveNote(qKey, id) {
+    const updated = {
+      ...matrix,
+      [qKey]: matrix[qKey].map(i => i.id === id ? { ...i, note: noteVal } : i)
+    };
+    onUpdate(updated);
+    setEditing(null);
+  }
+
+  return (
+    <div className="sp-matrix">
+      <div className="sp-section-title">四象限工作法</div>
+      <div className="sp-matrix-grid">
+        {QUADRANTS.map(q => (
+          <div key={q.key} className="sp-matrix-quad" style={{ "--qcolor": q.color }}>
+            <div className="sp-matrix-quad-header">
+              <span className="sp-matrix-quad-label">{q.label}</span>
+              <span className="sp-matrix-quad-sub">{q.sub}</span>
+            </div>
+            <div className="sp-matrix-tags">
+              {(matrix[q.key] || []).map(item => {
+                const expKey = `${q.key}-${item.id}`;
+                const isOpen = expanded === expKey;
+                const isEditingNote = editing === expKey;
+                return (
+                  <div key={item.id} className={`sp-matrix-tag-wrap${isOpen ? " open" : ""}`}>
+                    <div className="sp-matrix-tag">
+                      <span onClick={() => toggleExpand(q.key, item.id)} className="sp-matrix-tag-title">
+                        {item.title}
+                      </span>
+                      <button onClick={() => removeItem(q.key, item.id)} className="sp-del">✕</button>
+                    </div>
+                    {isOpen && (
+                      <div className="sp-matrix-note">
+                        {isEditingNote ? (
+                          <>
+                            <textarea
+                              autoFocus
+                              className="sp-matrix-note-input"
+                              value={noteVal}
+                              onChange={e => setNoteVal(e.target.value)}
+                              placeholder="Add notes..."
+                            />
+                            <button className="sp-matrix-save-btn" onClick={() => saveNote(q.key, item.id)}>Save</button>
+                          </>
+                        ) : (
+                          <p className="sp-matrix-note-text" onClick={() => startEditNote(q.key, item)}>
+                            {item.note || <span className="sp-matrix-note-empty">Click to add notes...</span>}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="sp-matrix-add">
+              <input
+                value={inputs[q.key]}
+                onChange={e => setInputs(p => ({ ...p, [q.key]: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && addItem(q.key)}
+                placeholder="新增..."
+              />
+              <button onClick={() => addItem(q.key)}>+</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Today Timeline ────────────────────────────────────────────
 function TodayTimeline({ timeline, onUpdate }) {
   const [editing, setEditing] = useState(null);
@@ -255,6 +366,7 @@ export default function SecretPage() {
   const [links, setLinks] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [matrix, setMatrix] = useState({ q1: [], q2: [], q3: [], q4: [] });
   const [timeline, setTimeline] = useState({});
   const [importantDraft, setImportantDraft] = useState("");
   const [groceries, setGroceries] = useState([]);
@@ -284,6 +396,7 @@ export default function SecretPage() {
       setLinks(await load("yc2_links", []));
       setDeadlines(await load("yc2_deadlines", []));
       setTasks(await load("yc2_tasks", []));
+      setMatrix(await load("yc2_matrix", { q1: [], q2: [], q3: [], q4: [] }));
       setTimeline(await load("yc2_timeline", {}));
       setImportantDraft(await load("yc2_important", "", true));
       setGroceries(await load("yc2_groceries", []));
@@ -310,13 +423,14 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setDeadlines([]); setTasks([]); setTimeline({});
+    setDeadlines([]); setTasks([]); setMatrix({ q1: [], q2: [], q3: [], q4: [] }); setTimeline({});
     setImportantDraft(""); setGroceries([]);
   }
 
   const updateLinks = v => { setLinks(v); save("yc2_links", v); };
   const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
   const updateTasks    = v => { setTasks(v);     save("yc2_tasks", v); };
+  const updateMatrix   = v => { setMatrix(v);    save("yc2_matrix", v); };
   const updateTimeline = v => { setTimeline(v);  save("yc2_timeline", v); };
   const updateGroceries= v => { setGroceries(v); save("yc2_groceries", v); };
 
@@ -391,6 +505,7 @@ export default function SecretPage() {
             onRemove={i => updateTasks(tasks.filter((_, idx) => idx !== i))}
             onUpdate={(i, t) => updateTasks(tasks.map((x, idx) => idx === i ? t : x))}
           />
+          <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
 
         {/* ── RIGHT ── */}
