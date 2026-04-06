@@ -832,6 +832,12 @@ export default function SecretPage() {
           <a href="/secret/friend" className="sp-pill sp-pill-link">
             <span>👥</span>Friends<span className="sp-pill-caret">→</span>
           </a>
+          <GroceriesSection
+            items={groceries}
+            onAdd={g => updateGroceries([...groceries, g])}
+            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
+            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
+          />
         </div>
 
         {/* ── MIDDLE ── */}
@@ -853,12 +859,6 @@ export default function SecretPage() {
             calEvents={calEvents}
             onAddEvent={e => updateCalEvents([...calEvents, e])}
             onRemoveEvent={id => updateCalEvents(calEvents.filter(e => e.id !== id))}
-          />
-          <GroceriesSection
-            items={groceries}
-            onAdd={g => updateGroceries([...groceries, g])}
-            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
-            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
           />
         </div>
       </div>
