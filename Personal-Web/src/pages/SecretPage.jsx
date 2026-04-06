@@ -201,7 +201,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
 
   function save() {
     if (!title.trim()) return;
-    onSave({ id: Date.now().toString(), title: title.trim(), date, time, category, location, notes });
+    onSave({ id: initial.id || Date.now().toString(), title: title.trim(), date, time, category, location, notes });
     onClose();
   }
 
@@ -209,7 +209,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
     <div className="sp-modal-overlay" onClick={onClose}>
       <div className="sp-modal" onClick={e => e.stopPropagation()}>
         <div className="sp-modal-header">
-          <span className="sp-modal-hd">New Event</span>
+          <span className="sp-modal-hd">{initial.id ? "Edit Event" : "New Event"}</span>
           <button onClick={onClose} className="sp-modal-close">✕</button>
         </div>
         <div className="sp-modal-body">
@@ -282,8 +282,8 @@ function dlBadgeLabel(days) {
 }
 
 // ── Deadlines ─────────────────────────────────────────────────
-function DeadlinesSection({ events, onAdd, onRemove }) {
-  const [modal, setModal] = useState(false);
+function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
+  const [modal, setModal] = useState(null); // null | event object
 
   const sorted = [...events].sort((a, b) => {
     const da = daysLeft(a.date), db = daysLeft(b.date);
@@ -294,10 +294,7 @@ function DeadlinesSection({ events, onAdd, onRemove }) {
 
   return (
     <div className="sp-deadlines">
-      <div className="sp-dl-header">
-        <div className="sp-section-title">Deadlines</div>
-        <button className="sp-add-ev-btn" onClick={() => setModal(true)}>+ Add</button>
-      </div>
+      <div className="sp-section-title">Deadlines</div>
       <div className="sp-dl-list">
         {sorted.length === 0 && <div className="sp-dl-empty">No events yet</div>}
         {sorted.map(d => {
@@ -306,18 +303,22 @@ function DeadlinesSection({ events, onAdd, onRemove }) {
           const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(d.date)
             ? d.date.slice(5).replace("-", "/") : d.date;
           return (
-            <div key={d.id} className="sp-dl-item">
+            <div key={d.id} className="sp-dl-item sp-dl-item-click" onClick={() => setModal(d)}>
               <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
               <span className="sp-cat-dot" style={{ background: catColor(d.category) }} title={catLabel(d.category)} />
               <span className="sp-dl-name">{d.title}</span>
               {d.time && <span className="sp-dl-time">{d.time}</span>}
               <span className="sp-dl-datestr">{displayDate}</span>
-              <button onClick={() => onRemove(d.id)} className="sp-del">✕</button>
+              <button onClick={e => { e.stopPropagation(); onRemove(d.id); }} className="sp-del">✕</button>
             </div>
           );
         })}
       </div>
-      {modal && <EventModal initial={{}} onSave={e => { onAdd(e); }} onClose={() => setModal(false)} />}
+      {modal && (
+        <EventModal initial={modal}
+          onSave={e => { modal.id ? onEdit(e) : onAdd(e); setModal(null); }}
+          onClose={() => setModal(null)} />
+      )}
     </div>
   );
 }
@@ -562,7 +563,7 @@ function normToISO(dateStr) {
   return null;
 }
 
-function TodayTimeline({ events, onAdd, onRemove }) {
+function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
   const [offset, setOffset] = useState(0);
   const [modal,  setModal]  = useState(null);
 
@@ -601,19 +602,21 @@ function TodayTimeline({ events, onAdd, onRemove }) {
             <div className="sp-tl-events">
               {hourEvs.map(e => (
                 <span key={e.id} className="sp-tl-chip"
-                  style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}>
+                  style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}
+                  onClick={() => setModal(e)} title="Edit event">
                   {e.title}
-                  <button onClick={() => onRemove(e.id)} className="sp-tl-chip-del">×</button>
+                  <button onClick={ev => { ev.stopPropagation(); onRemove(e.id); }} className="sp-tl-chip-del">×</button>
                 </span>
               ))}
-              <button className="sp-tl-add-btn"
-                onClick={() => setModal({ date: selKey, time: `${String(h).padStart(2,"0")}:00` })}
-                title="Add event">+</button>
             </div>
           </div>
         );
       })}
-      {modal && <EventModal initial={modal} onSave={e => { onAdd(e); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal && (
+        <EventModal initial={modal}
+          onSave={e => { modal.id ? onEdit(e) : onAdd(e); setModal(null); }}
+          onClose={() => setModal(null)} />
+      )}
     </div>
   );
 }
@@ -622,7 +625,7 @@ function TodayTimeline({ events, onAdd, onRemove }) {
 const CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const CAL_DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
-function CalendarSection({ events, onAdd, onRemove }) {
+function CalendarSection({ events, onAdd, onEdit, onRemove }) {
   const now = new Date();
   const [viewYear,  setViewYear]  = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -693,27 +696,28 @@ function CalendarSection({ events, onAdd, onRemove }) {
         <div className="sp-cal-panel">
           <div className="sp-cal-panel-header">
             <div className="sp-cal-panel-date">{fmtDate(selected)}</div>
-            <div style={{display:"flex", gap:"6px", alignItems:"center"}}>
-              <button className="sp-add-ev-btn" onClick={() => setModal({ date: selected })}>+ Add</button>
-              <button className="sp-cal-panel-close" onClick={() => setSelected(null)}>✕</button>
-            </div>
+            <button className="sp-cal-panel-close" onClick={() => setSelected(null)}>✕</button>
           </div>
           <div className="sp-cal-ev-list">
             {selEvs.length === 0 && <div className="sp-dl-empty">No events</div>}
             {selEvs.map(e => (
-              <div key={e.id} className="sp-cal-ev">
+              <div key={e.id} className="sp-cal-ev sp-cal-ev-click" onClick={() => setModal(e)}>
                 <span className="sp-cal-ev-tag" style={{ background: catColor(e.category)+"22", color: catColor(e.category) }}>
                   {catLabel(e.category)}
                 </span>
                 {e.time && <span className="sp-cal-ev-time">{e.time}</span>}
                 <span className="sp-cal-ev-title">{e.title}</span>
-                <button onClick={() => onRemove(e.id)} className="sp-del">✕</button>
+                <button onClick={ev => { ev.stopPropagation(); onRemove(e.id); }} className="sp-del">✕</button>
               </div>
             ))}
           </div>
         </div>
       )}
-      {modal && <EventModal initial={modal} onSave={e => { onAdd(e); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal && (
+        <EventModal initial={modal}
+          onSave={e => { modal.id ? onEdit(e) : onAdd(e); setModal(null); }}
+          onClose={() => setModal(null)} />
+      )}
     </div>
   );
 }
@@ -836,6 +840,9 @@ export default function SecretPage() {
 
   const updateLinks    = v => { setLinks(v);    save("yc2_links", v); };
   const updateEvents   = v => { setEvents(v);   save("yc2_events", v); };
+  const handleAddEvent = e => updateEvents([...events, e]);
+  const handleEditEvent= e => updateEvents(events.map(x => x.id === e.id ? e : x));
+  const handleDelEvent = id=> updateEvents(events.filter(e => e.id !== id));
   const updateMatrix   = v => { setMatrix(v);   save("yc2_matrix", v); };
   const updateGroceries= v => { setGroceries(v);save("yc2_groceries", v); };
 
@@ -873,7 +880,7 @@ export default function SecretPage() {
       </div>
       {globalModal && (
         <EventModal initial={{ date: dateKey(new Date()) }}
-          onSave={e => { updateEvents([...events, e]); setGlobalModal(false); }}
+          onSave={e => { handleAddEvent(e); setGlobalModal(false); }}
           onClose={() => setGlobalModal(false)} />
       )}
 
@@ -907,8 +914,7 @@ export default function SecretPage() {
         <div className="sp-middle">
           <DeadlinesSection
             events={events}
-            onAdd={e => updateEvents([...events, e])}
-            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
+            onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
@@ -917,13 +923,11 @@ export default function SecretPage() {
         <div className="sp-right">
           <TodayTimeline
             events={events}
-            onAdd={e => updateEvents([...events, e])}
-            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
+            onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
           />
           <CalendarSection
             events={events}
-            onAdd={e => updateEvents([...events, e])}
-            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
+            onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
           />
         </div>
       </div>
