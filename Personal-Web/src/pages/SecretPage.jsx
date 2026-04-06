@@ -243,43 +243,6 @@ function DeadlinesSection({ deadlines, onAdd, onRemove }) {
 }
 
 // ── Tasks ─────────────────────────────────────────────────────
-function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
-  const [name, setName] = useState("");
-  const [tags, setTags] = useState("");
-
-  function add() {
-    if (!name.trim()) return;
-    onAdd({ id: Date.now().toString(), name: name.trim(), tags: tags.trim(), progress: 0, urgent: false });
-    setName(""); setTags("");
-  }
-
-  return (
-    <div className="sp-tasks">
-      <div className="sp-tasks-head">
-        <span>Task</span><span>Tags</span><span></span>
-      </div>
-      {tasks.map((t, i) => (
-        <div key={t.id || i} className={`sp-task-row${t.urgent ? " sp-urgent" : ""}`}>
-          <div className="sp-task-name">
-            <span className="sp-task-num">{CIRCLED[i] || `${i + 1}`}</span>
-            <span>{t.name}</span>
-            {t.urgent && <span className="sp-urgent-tag">urgent</span>}
-          </div>
-          <div className="sp-task-tags">{t.tags}</div>
-          <div className="sp-task-ctrl">
-            <button onClick={() => onUpdate(i, { ...t, urgent: !t.urgent })} className={`sp-urg-btn${t.urgent ? " on" : ""}`} title="Toggle urgent">!</button>
-            <button onClick={() => onRemove(i)} className="sp-del">✕</button>
-          </div>
-        </div>
-      ))}
-      <div className="sp-task-add-row">
-        <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Task name..." />
-        <input value={tags} onChange={e => setTags(e.target.value)} placeholder="Tags..." />
-        <button onClick={add}>+</button>
-      </div>
-    </div>
-  );
-}
 
 // ── Eisenhower Matrix ─────────────────────────────────────────
 function getQuadrantInfo(x, y) {
@@ -749,7 +712,6 @@ export default function SecretPage() {
 
   const [links, setLinks] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [matrix, setMatrix] = useState([]);
   const [timeline, setTimeline] = useState({});
   const [calEvents, setCalEvents] = useState([]);
@@ -778,7 +740,6 @@ export default function SecretPage() {
       };
       setLinks(await load("yc2_links", []));
       setDeadlines(await load("yc2_deadlines", []));
-      setTasks(await load("yc2_tasks", []));
       const rawMatrix = await load("yc2_matrix", []);
       setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
       setTimeline(await load("yc2_timeline", {}));
@@ -807,13 +768,12 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setDeadlines([]); setTasks([]); setMatrix([]); setTimeline({});
+    setDeadlines([]); setMatrix([]); setTimeline({});
     setCalEvents([]); setGroceries([]);
   }
 
   const updateLinks = v => { setLinks(v); save("yc2_links", v); };
   const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
-  const updateTasks    = v => { setTasks(v);     save("yc2_tasks", v); };
   const updateMatrix   = v => { setMatrix(v);    save("yc2_matrix", v); };
   const updateTimeline  = v => { setTimeline(v);   save("yc2_timeline", v); };
   const updateCalEvents = v => { setCalEvents(v);  save("yc2_cal_events", v); };
@@ -877,12 +837,6 @@ export default function SecretPage() {
             deadlines={deadlines}
             onAdd={d => updateDeadlines([...deadlines, d])}
             onRemove={i => updateDeadlines(deadlines.filter((_, idx) => idx !== i))}
-          />
-          <TasksSection
-            tasks={tasks}
-            onAdd={t => updateTasks([...tasks, t])}
-            onRemove={i => updateTasks(tasks.filter((_, idx) => idx !== i))}
-            onUpdate={(i, t) => updateTasks(tasks.map((x, idx) => idx === i ? t : x))}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
