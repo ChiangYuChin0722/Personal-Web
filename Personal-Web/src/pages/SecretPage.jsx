@@ -506,6 +506,21 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
 // ── Today Timeline ────────────────────────────────────────────
 function dateKey(d) { return d.toISOString().slice(0, 10); }
 
+function normToISO(dateStr) {
+  if (!dateStr || dateStr === "TBD") return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3)
+      return `${parts[0]}-${String(parts[1]).padStart(2,"0")}-${String(parts[2]).padStart(2,"0")}`;
+    const now = new Date();
+    let d = new Date(now.getFullYear(), +parts[0]-1, +parts[1]);
+    if (d < now && now-d > 86400000) d = new Date(now.getFullYear()+1, +parts[0]-1, +parts[1]);
+    return dateKey(d);
+  }
+  return null;
+}
+
 function TodayTimeline({ timeline, onUpdate }) {
   const [editing, setEditing] = useState(null);
   const [val, setVal] = useState("");
@@ -575,6 +590,126 @@ function TodayTimeline({ timeline, onUpdate }) {
   );
 }
 
+// ── Calendar ──────────────────────────────────────────────────
+const CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const CAL_DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveEvent }) {
+  const now = new Date();
+  const [viewYear,  setViewYear]  = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [selected,  setSelected]  = useState(null);
+  const [newTitle,  setNewTitle]  = useState("");
+  const [newTime,   setNewTime]   = useState("");
+
+  const todayISO = dateKey(now);
+
+  const normTl = (() => {
+    if (!timeline || typeof timeline !== "object") return {};
+    const vals = Object.values(timeline);
+    if (vals.length > 0 && typeof vals[0] === "string") return { [todayISO]: timeline };
+    return timeline;
+  })();
+
+  function eventsForDate(iso) {
+    const evs = [];
+    deadlines.forEach(d => { if (normToISO(d.date) === iso) evs.push({ type: "dl", title: d.title }); });
+    const tl = normTl[iso] || {};
+    Object.entries(tl).forEach(([h, txt]) => { if (txt) evs.push({ type: "tl", title: txt, hour: +h }); });
+    (calEvents || []).filter(e => e.date === iso).forEach(e =>
+      evs.push({ type: "ev", title: e.title, time: e.time, id: e.id })
+    );
+    return evs;
+  }
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1); }
+    else setViewMonth(m => m-1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1); }
+    else setViewMonth(m => m+1);
+  }
+
+  function addEvent() {
+    if (!newTitle.trim() || !selected) return;
+    onAddEvent({ id: Date.now().toString(), date: selected, title: newTitle.trim(), time: newTime });
+    setNewTitle(""); setNewTime("");
+  }
+
+  const firstDow  = new Date(viewYear, viewMonth, 1).getDay();
+  const totalDays = new Date(viewYear, viewMonth+1, 0).getDate();
+  const selEvs    = selected ? eventsForDate(selected) : [];
+
+  function fmtHour(h) { return h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h-12}pm`; }
+  function fmtDate(iso) {
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  return (
+    <div className="sp-calendar">
+      <div className="sp-cal-header">
+        <div className="sp-section-title">Calendar</div>
+        <div className="sp-tl-nav">
+          <button className="sp-tl-nav-btn" onClick={prevMonth}>‹</button>
+          <span className="sp-cal-month-label">{CAL_MONTHS[viewMonth]} {viewYear}</span>
+          <button className="sp-tl-nav-btn" onClick={nextMonth}>›</button>
+        </div>
+      </div>
+
+      <div className="sp-cal-grid">
+        {CAL_DAYS.map(d => <div key={d} className="sp-cal-dow">{d}</div>)}
+        {Array(firstDow).fill(null).map((_, i) => <div key={"e"+i} />)}
+        {Array.from({ length: totalDays }, (_, i) => i+1).map(day => {
+          const iso = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          const evs = eventsForDate(iso);
+          const isToday = iso === todayISO;
+          const isSel   = iso === selected;
+          return (
+            <div key={iso}
+              className={`sp-cal-day${isToday ? " sp-cal-today" : ""}${isSel ? " sp-cal-sel" : ""}`}
+              onClick={() => setSelected(isSel ? null : iso)}>
+              <span className="sp-cal-num">{day}</span>
+              <div className="sp-cal-dots">
+                {evs.some(e => e.type === "dl") && <span className="sp-cal-dot" style={{background:"var(--red)"}} />}
+                {evs.some(e => e.type === "tl") && <span className="sp-cal-dot" style={{background:"var(--accent-light)"}} />}
+                {evs.some(e => e.type === "ev") && <span className="sp-cal-dot" style={{background:"var(--green)"}} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {selected && (
+        <div className="sp-cal-panel">
+          <div className="sp-cal-panel-date">{fmtDate(selected)}</div>
+          <div className="sp-cal-ev-list">
+            {selEvs.length === 0 && <div className="sp-dl-empty">No events</div>}
+            {selEvs.map((e, i) => (
+              <div key={i} className={`sp-cal-ev sp-cal-ev-${e.type}`}>
+                <span className="sp-cal-ev-tag">
+                  {e.type === "dl" ? "DL" : e.type === "tl" ? fmtHour(e.hour) : (e.time || "●")}
+                </span>
+                <span className="sp-cal-ev-title">{e.title}</span>
+                {e.type === "ev" && <button onClick={() => onRemoveEvent(e.id)} className="sp-del">✕</button>}
+              </div>
+            ))}
+          </div>
+          <div className="sp-dl-add">
+            <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addEvent()}
+              placeholder="Add event..." className="sp-dl-title-input" />
+            <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
+              className="sp-dl-date-input sp-cal-time-input" />
+            <button onClick={addEvent} className="sp-add-btn">+</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Groceries ─────────────────────────────────────────────────
 function GroceriesSection({ items, onAdd, onToggle, onRemove }) {
   const [input, setInput] = useState("");
@@ -617,9 +752,8 @@ export default function SecretPage() {
   const [tasks, setTasks] = useState([]);
   const [matrix, setMatrix] = useState([]);
   const [timeline, setTimeline] = useState({});
-  const [importantDraft, setImportantDraft] = useState("");
+  const [calEvents, setCalEvents] = useState([]);
   const [groceries, setGroceries] = useState([]);
-  const importantTimer = useRef(null);
 
   // Restore session
   useEffect(() => {
@@ -648,7 +782,7 @@ export default function SecretPage() {
       const rawMatrix = await load("yc2_matrix", []);
       setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
       setTimeline(await load("yc2_timeline", {}));
-      setImportantDraft(await load("yc2_important", "", true));
+      setCalEvents(await load("yc2_cal_events", []));
       setGroceries(await load("yc2_groceries", []));
     })();
   }, [loggedIn, currentPassword]);
@@ -674,21 +808,16 @@ export default function SecretPage() {
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
     setDeadlines([]); setTasks([]); setMatrix([]); setTimeline({});
-    setImportantDraft(""); setGroceries([]);
+    setCalEvents([]); setGroceries([]);
   }
 
   const updateLinks = v => { setLinks(v); save("yc2_links", v); };
   const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
   const updateTasks    = v => { setTasks(v);     save("yc2_tasks", v); };
   const updateMatrix   = v => { setMatrix(v);    save("yc2_matrix", v); };
-  const updateTimeline = v => { setTimeline(v);  save("yc2_timeline", v); };
-  const updateGroceries= v => { setGroceries(v); save("yc2_groceries", v); };
-
-  function handleImportantChange(v) {
-    setImportantDraft(v);
-    clearTimeout(importantTimer.current);
-    importantTimer.current = setTimeout(() => save("yc2_important", v), 500);
-  }
+  const updateTimeline  = v => { setTimeline(v);   save("yc2_timeline", v); };
+  const updateCalEvents = v => { setCalEvents(v);  save("yc2_cal_events", v); };
+  const updateGroceries = v => { setGroceries(v);  save("yc2_groceries", v); };
 
   if (!loggedIn) {
     return (
@@ -761,15 +890,13 @@ export default function SecretPage() {
         {/* ── RIGHT ── */}
         <div className="sp-right">
           <TodayTimeline timeline={timeline} onUpdate={updateTimeline} />
-          <div className="sp-important-box">
-            <div className="sp-section-title">Important</div>
-            <textarea
-              className="sp-important-area"
-              value={importantDraft}
-              onChange={e => handleImportantChange(e.target.value)}
-              placeholder="Important notes..."
-            />
-          </div>
+          <CalendarSection
+            deadlines={deadlines}
+            timeline={timeline}
+            calEvents={calEvents}
+            onAddEvent={e => updateCalEvents([...calEvents, e])}
+            onRemoveEvent={id => updateCalEvents(calEvents.filter(e => e.id !== id))}
+          />
           <GroceriesSection
             items={groceries}
             onAdd={g => updateGroceries([...groceries, g])}
