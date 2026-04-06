@@ -646,7 +646,10 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
 
       {selected && (
         <div className="sp-cal-panel">
-          <div className="sp-cal-panel-date">{fmtDate(selected)}</div>
+          <div className="sp-cal-panel-header">
+            <div className="sp-cal-panel-date">{fmtDate(selected)}</div>
+            <button className="sp-cal-panel-close" onClick={() => setSelected(null)}>✕</button>
+          </div>
           <div className="sp-cal-ev-list">
             {selEvs.length === 0 && <div className="sp-dl-empty">No events</div>}
             {selEvs.map((e, i) => (
@@ -659,10 +662,10 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
               </div>
             ))}
           </div>
-          <div className="sp-dl-add">
+          <div className="sp-cal-add-row">
             <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
               onKeyDown={e => e.key === "Enter" && addEvent()}
-              placeholder="Add event..." className="sp-dl-title-input" />
+              placeholder="Add event..." className="sp-dl-title-input sp-cal-add-title" />
             <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
               className="sp-dl-date-input sp-cal-time-input" />
             <button onClick={addEvent} className="sp-add-btn">+</button>
