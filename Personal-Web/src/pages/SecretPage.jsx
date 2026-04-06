@@ -184,6 +184,70 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
   );
 }
 
+// ── Event Modal ───────────────────────────────────────────────
+function EventModal({ initial = {}, onSave, onClose }) {
+  const [title,    setTitle]    = useState(initial.title    || "");
+  const [date,     setDate]     = useState(initial.date     || "");
+  const [time,     setTime]     = useState(initial.time     || "");
+  const [category, setCategory] = useState(initial.category || "other");
+  const [location, setLocation] = useState(initial.location || "");
+  const [notes,    setNotes]    = useState(initial.notes    || "");
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function save() {
+    if (!title.trim()) return;
+    onSave({ id: Date.now().toString(), title: title.trim(), date, time, category, location, notes });
+    onClose();
+  }
+
+  return (
+    <div className="sp-modal-overlay" onClick={onClose}>
+      <div className="sp-modal" onClick={e => e.stopPropagation()}>
+        <div className="sp-modal-header">
+          <span className="sp-modal-hd">New Event</span>
+          <button onClick={onClose} className="sp-modal-close">✕</button>
+        </div>
+        <div className="sp-modal-body">
+          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && save()}
+            placeholder="Event title..." className="sp-modal-main-input" />
+          <div className="sp-modal-label">Category</div>
+          <CategoryPicker value={category} onChange={setCategory} />
+          <div className="sp-modal-row2">
+            <div className="sp-modal-field">
+              <div className="sp-modal-label">Date</div>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="sp-modal-input" />
+            </div>
+            <div className="sp-modal-field">
+              <div className="sp-modal-label">Time</div>
+              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="sp-modal-input" />
+            </div>
+          </div>
+          <div className="sp-modal-field">
+            <div className="sp-modal-label">Location</div>
+            <input value={location} onChange={e => setLocation(e.target.value)}
+              placeholder="Add location..." className="sp-modal-input" />
+          </div>
+          <div className="sp-modal-field">
+            <div className="sp-modal-label">Notes</div>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)}
+              placeholder="Add notes..." className="sp-modal-textarea" />
+          </div>
+        </div>
+        <div className="sp-modal-footer">
+          <button onClick={onClose} className="sp-modal-cancel">Cancel</button>
+          <button onClick={save} className="sp-modal-save">Save Event</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Shared event helpers ──────────────────────────────────────
 function daysLeft(dateStr) {
   if (!dateStr || dateStr === "TBD") return null;
@@ -219,27 +283,21 @@ function dlBadgeLabel(days) {
 
 // ── Deadlines ─────────────────────────────────────────────────
 function DeadlinesSection({ events, onAdd, onRemove }) {
-  const [title, setTitle] = useState("");
-  const [date,  setDate]  = useState("");
-  const [cat,   setCat]   = useState("other");
+  const [modal, setModal] = useState(false);
 
-  function add() {
-    if (!title.trim()) return;
-    onAdd({ id: Date.now().toString(), title: title.trim(), date: date || "TBD", category: cat });
-    setTitle(""); setDate("");
-  }
-
-  const sorted = [...events]
-    .sort((a, b) => {
-      const da = daysLeft(a.date), db = daysLeft(b.date);
-      if (da === null && db === null) return 0;
-      if (da === null) return 1; if (db === null) return -1;
-      return da - db;
-    });
+  const sorted = [...events].sort((a, b) => {
+    const da = daysLeft(a.date), db = daysLeft(b.date);
+    if (da === null && db === null) return 0;
+    if (da === null) return 1; if (db === null) return -1;
+    return da - db;
+  });
 
   return (
     <div className="sp-deadlines">
-      <div className="sp-section-title">Deadlines</div>
+      <div className="sp-dl-header">
+        <div className="sp-section-title">Deadlines</div>
+        <button className="sp-add-ev-btn" onClick={() => setModal(true)}>+ Add</button>
+      </div>
       <div className="sp-dl-list">
         {sorted.length === 0 && <div className="sp-dl-empty">No events yet</div>}
         {sorted.map(d => {
@@ -259,14 +317,7 @@ function DeadlinesSection({ events, onAdd, onRemove }) {
           );
         })}
       </div>
-      <CategoryPicker value={cat} onChange={setCat} />
-      <div className="sp-dl-add">
-        <input value={title} onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && add()}
-          placeholder="Event title..." className="sp-dl-title-input" />
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="sp-dl-date-input" />
-        <button onClick={add} className="sp-add-btn">+</button>
-      </div>
+      {modal && <EventModal initial={{}} onSave={e => { onAdd(e); }} onClose={() => setModal(false)} />}
     </div>
   );
 }
@@ -513,9 +564,7 @@ function normToISO(dateStr) {
 
 function TodayTimeline({ events, onAdd, onRemove }) {
   const [offset, setOffset] = useState(0);
-  const [addingH, setAddingH] = useState(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [newCat,   setNewCat]   = useState("other");
+  const [modal,  setModal]  = useState(null);
 
   const today = new Date();
   const selected = new Date(today);
@@ -523,23 +572,9 @@ function TodayTimeline({ events, onAdd, onRemove }) {
   const selKey = dateKey(selected);
   const currentHour = offset === 0 ? today.getHours() : -1;
 
-  // events for this day, grouped by hour
   function eventsAtHour(h) {
     const hStr = String(h).padStart(2, "0");
     return events.filter(e => e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
-  }
-
-  function startAdd(h, ev) { ev.stopPropagation(); setAddingH(h); setNewTitle(""); setNewCat("other"); }
-  function commitAdd() {
-    if (!newTitle.trim()) { setAddingH(null); return; }
-    onAdd({
-      id: Date.now().toString(),
-      title: newTitle.trim(),
-      date: selKey,
-      time: `${String(addingH).padStart(2,"0")}:00`,
-      category: newCat,
-    });
-    setAddingH(null);
   }
 
   const dayLabel = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow"
@@ -565,29 +600,20 @@ function TodayTimeline({ events, onAdd, onRemove }) {
             <div className="sp-tl-line" />
             <div className="sp-tl-events">
               {hourEvs.map(e => (
-                <span key={e.id} className="sp-tl-chip" style={{ background: catColor(e.category) + "22", borderColor: catColor(e.category), color: catColor(e.category) }}>
+                <span key={e.id} className="sp-tl-chip"
+                  style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}>
                   {e.title}
                   <button onClick={() => onRemove(e.id)} className="sp-tl-chip-del">×</button>
                 </span>
               ))}
-              {addingH === h ? (
-                <div className="sp-tl-add-form" onClick={e => e.stopPropagation()}>
-                  <input autoFocus value={newTitle} onChange={e => setNewTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") commitAdd(); if (e.key === "Escape") setAddingH(null); }}
-                    placeholder="Event title..." className="sp-tl-input" />
-                  <CategoryPicker value={newCat} onChange={setNewCat} />
-                  <div className="sp-tl-add-btns">
-                    <button onClick={commitAdd} className="sp-add-btn" style={{padding:"3px 10px"}}>+</button>
-                    <button onClick={() => setAddingH(null)} className="sp-del">✕</button>
-                  </div>
-                </div>
-              ) : (
-                <button className="sp-tl-add-btn" onClick={e => startAdd(h, e)} title="Add event">+</button>
-              )}
+              <button className="sp-tl-add-btn"
+                onClick={() => setModal({ date: selKey, time: `${String(h).padStart(2,"0")}:00` })}
+                title="Add event">+</button>
             </div>
           </div>
         );
       })}
+      {modal && <EventModal initial={modal} onSave={e => { onAdd(e); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
@@ -601,9 +627,7 @@ function CalendarSection({ events, onAdd, onRemove }) {
   const [viewYear,  setViewYear]  = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selected,  setSelected]  = useState(null);
-  const [newTitle,  setNewTitle]  = useState("");
-  const [newTime,   setNewTime]   = useState("");
-  const [newCat,    setNewCat]    = useState("other");
+  const [modal,     setModal]     = useState(null);
 
   const todayISO = dateKey(now);
 
@@ -619,12 +643,6 @@ function CalendarSection({ events, onAdd, onRemove }) {
   function nextMonth() {
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1); }
     else setViewMonth(m => m+1);
-  }
-
-  function addEvent() {
-    if (!newTitle.trim() || !selected) return;
-    onAdd({ id: Date.now().toString(), date: selected, title: newTitle.trim(), time: newTime, category: newCat });
-    setNewTitle(""); setNewTime("");
   }
 
   const firstDow  = new Date(viewYear, viewMonth, 1).getDay();
@@ -675,7 +693,10 @@ function CalendarSection({ events, onAdd, onRemove }) {
         <div className="sp-cal-panel">
           <div className="sp-cal-panel-header">
             <div className="sp-cal-panel-date">{fmtDate(selected)}</div>
-            <button className="sp-cal-panel-close" onClick={() => setSelected(null)}>✕</button>
+            <div style={{display:"flex", gap:"6px", alignItems:"center"}}>
+              <button className="sp-add-ev-btn" onClick={() => setModal({ date: selected })}>+ Add</button>
+              <button className="sp-cal-panel-close" onClick={() => setSelected(null)}>✕</button>
+            </div>
           </div>
           <div className="sp-cal-ev-list">
             {selEvs.length === 0 && <div className="sp-dl-empty">No events</div>}
@@ -690,17 +711,9 @@ function CalendarSection({ events, onAdd, onRemove }) {
               </div>
             ))}
           </div>
-          <CategoryPicker value={newCat} onChange={setNewCat} />
-          <div className="sp-cal-add-row">
-            <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && addEvent()}
-              placeholder="Add event..." className="sp-dl-title-input sp-cal-add-title" />
-            <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-              className="sp-dl-date-input sp-cal-time-input" />
-            <button onClick={addEvent} className="sp-add-btn">+</button>
-          </div>
         </div>
       )}
+      {modal && <EventModal initial={modal} onSave={e => { onAdd(e); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
@@ -742,10 +755,11 @@ export default function SecretPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
 
-  const [links,    setLinks]    = useState([]);
-  const [events,   setEvents]   = useState([]);  // unified events
-  const [matrix,   setMatrix]   = useState([]);
-  const [groceries,setGroceries]= useState([]);
+  const [links,      setLinks]      = useState([]);
+  const [events,     setEvents]     = useState([]);  // unified events
+  const [matrix,     setMatrix]     = useState([]);
+  const [groceries,  setGroceries]  = useState([]);
+  const [globalModal,setGlobalModal]= useState(false);
 
   // Restore session
   useEffect(() => {
@@ -852,10 +866,16 @@ export default function SecretPage() {
       <div className="sp-topbar">
         <div className="sp-brand">YC<span>.</span> Private</div>
         <div className="sp-topbar-right">
+          <button className="sp-new-ev-btn" onClick={() => setGlobalModal(true)}>＋ Event</button>
           <span className="sp-username">{currentUser}</span>
           <button className="sp-logout-btn" onClick={handleLogout}>Sign Out</button>
         </div>
       </div>
+      {globalModal && (
+        <EventModal initial={{ date: dateKey(new Date()) }}
+          onSave={e => { updateEvents([...events, e]); setGlobalModal(false); }}
+          onClose={() => setGlobalModal(false)} />
+      )}
 
       <div className="sp-body">
         {/* ── LEFT ── */}
