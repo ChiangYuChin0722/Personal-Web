@@ -158,33 +158,85 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
 }
 
 // ── Deadlines ─────────────────────────────────────────────────
+function daysLeft(dateStr) {
+  if (!dateStr || dateStr === "TBD") return null;
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    d = new Date(dateStr + "T00:00:00");
+  } else if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    const now = new Date();
+    if (parts.length === 3) {
+      d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    } else {
+      d = new Date(now.getFullYear(), +parts[0] - 1, +parts[1]);
+      if (d < now && now - d > 86400000) d.setFullYear(now.getFullYear() + 1);
+    }
+  } else { return null; }
+  const today = new Date(); today.setHours(0, 0, 0, 0); d.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / 86400000);
+}
+
+function dlBadgeStyle(days) {
+  if (days === null) return { bg: "var(--bg3)", color: "var(--muted)" };
+  if (days < 0)  return { bg: "rgba(248,113,113,0.15)", color: "var(--red)" };
+  if (days <= 3) return { bg: "rgba(249,115,22,0.15)", color: "#f97316" };
+  if (days <= 7) return { bg: "rgba(234,179,8,0.15)",  color: "#eab308" };
+  return { bg: "rgba(52,211,153,0.12)", color: "var(--green)" };
+}
+
+function dlBadgeLabel(days) {
+  if (days === null) return "TBD";
+  if (days < 0)  return `${Math.abs(days)}d overdue`;
+  if (days === 0) return "Today!";
+  if (days === 1) return "Tomorrow";
+  return `${days} days`;
+}
+
 function DeadlinesSection({ deadlines, onAdd, onRemove }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
 
   function add() {
     if (!title.trim()) return;
-    const color = CARD_COLORS[deadlines.length % CARD_COLORS.length];
-    onAdd({ id: Date.now().toString(), title: title.trim(), date: date || "TBD", color });
+    onAdd({ id: Date.now().toString(), title: title.trim(), date: date || "TBD" });
     setTitle(""); setDate("");
   }
 
+  const sorted = [...deadlines]
+    .map((d, origIdx) => ({ ...d, origIdx }))
+    .sort((a, b) => {
+      const da = daysLeft(a.date), db = daysLeft(b.date);
+      if (da === null && db === null) return 0;
+      if (da === null) return 1;
+      if (db === null) return -1;
+      return da - db;
+    });
+
   return (
     <div className="sp-deadlines">
-      <div className="sp-section-title">Dead Line</div>
-      <div className="sp-deadline-row">
-        {deadlines.map((d, i) => (
-          <div key={d.id || i} className="sp-deadline-card" style={{ "--card-color": d.color }}>
-            <button onClick={() => onRemove(i)} className="sp-card-del">✕</button>
-            <div className="sp-deadline-date">{d.date}</div>
-            <div className="sp-deadline-title">{d.title}</div>
-          </div>
-        ))}
-        <div className="sp-deadline-new">
-          <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Task name..." className="sp-dl-title-input" />
-          <input value={date} onChange={e => setDate(e.target.value)} placeholder="MM/DD" className="sp-dl-date-input" />
-          <button onClick={add} className="sp-add-btn">+</button>
-        </div>
+      <div className="sp-section-title">Deadlines</div>
+      <div className="sp-dl-list">
+        {sorted.map(d => {
+          const days = daysLeft(d.date);
+          const { bg, color } = dlBadgeStyle(days);
+          const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(d.date)
+            ? d.date.slice(5).replace("-", "/") : d.date;
+          return (
+            <div key={d.id || d.origIdx} className="sp-dl-item">
+              <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
+              <span className="sp-dl-name">{d.title}</span>
+              <span className="sp-dl-datestr">{displayDate}</span>
+              <button onClick={() => onRemove(d.origIdx)} className="sp-del">✕</button>
+            </div>
+          );
+        })}
+        {deadlines.length === 0 && <div className="sp-dl-empty">No deadlines yet</div>}
+      </div>
+      <div className="sp-dl-add">
+        <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Task name..." className="sp-dl-title-input" />
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="sp-dl-date-input" />
+        <button onClick={add} className="sp-add-btn">+</button>
       </div>
     </div>
   );
@@ -204,7 +256,7 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
   return (
     <div className="sp-tasks">
       <div className="sp-tasks-head">
-        <span>Task</span><span>Tags</span><span>Progress</span><span></span>
+        <span>Task</span><span>Tags</span><span></span>
       </div>
       {tasks.map((t, i) => (
         <div key={t.id || i} className={`sp-task-row${t.urgent ? " sp-urgent" : ""}`}>
@@ -214,17 +266,6 @@ function TasksSection({ tasks, onAdd, onRemove, onUpdate }) {
             {t.urgent && <span className="sp-urgent-tag">urgent</span>}
           </div>
           <div className="sp-task-tags">{t.tags}</div>
-          <div className="sp-task-prog">
-            <div className="sp-prog-bar">
-              <div className="sp-prog-fill" style={{ width: `${t.progress}%` }} />
-            </div>
-            <span className="sp-prog-pct">{t.progress}%</span>
-            <input
-              type="range" min="0" max="100" value={t.progress}
-              onChange={e => onUpdate(i, { ...t, progress: +e.target.value })}
-              className="sp-prog-slider"
-            />
-          </div>
           <div className="sp-task-ctrl">
             <button onClick={() => onUpdate(i, { ...t, urgent: !t.urgent })} className={`sp-urg-btn${t.urgent ? " on" : ""}`} title="Toggle urgent">!</button>
             <button onClick={() => onRemove(i)} className="sp-del">✕</button>
