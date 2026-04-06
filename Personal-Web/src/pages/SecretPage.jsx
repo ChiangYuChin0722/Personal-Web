@@ -8,6 +8,33 @@ const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const CARD_COLORS = ["#2563eb", "#7c3aed", "#dc2626", "#059669", "#d97706", "#0891b2"];
 const CIRCLED = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩"];
 
+const EVENT_CATS = [
+  { id: "exam",     label: "考試",   color: "#ef4444" },
+  { id: "meal",     label: "聚餐",   color: "#f97316" },
+  { id: "work",     label: "工作",   color: "#3b82f6" },
+  { id: "personal", label: "個人",   color: "#a855f7" },
+  { id: "exercise", label: "運動",   color: "#22c55e" },
+  { id: "deadline", label: "截止日", color: "#e11d48" },
+  { id: "other",    label: "其他",   color: "#64748b" },
+];
+function catColor(id) { return EVENT_CATS.find(c => c.id === id)?.color ?? "#64748b"; }
+function catLabel(id) { return EVENT_CATS.find(c => c.id === id)?.label ?? id; }
+
+function CategoryPicker({ value, onChange }) {
+  return (
+    <div className="sp-cat-picker">
+      {EVENT_CATS.map(c => (
+        <button key={c.id}
+          className={`sp-cat-chip${value === c.id ? " active" : ""}`}
+          style={{ "--cat": c.color }}
+          onClick={() => onChange(c.id)}
+          type="button"
+        >{c.label}</button>
+      ))}
+    </div>
+  );
+}
+
 // ── World Clocks ──────────────────────────────────────────────
 function WorldClocks() {
   const [now, setNow] = useState(new Date());
@@ -157,7 +184,7 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
   );
 }
 
-// ── Deadlines ─────────────────────────────────────────────────
+// ── Shared event helpers ──────────────────────────────────────
 function daysLeft(dateStr) {
   if (!dateStr || dateStr === "TBD") return null;
   let d;
@@ -166,25 +193,22 @@ function daysLeft(dateStr) {
   } else if (dateStr.includes("/")) {
     const parts = dateStr.split("/");
     const now = new Date();
-    if (parts.length === 3) {
-      d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    } else {
-      d = new Date(now.getFullYear(), +parts[0] - 1, +parts[1]);
-      if (d < now && now - d > 86400000) d.setFullYear(now.getFullYear() + 1);
+    if (parts.length === 3) { d = new Date(+parts[0], +parts[1]-1, +parts[2]); }
+    else {
+      d = new Date(now.getFullYear(), +parts[0]-1, +parts[1]);
+      if (d < now && now-d > 86400000) d.setFullYear(now.getFullYear()+1);
     }
   } else { return null; }
-  const today = new Date(); today.setHours(0, 0, 0, 0); d.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
   return Math.round((d - today) / 86400000);
 }
-
 function dlBadgeStyle(days) {
-  if (days === null) return { bg: "var(--bg3)", color: "var(--muted)" };
-  if (days < 0)  return { bg: "rgba(248,113,113,0.15)", color: "var(--red)" };
-  if (days <= 3) return { bg: "rgba(249,115,22,0.15)", color: "#f97316" };
-  if (days <= 7) return { bg: "rgba(234,179,8,0.15)",  color: "#eab308" };
-  return { bg: "rgba(52,211,153,0.12)", color: "var(--green)" };
+  if (days === null) return { bg: "var(--bg3)",              color: "var(--muted)" };
+  if (days < 0)      return { bg: "rgba(248,113,113,0.15)",  color: "var(--red)"   };
+  if (days <= 3)     return { bg: "rgba(249,115,22,0.15)",   color: "#f97316"      };
+  if (days <= 7)     return { bg: "rgba(234,179,8,0.15)",    color: "#eab308"      };
+  return                    { bg: "rgba(52,211,153,0.12)",   color: "var(--green)" };
 }
-
 function dlBadgeLabel(days) {
   if (days === null) return "TBD";
   if (days < 0)  return `${Math.abs(days)}d overdue`;
@@ -193,23 +217,23 @@ function dlBadgeLabel(days) {
   return `${days} days`;
 }
 
-function DeadlinesSection({ deadlines, onAdd, onRemove }) {
+// ── Deadlines ─────────────────────────────────────────────────
+function DeadlinesSection({ events, onAdd, onRemove }) {
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
+  const [date,  setDate]  = useState("");
+  const [cat,   setCat]   = useState("other");
 
   function add() {
     if (!title.trim()) return;
-    onAdd({ id: Date.now().toString(), title: title.trim(), date: date || "TBD" });
+    onAdd({ id: Date.now().toString(), title: title.trim(), date: date || "TBD", category: cat });
     setTitle(""); setDate("");
   }
 
-  const sorted = [...deadlines]
-    .map((d, origIdx) => ({ ...d, origIdx }))
+  const sorted = [...events]
     .sort((a, b) => {
       const da = daysLeft(a.date), db = daysLeft(b.date);
       if (da === null && db === null) return 0;
-      if (da === null) return 1;
-      if (db === null) return -1;
+      if (da === null) return 1; if (db === null) return -1;
       return da - db;
     });
 
@@ -217,32 +241,35 @@ function DeadlinesSection({ deadlines, onAdd, onRemove }) {
     <div className="sp-deadlines">
       <div className="sp-section-title">Deadlines</div>
       <div className="sp-dl-list">
+        {sorted.length === 0 && <div className="sp-dl-empty">No events yet</div>}
         {sorted.map(d => {
           const days = daysLeft(d.date);
           const { bg, color } = dlBadgeStyle(days);
           const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(d.date)
             ? d.date.slice(5).replace("-", "/") : d.date;
           return (
-            <div key={d.id || d.origIdx} className="sp-dl-item">
+            <div key={d.id} className="sp-dl-item">
               <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
+              <span className="sp-cat-dot" style={{ background: catColor(d.category) }} title={catLabel(d.category)} />
               <span className="sp-dl-name">{d.title}</span>
+              {d.time && <span className="sp-dl-time">{d.time}</span>}
               <span className="sp-dl-datestr">{displayDate}</span>
-              <button onClick={() => onRemove(d.origIdx)} className="sp-del">✕</button>
+              <button onClick={() => onRemove(d.id)} className="sp-del">✕</button>
             </div>
           );
         })}
-        {deadlines.length === 0 && <div className="sp-dl-empty">No deadlines yet</div>}
       </div>
+      <CategoryPicker value={cat} onChange={setCat} />
       <div className="sp-dl-add">
-        <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Task name..." className="sp-dl-title-input" />
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && add()}
+          placeholder="Event title..." className="sp-dl-title-input" />
         <input type="date" value={date} onChange={e => setDate(e.target.value)} className="sp-dl-date-input" />
         <button onClick={add} className="sp-add-btn">+</button>
       </div>
     </div>
   );
 }
-
-// ── Tasks ─────────────────────────────────────────────────────
 
 // ── Eisenhower Matrix ─────────────────────────────────────────
 function getQuadrantInfo(x, y) {
@@ -484,10 +511,11 @@ function normToISO(dateStr) {
   return null;
 }
 
-function TodayTimeline({ timeline, onUpdate }) {
-  const [editing, setEditing] = useState(null);
-  const [val, setVal] = useState("");
-  const [offset, setOffset] = useState(0); // 0=today, negative=past, positive=future
+function TodayTimeline({ events, onAdd, onRemove }) {
+  const [offset, setOffset] = useState(0);
+  const [addingH, setAddingH] = useState(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newCat,   setNewCat]   = useState("other");
 
   const today = new Date();
   const selected = new Date(today);
@@ -495,26 +523,23 @@ function TodayTimeline({ timeline, onUpdate }) {
   const selKey = dateKey(selected);
   const currentHour = offset === 0 ? today.getHours() : -1;
 
-  // Migrate old flat format { hour: text } → new { dateKey: { hour: text } }
-  function normalize(tl) {
-    if (!tl || typeof tl !== "object") return {};
-    const vals = Object.values(tl);
-    if (vals.length > 0 && typeof vals[0] === "string") {
-      return { [dateKey(today)]: tl };
-    }
-    return tl;
+  // events for this day, grouped by hour
+  function eventsAtHour(h) {
+    const hStr = String(h).padStart(2, "0");
+    return events.filter(e => e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
   }
-  const norm = normalize(timeline);
-  const dayData = norm[selKey] || {};
 
-  function startEdit(h) { setEditing(h); setVal(dayData[h] || ""); }
-  function commitEdit() {
-    if (editing == null) return;
-    const base = normalize(timeline);
-    const dayUpdated = { ...(base[selKey] || {}), [editing]: val };
-    if (!val.trim()) delete dayUpdated[editing];
-    onUpdate({ ...base, [selKey]: dayUpdated });
-    setEditing(null);
+  function startAdd(h, ev) { ev.stopPropagation(); setAddingH(h); setNewTitle(""); setNewCat("other"); }
+  function commitAdd() {
+    if (!newTitle.trim()) { setAddingH(null); return; }
+    onAdd({
+      id: Date.now().toString(),
+      title: newTitle.trim(),
+      date: selKey,
+      time: `${String(addingH).padStart(2,"0")}:00`,
+      category: newCat,
+    });
+    setAddingH(null);
   }
 
   const dayLabel = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow"
@@ -524,31 +549,45 @@ function TodayTimeline({ timeline, onUpdate }) {
   return (
     <div className="sp-timeline">
       <div className="sp-tl-header">
-        <div className="sp-section-title">
-          {dayLabel} <span className="sp-tl-sub">timeline</span>
-        </div>
+        <div className="sp-section-title">{dayLabel} <span className="sp-tl-sub">timeline</span></div>
         <div className="sp-tl-nav">
-          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o - 1)} disabled={offset <= -3}>‹</button>
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o-1)} disabled={offset <= -3}>‹</button>
           <span className="sp-tl-date">{dateLabel}</span>
-          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o + 1)} disabled={offset >= 7}>›</button>
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o+1)} disabled={offset >= 7}>›</button>
         </div>
       </div>
-      {HOURS.map(h => (
-        <div key={h} className={`sp-tl-row${h === currentHour ? " sp-tl-now" : ""}`} onClick={() => startEdit(h)}>
-          <span className="sp-tl-hour">{h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`}</span>
-          <div className="sp-tl-line" />
-          {editing === h ? (
-            <input
-              autoFocus className="sp-tl-input"
-              value={val} onChange={e => setVal(e.target.value)}
-              onBlur={commitEdit} onKeyDown={e => e.key === "Enter" && commitEdit()}
-              onClick={e => e.stopPropagation()}
-            />
-          ) : (
-            <span className="sp-tl-event">{dayData[h]}</span>
-          )}
-        </div>
-      ))}
+      {HOURS.map(h => {
+        const hourEvs = eventsAtHour(h);
+        const isNow   = h === currentHour;
+        return (
+          <div key={h} className={`sp-tl-row${isNow ? " sp-tl-now" : ""}`}>
+            <span className="sp-tl-hour">{h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h-12}pm`}</span>
+            <div className="sp-tl-line" />
+            <div className="sp-tl-events">
+              {hourEvs.map(e => (
+                <span key={e.id} className="sp-tl-chip" style={{ background: catColor(e.category) + "22", borderColor: catColor(e.category), color: catColor(e.category) }}>
+                  {e.title}
+                  <button onClick={() => onRemove(e.id)} className="sp-tl-chip-del">×</button>
+                </span>
+              ))}
+              {addingH === h ? (
+                <div className="sp-tl-add-form" onClick={e => e.stopPropagation()}>
+                  <input autoFocus value={newTitle} onChange={e => setNewTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") commitAdd(); if (e.key === "Escape") setAddingH(null); }}
+                    placeholder="Event title..." className="sp-tl-input" />
+                  <CategoryPicker value={newCat} onChange={setNewCat} />
+                  <div className="sp-tl-add-btns">
+                    <button onClick={commitAdd} className="sp-add-btn" style={{padding:"3px 10px"}}>+</button>
+                    <button onClick={() => setAddingH(null)} className="sp-del">✕</button>
+                  </div>
+                </div>
+              ) : (
+                <button className="sp-tl-add-btn" onClick={e => startAdd(h, e)} title="Add event">+</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -557,32 +596,20 @@ function TodayTimeline({ timeline, onUpdate }) {
 const CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const CAL_DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
-function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveEvent }) {
+function CalendarSection({ events, onAdd, onRemove }) {
   const now = new Date();
   const [viewYear,  setViewYear]  = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selected,  setSelected]  = useState(null);
   const [newTitle,  setNewTitle]  = useState("");
   const [newTime,   setNewTime]   = useState("");
+  const [newCat,    setNewCat]    = useState("other");
 
   const todayISO = dateKey(now);
 
-  const normTl = (() => {
-    if (!timeline || typeof timeline !== "object") return {};
-    const vals = Object.values(timeline);
-    if (vals.length > 0 && typeof vals[0] === "string") return { [todayISO]: timeline };
-    return timeline;
-  })();
-
   function eventsForDate(iso) {
-    const evs = [];
-    deadlines.forEach(d => { if (normToISO(d.date) === iso) evs.push({ type: "dl", title: d.title }); });
-    const tl = normTl[iso] || {};
-    Object.entries(tl).forEach(([h, txt]) => { if (txt) evs.push({ type: "tl", title: txt, hour: +h }); });
-    (calEvents || []).filter(e => e.date === iso).forEach(e =>
-      evs.push({ type: "ev", title: e.title, time: e.time, id: e.id })
-    );
-    return evs;
+    return events.filter(e => normToISO(e.date) === iso || e.date === iso)
+      .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   }
 
   function prevMonth() {
@@ -596,7 +623,7 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
 
   function addEvent() {
     if (!newTitle.trim() || !selected) return;
-    onAddEvent({ id: Date.now().toString(), date: selected, title: newTitle.trim(), time: newTime });
+    onAdd({ id: Date.now().toString(), date: selected, title: newTitle.trim(), time: newTime, category: newCat });
     setNewTitle(""); setNewTime("");
   }
 
@@ -604,7 +631,6 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
   const totalDays = new Date(viewYear, viewMonth+1, 0).getDate();
   const selEvs    = selected ? eventsForDate(selected) : [];
 
-  function fmtHour(h) { return h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h-12}pm`; }
   function fmtDate(iso) {
     const d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -629,15 +655,16 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
           const evs = eventsForDate(iso);
           const isToday = iso === todayISO;
           const isSel   = iso === selected;
+          const cats    = [...new Set(evs.map(e => e.category))];
           return (
             <div key={iso}
               className={`sp-cal-day${isToday ? " sp-cal-today" : ""}${isSel ? " sp-cal-sel" : ""}`}
               onClick={() => setSelected(isSel ? null : iso)}>
               <span className="sp-cal-num">{day}</span>
               <div className="sp-cal-dots">
-                {evs.some(e => e.type === "dl") && <span className="sp-cal-dot" style={{background:"var(--red)"}} />}
-                {evs.some(e => e.type === "tl") && <span className="sp-cal-dot" style={{background:"var(--accent-light)"}} />}
-                {evs.some(e => e.type === "ev") && <span className="sp-cal-dot" style={{background:"var(--green)"}} />}
+                {cats.slice(0, 3).map(c => (
+                  <span key={c} className="sp-cal-dot" style={{ background: catColor(c) }} />
+                ))}
               </div>
             </div>
           );
@@ -652,16 +679,18 @@ function CalendarSection({ deadlines, timeline, calEvents, onAddEvent, onRemoveE
           </div>
           <div className="sp-cal-ev-list">
             {selEvs.length === 0 && <div className="sp-dl-empty">No events</div>}
-            {selEvs.map((e, i) => (
-              <div key={i} className={`sp-cal-ev sp-cal-ev-${e.type}`}>
-                <span className="sp-cal-ev-tag">
-                  {e.type === "dl" ? "DL" : e.type === "tl" ? fmtHour(e.hour) : (e.time || "●")}
+            {selEvs.map(e => (
+              <div key={e.id} className="sp-cal-ev">
+                <span className="sp-cal-ev-tag" style={{ background: catColor(e.category)+"22", color: catColor(e.category) }}>
+                  {catLabel(e.category)}
                 </span>
+                {e.time && <span className="sp-cal-ev-time">{e.time}</span>}
                 <span className="sp-cal-ev-title">{e.title}</span>
-                {e.type === "ev" && <button onClick={() => onRemoveEvent(e.id)} className="sp-del">✕</button>}
+                <button onClick={() => onRemove(e.id)} className="sp-del">✕</button>
               </div>
             ))}
           </div>
+          <CategoryPicker value={newCat} onChange={setNewCat} />
           <div className="sp-cal-add-row">
             <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
               onKeyDown={e => e.key === "Enter" && addEvent()}
@@ -713,12 +742,10 @@ export default function SecretPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
 
-  const [links, setLinks] = useState([]);
-  const [deadlines, setDeadlines] = useState([]);
-  const [matrix, setMatrix] = useState([]);
-  const [timeline, setTimeline] = useState({});
-  const [calEvents, setCalEvents] = useState([]);
-  const [groceries, setGroceries] = useState([]);
+  const [links,    setLinks]    = useState([]);
+  const [events,   setEvents]   = useState([]);  // unified events
+  const [matrix,   setMatrix]   = useState([]);
+  const [groceries,setGroceries]= useState([]);
 
   // Restore session
   useEffect(() => {
@@ -745,8 +772,27 @@ export default function SecretPage() {
       setDeadlines(await load("yc2_deadlines", []));
       const rawMatrix = await load("yc2_matrix", []);
       setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
-      setTimeline(await load("yc2_timeline", {}));
-      setCalEvents(await load("yc2_cal_events", []));
+
+      // Load unified events (migrate old formats if present)
+      let unified = await load("yc2_events", null);
+      if (!unified) {
+        unified = [];
+        // Migrate old deadlines
+        const oldDL = await load("yc2_deadlines", []);
+        oldDL.forEach(d => unified.push({ id: d.id || Date.now().toString() + Math.random(), title: d.title, date: normToISO(d.date) || d.date, category: "deadline" }));
+        // Migrate old timeline
+        const oldTL = await load("yc2_timeline", {});
+        const tlObj = (typeof Object.values(oldTL)[0] === "string") ? { [dateKey(new Date())]: oldTL } : oldTL;
+        Object.entries(tlObj).forEach(([date, hours]) => {
+          Object.entries(hours).forEach(([h, txt]) => {
+            if (txt) unified.push({ id: Date.now().toString()+Math.random(), title: txt, date, time: `${String(h).padStart(2,"0")}:00`, category: "other" });
+          });
+        });
+        // Migrate old cal events
+        const oldCal = await load("yc2_cal_events", []);
+        oldCal.forEach(e => unified.push({ id: e.id, title: e.title, date: e.date, time: e.time||"", category: e.category||"other" }));
+      }
+      setEvents(unified);
       setGroceries(await load("yc2_groceries", []));
     })();
   }, [loggedIn, currentPassword]);
@@ -771,16 +817,13 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setDeadlines([]); setMatrix([]); setTimeline({});
-    setCalEvents([]); setGroceries([]);
+    setEvents([]); setMatrix([]); setGroceries([]);
   }
 
-  const updateLinks = v => { setLinks(v); save("yc2_links", v); };
-  const updateDeadlines= v => { setDeadlines(v); save("yc2_deadlines", v); };
-  const updateMatrix   = v => { setMatrix(v);    save("yc2_matrix", v); };
-  const updateTimeline  = v => { setTimeline(v);   save("yc2_timeline", v); };
-  const updateCalEvents = v => { setCalEvents(v);  save("yc2_cal_events", v); };
-  const updateGroceries = v => { setGroceries(v);  save("yc2_groceries", v); };
+  const updateLinks    = v => { setLinks(v);    save("yc2_links", v); };
+  const updateEvents   = v => { setEvents(v);   save("yc2_events", v); };
+  const updateMatrix   = v => { setMatrix(v);   save("yc2_matrix", v); };
+  const updateGroceries= v => { setGroceries(v);save("yc2_groceries", v); };
 
   if (!loggedIn) {
     return (
@@ -843,22 +886,24 @@ export default function SecretPage() {
         {/* ── MIDDLE ── */}
         <div className="sp-middle">
           <DeadlinesSection
-            deadlines={deadlines}
-            onAdd={d => updateDeadlines([...deadlines, d])}
-            onRemove={i => updateDeadlines(deadlines.filter((_, idx) => idx !== i))}
+            events={events}
+            onAdd={e => updateEvents([...events, e])}
+            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
 
         {/* ── RIGHT ── */}
         <div className="sp-right">
-          <TodayTimeline timeline={timeline} onUpdate={updateTimeline} />
+          <TodayTimeline
+            events={events}
+            onAdd={e => updateEvents([...events, e])}
+            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
+          />
           <CalendarSection
-            deadlines={deadlines}
-            timeline={timeline}
-            calEvents={calEvents}
-            onAddEvent={e => updateCalEvents([...calEvents, e])}
-            onRemoveEvent={id => updateCalEvents(calEvents.filter(e => e.id !== id))}
+            events={events}
+            onAdd={e => updateEvents([...events, e])}
+            onRemove={id => updateEvents(events.filter(e => e.id !== id))}
           />
         </div>
       </div>
