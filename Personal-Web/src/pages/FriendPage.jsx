@@ -163,7 +163,6 @@ function Avatar({ profile, size = 40, style: extra = {} }) {
         ? <img src={profile.photo} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
         : <span style={{ fontWeight:800, color }}>{(profile.name||'?').charAt(0).toUpperCase()}</span>
       }
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
