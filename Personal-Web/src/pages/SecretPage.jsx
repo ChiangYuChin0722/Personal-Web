@@ -777,29 +777,39 @@ export default function SecretPage() {
 
   // Load all data after login
   useEffect(() => {
-    if (!loggedIn || !currentPassword) return;
-    (async () => {
-      const load = async (key, def, isStr = false) => {
-        const raw = localStorage.getItem(key);
-        if (!raw) return def;
+    if (!loggedIn) return;
+    // Try plain JSON first; if it fails (old encrypted format), migrate once
+    const tryLoad = async (key, def) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return def;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        // Old encrypted format – decrypt once and re-save as plain JSON
+        if (!currentPassword) return def;
         const text = await decrypt(raw, currentPassword);
         if (text == null) return def;
-        return isStr ? text : JSON.parse(text);
-      };
-      setLinks(await load("yc2_links", []));
-      setDeadlines(await load("yc2_deadlines", []));
-      const rawMatrix = await load("yc2_matrix", []);
+        try {
+          const val = JSON.parse(text);
+          localStorage.setItem(key, JSON.stringify(val)); // migrate
+          return val;
+        } catch { return def; }
+      }
+    };
+    (async () => {
+      setLinks(await tryLoad("yc2_links", []));
+      const rawMatrix = await tryLoad("yc2_matrix", []);
       setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
 
       // Load unified events (migrate old formats if present)
-      let unified = await load("yc2_events", null);
+      let unified = await tryLoad("yc2_events", null);
       if (!unified) {
         unified = [];
         // Migrate old deadlines
-        const oldDL = await load("yc2_deadlines", []);
+        const oldDL = await tryLoad("yc2_deadlines", []);
         oldDL.forEach(d => unified.push({ id: d.id || Date.now().toString() + Math.random(), title: d.title, date: normToISO(d.date) || d.date, category: "deadline" }));
         // Migrate old timeline
-        const oldTL = await load("yc2_timeline", {});
+        const oldTL = await tryLoad("yc2_timeline", {});
         const tlObj = (typeof Object.values(oldTL)[0] === "string") ? { [dateKey(new Date())]: oldTL } : oldTL;
         Object.entries(tlObj).forEach(([date, hours]) => {
           Object.entries(hours).forEach(([h, txt]) => {
@@ -807,18 +817,18 @@ export default function SecretPage() {
           });
         });
         // Migrate old cal events
-        const oldCal = await load("yc2_cal_events", []);
+        const oldCal = await tryLoad("yc2_cal_events", []);
         oldCal.forEach(e => unified.push({ id: e.id, title: e.title, date: e.date, time: e.time||"", category: e.category||"other" }));
       }
       setEvents(unified);
-      setGroceries(await load("yc2_groceries", []));
+      setGroceries(await tryLoad("yc2_groceries", []));
     })();
   }, [loggedIn, currentPassword]);
 
-  const save = useCallback(async (key, value) => {
-    const text = typeof value === "string" ? value : JSON.stringify(value);
-    localStorage.setItem(key, await encrypt(text, currentPassword));
-  }, [currentPassword]);
+  // Synchronous plain-JSON save – no async, no timing issues
+  const save = useCallback((key, value) => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, []);
 
   function handleLogin() {
     if (username !== VALID_USERNAME || password !== VALID_PASSWORD) {
