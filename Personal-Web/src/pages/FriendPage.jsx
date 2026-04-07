@@ -220,7 +220,6 @@ function LogModal({ profile, onSave, onClose }) {
           <button className="fq-btn fq-btn-ghost" onClick={onClose}>取消</button>
         </div>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
