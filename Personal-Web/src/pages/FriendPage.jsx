@@ -3,81 +3,100 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EMOJI_OPTIONS = ['😊','👻','🐱','🐶','🦊','🐼','🌟','🎯','⚡','🔥','🎭','💎','🚀','🌙','🎵'];
 const COLOR_OPTIONS = ['#60A5FA','#22D3EE','#34D399','#8B5CF6','#F472B6','#FB923C','#FBBF24','#F87171'];
 
 const DIM_META = [
-  { key: 'F',  label: '頻率', en: 'Frequency', color: '#60A5FA' },
-  { key: 'B',  label: '平衡', en: 'Balance',   color: '#22D3EE' },
-  { key: 'S',  label: '支持', en: 'Support',   color: '#34D399' },
-  { key: 'T',  label: '信任', en: 'Trust',     color: '#8B5CF6' },
-  { key: 'St', label: '穩定', en: 'Stability', color: '#FBBF24' },
+  { key: 'F',  label: '頻率', en: 'Frequency',   color: '#60A5FA' },
+  { key: 'R',  label: '互惠', en: 'Reciprocity', color: '#22D3EE' },
+  { key: 'S',  label: '支持', en: 'Support',     color: '#34D399' },
+  { key: 'T',  label: '信任', en: 'Trust',       color: '#8B5CF6' },
+  { key: 'St', label: '穩定', en: 'Stability',   color: '#FBBF24' },
+  { key: 'E',  label: '能量', en: 'Energy',      color: '#F472B6' },
+];
+
+const MOODS = [
+  { key:'great',   icon:'🌟', label:'感覺很好' },
+  { key:'good',    icon:'😊', label:'還不錯' },
+  { key:'neutral', icon:'😐', label:'普通' },
+  { key:'drained', icon:'😔', label:'有點累' },
+  { key:'tense',   icon:'⚡', label:'有些摩擦' },
 ];
 
 const QUESTIONS = [
-  // F
-  { dim:'F', text:'我們平均多久主動聯絡一次？', opts:['幾乎不聯絡','每月聯絡','每週聯絡','幾乎每天'] },
-  { dim:'F', text:'最近一個月，我們實際見面幾次？', opts:['0次','1–2次','3–5次','6次以上'] },
-  { dim:'F', text:'在重要節日或特殊場合，對方會主動聯繫我嗎？', opts:['從不','偶爾','通常會','一定會'] },
-  { dim:'F', text:'我們的聯絡頻率和半年前相比？', opts:['大幅減少','略有減少','差不多','增加了'] },
-  // B
-  { dim:'B', text:'在我們的對話中，誰更常主動開始話題？', opts:['幾乎都是我','大多是我','差不多','對方更多'] },
-  { dim:'B', text:'分享個人困擾和喜悅時，是否雙向？', opts:['幾乎單向','偶爾雙向','大多雙向','非常平衡'] },
-  { dim:'B', text:'對方是否也會主動關心我的狀況？', opts:['從不','很少','有時','經常'] },
-  { dim:'B', text:'我們付出的時間和精力是否對等？', opts:['明顯不對等','稍微不對等','大致對等','完全對等'] },
-  // S
-  { dim:'S', text:'當我遇到困難時，對方會主動提供幫助嗎？', opts:['從不','很少','有時','一定會'] },
-  { dim:'S', text:'對方了解我目前生活中重要的事嗎？', opts:['完全不了解','知道一些','了解大部分','非常了解'] },
-  { dim:'S', text:'我在情緒低落時，會想到找對方嗎？', opts:['不會','很少','有時','第一個想到'] },
-  { dim:'S', text:'對方曾在我最需要的時候出現嗎？', opts:['從未','偶爾','通常會','一直都在'] },
-  // T
-  { dim:'T', text:'我可以對對方說不好聽的真心話嗎？', opts:['完全不行','有限度','大多可以','完全可以'] },
-  { dim:'T', text:'對方說的話和承諾，我有多信任？', opts:['不太信','將信將疑','大致相信','完全信任'] },
-  { dim:'T', text:'我願意把私密的事告訴對方嗎？', opts:['不願意','只說表面','說一部分','完全願意'] },
-  { dim:'T', text:'如果我們有矛盾，可以直接溝通解決嗎？', opts:['不行','很困難','大多可以','完全沒問題'] },
-  // St
-  { dim:'St', text:'我們的友誼在過去一年有沒有出現過明顯裂痕？', opts:['嚴重裂痕','有些摩擦','小誤會','非常穩定'] },
-  { dim:'St', text:'即使一段時間沒聯絡，再見面時還是自在嗎？', opts:['非常尷尬','有點生疏','稍微需要暖身','完全自然'] },
-  { dim:'St', text:'我預計五年後我們還是好朋友嗎？', opts:['不太可能','不確定','應該會','一定會'] },
-  { dim:'St', text:'整體來說，這段友誼讓我感到？', opts:['很累/消耗','普通','還不錯','非常滋養'] },
+  // F 頻率
+  { dim:'F', text:'不計群組訊息，我們私下一對一聯絡的平均頻率？', opts:['幾乎不聯絡','每月一次左右','每週一次以上','幾乎每天'] },
+  { dim:'F', text:'最近三個月，是誰更常主動開啟對話或約見面？', opts:['幾乎都是我','大多是我','差不多','對方更多或差不多'] },
+  { dim:'F', text:'如果我連續兩週沒有主動聯絡，對方會注意到並主動找我嗎？', opts:['不會','不確定，可能不會','應該會','一定會'] },
+  { dim:'F', text:'我們友誼的「聯絡熱度」和一年前相比？', opts:['明顯降溫','稍微減少','差不多','變得更頻繁'] },
+  // R 互惠
+  { dim:'R', text:'我們分享個人困擾、喜悅和私事的程度，是否雙向對等？', opts:['幾乎是我在分享','偏向我多分享','大致對等','非常對等雙向'] },
+  { dim:'R', text:'對方了解我現在生活中最重要、最在意的事嗎？', opts:['幾乎不知道','只知道表面的事','了解大部分','非常清楚'] },
+  { dim:'R', text:'我付出的關心、時間和精力，對方是否有相應的回應？', opts:['完全沒有對應','回應很少','大致有回應','充分且對等'] },
+  { dim:'R', text:'當我需要幫忙或支持時，主動開口的難度？', opts:['非常難，寧可不說','有點難','還好，可以說','很自然，毫無障礙'] },
+  // S 支持
+  { dim:'S', text:'在我人生中最困難的一段時期，對方的角色是？', opts:['完全不在場','知道但沒怎麼幫助','有提供支持','是重要的支柱之一'] },
+  { dim:'S', text:'如果我明天要做一個重大決定，我會想先聽對方的意見嗎？', opts:['不會','不太會','可能會','一定會'] },
+  { dim:'S', text:'對方的支持符合「我真正需要的」的程度？', opts:['差很多，不理解需要','有時對有時錯','大多能給到位','非常精準，深度理解'] },
+  { dim:'S', text:'對方曾在沒有明確求助的情況下，主動察覺並關心過我嗎？', opts:['從來沒有','偶爾','有幾次讓我很感動','這是他的常態'] },
+  // T 信任
+  { dim:'T', text:'我是否曾對對方說過讓自己顯得脆弱、不完美或尷尬的事？', opts:['從不，不敢說','說過一點點','說過不少','幾乎什麼都說過'] },
+  { dim:'T', text:'如果我犯了一個嚴重的錯誤，我願意主動告訴對方嗎？', opts:['不願意','有點猶豫','應該會告訴他','第一個想到的就是他'] },
+  { dim:'T', text:'對方說過的話、做出的承諾，我的信任程度是？', opts:['經常懷疑','有些保留','大致相信','完全信任'] },
+  { dim:'T', text:'如果我們發生誤會或衝突，我相信問題可以被直接溝通解決嗎？', opts:['不相信，很難談','很困難但或許可以','大多能解決','完全相信，我們能處理'] },
+  // St 穩定性
+  { dim:'St', text:'這段友誼在過去兩年內有沒有出現過「差點斷掉」的危機？', opts:['有嚴重危機且未修復','有摩擦影響了關係','有小誤會但都解決了','非常穩定從沒出現過'] },
+  { dim:'St', text:'即使一段時間沒有聯絡，再次見面或聊天時的自在感？', opts:['非常尷尬，需要很久暖身','有些生疏','稍微需要一點時間','完全自然，像從沒斷過'] },
+  { dim:'St', text:'考慮各種人生變化（換工作、搬家、新對象），這段友誼的韌性？', opts:['人生一變就消失了','有些影響，關係變淡了','大致維持，只是見面少了','人生變了依然穩固'] },
+  { dim:'St', text:'我預計五年後，我們是否仍然是彼此生命中重要的人？', opts:['不太可能','不確定','應該會','幾乎確定'] },
+  // E 情感能量
+  { dim:'E', text:'想到要主動聯絡對方，我的第一個直覺反應是？', opts:['有負擔或逃避感','有點猶豫','還好沒特別感覺','期待，很想聊'] },
+  { dim:'E', text:'和對方進行一次深度交流或見面之後，我通常感覺？', opts:['很累，需要獨自恢復','有些消耗','普通，沒什麼特別','充電感，精神變好'] },
+  { dim:'E', text:'這段友誼是否讓我感覺「被接納」——不需要表演、可以做自己？', opts:['不太行，有壓力要表現','有時有壓力','大多可以','完全可以，就是我'] },
+  { dim:'E', text:'整體來說，這段友誼對我的生活帶來什麼？', opts:['主要是消耗或壓力','普通，沒什麼特別','讓生活更豐富','是我非常珍惜的滋養'] },
 ];
 
 
 // ─── Score helpers ─────────────────────────────────────────────────────────────
 
 function calcScores(answers) {
-  const dims = ['F','B','S','T','St'];
+  const DIMS = [
+    { key:'F',  from:0,  weight:0.15 },
+    { key:'R',  from:4,  weight:0.18 },
+    { key:'S',  from:8,  weight:0.20 },
+    { key:'T',  from:12, weight:0.20 },
+    { key:'St', from:16, weight:0.15 },
+    { key:'E',  from:20, weight:0.12 },
+  ];
   const scores = {};
-  dims.forEach((d, i) => {
-    const slice = answers.slice(i * 4, i * 4 + 4);
+  DIMS.forEach(d => {
+    const slice = answers.slice(d.from, d.from + 4);
     const sum = slice.reduce((a, b) => a + b, 0);
-    scores[d] = Math.round(((sum - 4) / 16) * 100);
+    scores[d.key] = Math.round(((sum - 4) / 16) * 100);
   });
-  scores.total = Math.round(
-    0.20 * scores.F +
-    0.20 * scores.B +
-    0.25 * scores.S +
-    0.20 * scores.T +
-    0.15 * scores.St
-  );
+  scores.total = Math.round(DIMS.reduce((acc, d) => acc + d.weight * scores[d.key], 0));
   return scores;
 }
 
 function getFriendshipType(scores) {
-  const { F, B, S, T, St } = scores;
-  if (scores.total >= 75 && T >= 70 && St >= 70)
-    return { key:'SHQ', name:'穩固高品質', en:'Stable & High Quality', color:'#22D3EE', desc:'信任深厚、情感穩定，是少數真正可以依賴的友誼。' };
-  if (F >= 70 && B < 50)
-    return { key:'ASL', name:'主動表層型', en:'Active but Surface Level', color:'#60A5FA', desc:'聯絡頻繁但缺乏深度，需要加強雙向理解。' };
-  if (B < 45 || (S < 50 && T < 50))
-    return { key:'AOS', name:'不對等單向型', en:'Asymmetric / One-Sided', color:'#FB923C', desc:'付出不對等，長期可能造成疲憊感。' };
-  if (F < 50 && T >= 65 && St >= 65)
-    return { key:'QDB', name:'安靜深連型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多但情感真實，聯絡少不代表感情淡。' };
-  if (St < 45 || T < 45)
-    return { key:'FNR', name:'脆弱待修型', en:'Fragile / Needs Repair', color:'#F87171', desc:'關係出現裂縫，需要主動修復才能維持。' };
-  if (scores.total >= 55)
-    return { key:'SLD', name:'穩定輕度型', en:'Stable Lightweight', color:'#34D399', desc:'關係平穩但不算特別深入，適合輕鬆相處。' };
-  return { key:'FAD', name:'淡化中型', en:'Fading', color:'#94A3B8', desc:'友誼正在自然淡化，需要決定是否投入更多。' };
+  const { F, R, S, T, St, E } = scores;
+  const tot = scores.total;
+  if (tot >= 78 && T >= 70 && E >= 65 && St >= 65)
+    return { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' };
+  if (tot >= 65 && T >= 60 && St >= 60 && R >= 58)
+    return { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' };
+  if (F >= 68 && E >= 60 && T < 55)
+    return { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' };
+  if (F < 45 && T >= 62 && St >= 62)
+    return { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' };
+  if (E < 38)
+    return { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#F87171', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' };
+  if (R < 42)
+    return { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' };
+  if (St < 42 || T < 40)
+    return { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' };
+  if (tot >= 50)
+    return { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' };
+  return   { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' };
 }
 
 function getScoreTier(total) {
@@ -91,11 +110,12 @@ function getScoreTier(total) {
 
 function getSuggestions(scores) {
   const tips = [];
-  if (scores.F < 50) tips.push({ icon:'📅', text:'建議增加主動聯絡的頻率，定期check-in能有效維繫感情。' });
-  if (scores.B < 50) tips.push({ icon:'⚖️', text:'注意互動的平衡性，試著讓對方也有機會分享和傾訴。' });
+  if (scores.F < 50) tips.push({ icon:'📅', text:'建議增加主動聯絡的頻率，定期 check-in 能有效維繫感情。' });
+  if (scores.R < 50) tips.push({ icon:'⚖️', text:'注意互動的平衡性，試著讓對方也有機會主動分享和傾訴。' });
   if (scores.S < 50) tips.push({ icon:'🤝', text:'在對方遇到困難時多給予支持，這是深化友誼的關鍵。' });
-  if (scores.T < 50) tips.push({ icon:'🔐', text:'試著分享更多真實的想法，建立信任需要雙方的勇氣。' });
+  if (scores.T < 50) tips.push({ icon:'🔐', text:'試著分享更多真實的想法和脆弱，建立信任需要雙方的勇氣。' });
   if (scores.St < 50) tips.push({ icon:'🛠️', text:'若有未解決的摩擦，主動開口溝通比沉默更有效。' });
+  if (scores.E < 50) tips.push({ icon:'⚡', text:'注意這段關係帶給你的能量狀態，健康的友誼應該讓你感到充電。' });
   if (tips.length === 0) tips.push({ icon:'✨', text:'這段友誼狀態良好！持續用心維護，它會越來越珍貴。' });
   return tips;
 }
@@ -120,6 +140,91 @@ function loadSurveys() {
   try { return JSON.parse(localStorage.getItem('fq_surveys') || '[]'); } catch { return []; }
 }
 function saveSurveys(s) { localStorage.setItem('fq_surveys', JSON.stringify(s)); }
+function loadJournals() {
+  try { return JSON.parse(localStorage.getItem('fq_journals') || '[]'); } catch { return []; }
+}
+function saveJournals(j) { localStorage.setItem('fq_journals', JSON.stringify(j)); }
+
+
+// ─── Avatar component ─────────────────────────────────────────────────────────
+
+function Avatar({ profile, size = 40, style: extra = {} }) {
+  const color = profile.color || '#2563eb';
+  return (
+    <div
+      className="fq-avatar"
+      style={{
+        width: size, height: size, fontSize: size * 0.42,
+        background: color + '22', border: `1px solid ${color}`,
+        overflow: 'hidden', flexShrink: 0, ...extra,
+      }}
+    >
+      {profile.photo
+        ? <img src={profile.photo} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        : <span style={{ fontWeight:800, color }}>{(profile.name||'?').charAt(0).toUpperCase()}</span>
+      }
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
+    </div>
+  );
+}
+
+
+// ─── Log Modal ────────────────────────────────────────────────────────────────
+
+function LogModal({ profile, onSave, onClose }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [mood, setMood] = useState('good');
+  const [date, setDate] = useState(today);
+  const [text, setText] = useState('');
+
+  function handleSave() {
+    if (!text.trim()) return;
+    onSave({ id: genId(), profileId: profile.id, mood, date, text: text.trim(), createdAt: new Date().toISOString() });
+  }
+
+  return (
+    <div className="fq-log-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="fq-log-panel">
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title">Log Update — {profile.name}</div>
+          <button className="fq-log-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">今天跟他的感覺</label>
+          <div className="fq-mood-row">
+            {MOODS.map(m => (
+              <button key={m.key} type="button" className={`fq-mood-btn${mood===m.key?' selected':''}`} onClick={() => setMood(m.key)}>
+                {m.icon} {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">日期</label>
+          <input className="fq-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">近況 / 八卦 / 感受</label>
+          <textarea
+            className="fq-textarea"
+            placeholder="記錄最近的互動、對方的近況、你的感覺、發生了什麼事..."
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={5}
+            autoFocus
+          />
+        </div>
+        <div className="fq-row" style={{ gap:10 }}>
+          <button className="fq-btn fq-btn-primary" onClick={handleSave} disabled={!text.trim()} style={{ opacity: text.trim()?1:0.5 }}>
+            ✓ 儲存紀錄
+          </button>
+          <button className="fq-btn fq-btn-ghost" onClick={onClose}>取消</button>
+        </div>
+      </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
+    </div>
+  );
+}
 
 
 // ─── Radar Chart SVG ───────────────────────────────────────────────────────────
@@ -158,14 +263,14 @@ function RadarChart({ scores, size = 240 }) {
           key={gi}
           points={makePolygon(f)}
           fill="none"
-          stroke="#263248"
+          stroke="rgba(255,255,255,0.08)"
           strokeWidth={f === 1.0 ? 1.5 : 1}
         />
       ))}
       {/* spokes */}
       {angles.map((a, i) => {
         const outer = polarToXY(a, maxR, cx, cy);
-        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="#263248" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />;
       })}
       {/* data fill */}
       <polygon
@@ -177,7 +282,7 @@ function RadarChart({ scores, size = 240 }) {
       />
       {/* data dots */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="#0B1020" strokeWidth="2" />
+        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="#090909" strokeWidth="2" />
       ))}
       {/* labels */}
       {dims.map((d, i) => {
@@ -231,7 +336,7 @@ function LineChart({ surveys }) {
         {/* grid lines */}
         {[0, 25, 50, 75, 100].map(v => (
           <g key={v}>
-            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="#263248" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
+            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
             <text x={PL - 6} y={yOf(v)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#94A3B8">{v}</text>
           </g>
         ))}
@@ -253,10 +358,10 @@ function LineChart({ surveys }) {
             onMouseLeave={() => setHoveredIdx(null)}
             style={{ cursor:'pointer' }}
           >
-            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="#0B1020" strokeWidth="2" />
+            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="#090909" strokeWidth="2" />
             {hoveredIdx === i && (
               <g>
-                <rect x={xOf(i) - 28} y={yOf(s.total) - 30} width="56" height="22" rx="4" fill="#182235" stroke="#263248" />
+                <rect x={xOf(i) - 28} y={yOf(s.total) - 30} width="56" height="22" rx="4" fill="#0f0f12" stroke="rgba(255,255,255,0.1)" />
                 <text x={xOf(i)} y={yOf(s.total) - 19} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill="#E8EEF9">{s.total}</text>
               </g>
             )}
@@ -269,6 +374,7 @@ function LineChart({ surveys }) {
           </text>
         ))}
       </svg>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -301,6 +407,7 @@ function Topbar({ view, onDashboard, onAddFriend }) {
       <a href="/secret" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
       </a>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -340,6 +447,7 @@ function AuthView({ onAuth }) {
           </button>
         </form>
       </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -347,7 +455,7 @@ function AuthView({ onAuth }) {
 
 // ─── Dashboard View ────────────────────────────────────────────────────────────
 
-function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onStartSurvey }) {
+function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
   // KPI calculations
   const total = profiles.length;
   const avgScore = total === 0 ? null : (() => {
@@ -395,7 +503,7 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
         </div>
         <div className="fq-kpi">
           <div className="fq-kpi-label">Avg FQ Score</div>
-          <div className="fq-kpi-value" style={{ color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--fq-muted)' }}>
+          <div className="fq-kpi-value" style={{ color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--muted)' }}>
             {avgScore !== null ? avgScore : '—'}
           </div>
           <div className="fq-kpi-sub">across all friends</div>
@@ -404,7 +512,7 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
           <div className="fq-kpi-label">Highest Scorer</div>
           <div className="fq-kpi-value" style={{ fontSize: highestProfile ? 22 : 30, paddingTop: highestProfile ? 4 : 0 }}>
             {highestProfile ? (
-              <span>{highestProfile.emoji} {highestProfile.name}</span>
+              <span>{highestProfile.name}</span>
             ) : '—'}
           </div>
           <div className="fq-kpi-sub">
@@ -417,7 +525,7 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
         <div className="fq-kpi">
           <div className="fq-kpi-label">Most Recent Survey</div>
           <div className="fq-kpi-value" style={{ fontSize: 22, paddingTop: 4 }}>
-            {mostRecentProfile ? `${mostRecentProfile.emoji} ${mostRecentProfile.name}` : '—'}
+            {mostRecentProfile ? mostRecentProfile.name : '—'}
           </div>
           <div className="fq-kpi-sub">
             {mostRecentSurvey ? fmtDate(mostRecentSurvey.createdAt) : 'none yet'}
@@ -462,13 +570,12 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
                   </div>
                 )}
                 <div className="fq-friend-card-top">
-                  <div className="fq-avatar" style={{ background: p.color + '33', borderColor: p.color }}>
-                    {p.emoji}
-                  </div>
+                  <Avatar profile={p} size={40} />
                   <div>
                     <div className="fq-friend-name">{p.name}</div>
                     <div className="fq-friend-meta">
                       {p.since ? `Since ${fmtDate(p.since)}` : 'Date unknown'}
+                      {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? ` · ${jc} logs` : ''; })()}
                     </div>
                   </div>
                   {latest ? (
@@ -476,7 +583,7 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
                       {latest.total}
                     </div>
                   ) : (
-                    <div className="fq-score-badge" style={{ color:'var(--fq-muted)', fontSize:14 }}>
+                    <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>
                       N/A
                     </div>
                   )}
@@ -494,20 +601,22 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
                     ))}
                   </div>
                 )}
-                {!latest && (
-                  <button
-                    className="fq-btn fq-btn-ghost fq-btn-sm"
-                    style={{ marginTop: 8 }}
-                    onClick={e => { e.stopPropagation(); onStartSurvey(p); }}
-                  >
-                    Start Survey →
+                <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                  {!latest && (
+                    <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
+                      Start Survey →
+                    </button>
+                  )}
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
+                    + Log
                   </button>
-                )}
+                </div>
               </div>
             );
           })}
         </div>
       )}
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -518,18 +627,28 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
 function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const isEdit = !!editProfile;
   const [name, setName] = useState(editProfile?.name || '');
-  const [emoji, setEmoji] = useState(editProfile?.emoji || '😊');
+  const [photo, setPhoto] = useState(editProfile?.photo || null);
   const [color, setColor] = useState(editProfile?.color || '#60A5FA');
   const [since, setSince] = useState(editProfile?.since || '');
   const [notes, setNotes] = useState(editProfile?.notes || '');
   const [err, setErr] = useState('');
+  const fileRef = useRef(null);
+
+  function handlePhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setErr('照片太大，請選擇 2MB 以下的圖片'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => setPhoto(ev.target.result);
+    reader.readAsDataURL(file);
+  }
 
   function handleSave() {
     if (!name.trim()) { setErr('請輸入姓名'); return; }
     const profile = {
       id: editProfile?.id || genId(),
       name: name.trim(),
-      emoji,
+      photo,
       color,
       since,
       notes,
@@ -537,6 +656,8 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
     };
     onSave(profile);
   }
+
+  const previewProfile = { name, photo, color };
 
   return (
     <div className="fq-body">
@@ -546,13 +667,11 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
       </div>
       <div className="fq-form">
         {/* Preview */}
-        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:28, padding:'16px 20px', background:'var(--fq-card)', border:'1px solid var(--fq-border)', borderRadius:10 }}>
-          <div className="fq-avatar" style={{ width:56, height:56, fontSize:26, background: color + '33', borderColor: color }}>
-            {emoji}
-          </div>
+        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:28, padding:'16px 20px', background:'var(--bg1)', border:'1px solid var(--border)', borderRadius:10 }}>
+          <Avatar profile={previewProfile} size={56} />
           <div>
             <div style={{ fontSize:16, fontWeight:700 }}>{name || '(Name)'}</div>
-            <div style={{ fontSize:12, color:'var(--fq-muted)' }}>{since ? `Since ${fmtDate(since)}` : 'Friend since...'}</div>
+            <div style={{ fontSize:12, color:'var(--muted)' }}>{since ? `Since ${fmtDate(since)}` : 'Friend since...'}</div>
           </div>
         </div>
 
@@ -564,22 +683,23 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
             value={name}
             onChange={e => { setName(e.target.value); setErr(''); }}
           />
-          {err && <div style={{ color:'var(--fq-red)', fontSize:12, marginTop:6 }}>{err}</div>}
+          {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:6 }}>{err}</div>}
         </div>
 
         <div className="fq-form-row">
-          <label className="fq-label">Avatar Emoji</label>
-          <div className="fq-emoji-row">
-            {EMOJI_OPTIONS.map(e => (
-              <button
-                key={e}
-                className={`fq-emoji-opt${emoji === e ? ' selected' : ''}`}
-                onClick={() => setEmoji(e)}
-                type="button"
-              >
-                {e}
-              </button>
-            ))}
+          <label className="fq-label">照片</label>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div className="fq-photo-upload" onClick={() => fileRef.current?.click()} style={{ background: color + '22', borderColor: photo ? color : undefined }}>
+              {photo
+                ? <img src={photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                : <span className="fq-photo-upload-hint">點擊<br/>上傳</span>
+              }
+            </div>
+            <div>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>上傳朋友照片（PNG/JPG，最大 2MB）</div>
+              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>移除照片</button>}
+            </div>
           </div>
         </div>
 
@@ -630,6 +750,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
           )}
         </div>
       </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -639,7 +760,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 
 function SurveyView({ profile, onComplete, onCancel }) {
   const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState(Array(20).fill(null));
+  const [answers, setAnswers] = useState(Array(24).fill(null));
 
   const liveAnswers = answers.map(a => a !== null ? a : 0);
   const liveScores = calcScores(liveAnswers);
@@ -652,7 +773,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
   function handleNext() {
     if (answers[currentQ] === null) return;
-    if (currentQ < 19) {
+    if (currentQ < 23) {
       setCurrentQ(currentQ + 1);
     } else {
       // submit
@@ -695,9 +816,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 20 }}>
-        <div className="fq-avatar" style={{ background: profile.color + '33', borderColor: profile.color, width:32, height:32, fontSize:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid', flexShrink:0 }}>
-          {profile.emoji}
-        </div>
+        <Avatar profile={profile} size={32} />
         <h2 style={{ fontSize:14, letterSpacing:0 }}>{profile.name} — FQ Survey</h2>
         <div className="fq-line" />
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onCancel}>✕ Cancel</button>
@@ -713,7 +832,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
           <div className="fq-survey-dim-header" style={{ color: dimMeta.color }}>
             [{dimMeta.en.toUpperCase()}] {dimMeta.label}
           </div>
-          <div className="fq-survey-q-num">Question {currentQ + 1} of 20</div>
+          <div className="fq-survey-q-num">Question {currentQ + 1} of 24</div>
           <div className="fq-survey-q-text">{q.text}</div>
 
           <div className="fq-likert">
@@ -745,14 +864,14 @@ function SurveyView({ profile, onComplete, onCancel }) {
             >
               ← Prev
             </button>
-            <span className="fq-q-counter">{currentQ + 1} / 20</span>
+            <span className="fq-q-counter">{currentQ + 1} / 24</span>
             <button
               className="fq-btn fq-btn-primary"
               onClick={handleNext}
               disabled={answers[currentQ] === null}
               style={{ opacity: answers[currentQ] === null ? 0.5 : 1 }}
             >
-              {currentQ === 19 ? '完成 →' : 'Next →'}
+              {currentQ === 23 ? '完成 →' : 'Next →'}
             </button>
           </div>
         </div>
@@ -791,7 +910,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
           {/* progress dots */}
           <div className="fq-survey-q-dots">
-            {Array.from({ length: 20 }, (_, i) => (
+            {Array.from({ length: 24 }, (_, i) => (
               <div
                 key={i}
                 className={`fq-survey-q-dot${i === currentQ ? ' current' : answers[i] !== null ? ' answered' : ''}`}
@@ -801,11 +920,12 @@ function SurveyView({ profile, onComplete, onCancel }) {
               />
             ))}
           </div>
-          <div style={{ fontSize:11, color:'var(--fq-muted)', marginTop:8 }}>
-            {answers.filter(a => a !== null).length} / 20 answered
+          <div style={{ fontSize:11, color:'var(--muted)', marginTop:8 }}>
+            {answers.filter(a => a !== null).length} / 24 answered
           </div>
         </div>
       </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -822,12 +942,10 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
-        <div className="fq-avatar" style={{ background: profile.color + '33', borderColor: profile.color, width:32, height:32, fontSize:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid', flexShrink:0 }}>
-          {profile.emoji}
-        </div>
+        <Avatar profile={profile} size={32} />
         <h2 style={{ fontSize:14 }}>{profile.name} — Analysis Results</h2>
         <div className="fq-line" />
-        <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{fmtDate(survey.createdAt)}</span>
+        <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(survey.createdAt)}</span>
       </div>
 
       <div className="fq-results-layout">
@@ -865,7 +983,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
       <div className="fq-results-layout">
         {/* Dimension breakdown */}
         <div className="fq-card">
-          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
             Dimension Breakdown
           </div>
           <div className="fq-dim-breakdown">
@@ -874,11 +992,11 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
                 <div className="fq-dim-breakdown-top">
                   <span className="fq-dim-breakdown-name">
                     <span style={{ width:10, height:10, borderRadius:'50%', background: d.color, display:'inline-block' }} />
-                    {d.label} <span style={{ color:'var(--fq-muted)', fontWeight:400, fontSize:12 }}>({d.en})</span>
+                    {d.label} <span style={{ color:'var(--muted)', fontWeight:400, fontSize:12 }}>({d.en})</span>
                   </span>
                   <span className="fq-dim-breakdown-score" style={{ color: d.color }}>
                     {scores[d.key]}
-                    <span style={{ fontSize:12, fontWeight:400, color:'var(--fq-muted)' }}>/100</span>
+                    <span style={{ fontSize:12, fontWeight:400, color:'var(--muted)' }}>/100</span>
                   </span>
                 </div>
                 <div className="fq-dim-breakdown-track">
@@ -894,7 +1012,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
         {/* Suggestions */}
         <div className="fq-card">
-          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
             AI Suggestions
           </div>
           <div className="fq-flags">
@@ -906,8 +1024,8 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
             ))}
           </div>
           <div className="fq-divider" />
-          <div style={{ fontSize:11, color:'var(--fq-muted)', lineHeight:1.6 }}>
-            FQ Score is calculated as: F×20% + B×20% + S×25% + T×20% + St×15%
+          <div style={{ fontSize:11, color:'var(--muted)', lineHeight:1.6 }}>
+            FQ Score = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
           </div>
         </div>
       </div>
@@ -924,6 +1042,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           ← Dashboard
         </button>
       </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -931,7 +1050,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
-function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
+function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack, onLogUpdate }) {
   const profileSurveys = surveys
     .filter(s => s.profileId === profile.id)
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -952,17 +1071,16 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
         <h2>Friend Detail</h2>
         <div className="fq-line" />
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ Edit</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ Log</button>
         <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-          + New Survey
+          + Survey
         </button>
       </div>
 
       <div className="fq-detail-layout">
         {/* Sidebar */}
         <div className="fq-detail-sidebar fq-card">
-          <div className="fq-detail-avatar-big" style={{ background: profile.color + '33', borderColor: profile.color }}>
-            {profile.emoji}
-          </div>
+          <Avatar profile={profile} size={68} style={{ margin:'0 auto 14px', display:'flex' }} />
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
             {profile.since ? `Friends since ${fmtDate(profile.since)}` : 'Date not recorded'}
@@ -982,7 +1100,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
             </div>
           )}
 
-          <div style={{ borderTop:'1px solid var(--fq-border)', paddingTop:14 }}>
+          <div style={{ borderTop:'1px solid var(--border)', paddingTop:14 }}>
             {[
               ['Surveys taken', surveyCount],
               ['Avg score', avgScore !== null ? avgScore : '—'],
@@ -997,14 +1115,14 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
           </div>
 
           {profile.notes && (
-            <div style={{ marginTop:14, padding:'10px 12px', background:'var(--fq-surface)', borderRadius:7, fontSize:13, color:'var(--fq-muted)', lineHeight:1.6 }}>
+            <div style={{ marginTop:14, padding:'10px 12px', background:'var(--bg2)', borderRadius:7, fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
               {profile.notes}
             </div>
           )}
 
           {latest && (
             <div style={{ marginTop:16 }}>
-              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
                 Latest Dimensions
               </div>
               {DIM_META.map(d => (
@@ -1013,7 +1131,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                     <span style={{ color: d.color, fontWeight:600 }}>{d.label}</span>
                     <span style={{ fontWeight:700, color: d.color }}>{latest.scores[d.key]}</span>
                   </div>
-                  <div style={{ height:5, background:'var(--fq-border)', borderRadius:3, overflow:'hidden' }}>
+                  <div style={{ height:5, background:'var(--border)', borderRadius:3, overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${latest.scores[d.key]}%`, background: d.color, borderRadius:3, transition:'width 0.6s' }} />
                   </div>
                 </div>
@@ -1039,7 +1157,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
               <div className="fq-section-hdr" style={{ marginBottom:14 }}>
                 <h2>Latest Radar</h2>
                 <div className="fq-line" />
-                <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{fmtDate(latest.createdAt)}</span>
+                <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(latest.createdAt)}</span>
               </div>
               <div className="fq-card" style={{ display:'flex', justifyContent:'center', marginBottom:20 }}>
                 <RadarChart scores={latest.scores} size={280} />
@@ -1051,7 +1169,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
             <h2>Survey History</h2>
             <div className="fq-line" />
-            <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{surveyCount} records</span>
+            <span style={{ fontSize:12, color:'var(--muted)' }}>{surveyCount} records</span>
           </div>
 
           {profileSurveys.length === 0 ? (
@@ -1070,7 +1188,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                 const sType = getFriendshipType(s.scores);
                 return (
                   <div key={s.id} className="fq-survey-history-row">
-                    <span style={{ fontSize:11, color:'var(--fq-muted)', minWidth:24 }}>
+                    <span style={{ fontSize:11, color:'var(--muted)', minWidth:24 }}>
                       #{profileSurveys.length - idx}
                     </span>
                     <span className="fq-survey-history-date">{fmtDate(s.createdAt)}</span>
@@ -1087,7 +1205,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                       const diff = s.total - prev.total;
                       if (diff === 0) return null;
                       return (
-                        <span style={{ fontSize:12, color: diff > 0 ? 'var(--fq-green)' : 'var(--fq-red)', fontWeight:700, minWidth:32 }}>
+                        <span style={{ fontSize:12, color: diff > 0 ? 'var(--green)' : 'var(--red)', fontWeight:700, minWidth:32 }}>
                           {diff > 0 ? `+${diff}` : diff}
                         </span>
                       );
@@ -1097,8 +1215,50 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
               })}
             </div>
           )}
+
+          {/* Journal / Log entries */}
+          {(() => {
+            const profileJournals = (journals || [])
+              .filter(j => j.profileId === profile.id)
+              .sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt));
+            const moodMap = Object.fromEntries(MOODS.map(m => [m.key, m]));
+            return (
+              <>
+                <div className="fq-section-hdr" style={{ marginBottom:14, marginTop:24 }}>
+                  <h2>近況日誌</h2>
+                  <div className="fq-line" />
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ 新增</button>
+                </div>
+                {profileJournals.length === 0 ? (
+                  <div className="fq-empty" style={{ padding:'28px 20px' }}>
+                    <div className="fq-empty-title">尚無日誌紀錄</div>
+                    <div className="fq-empty-sub">隨時點擊「+ Log」記錄最新的互動感受。</div>
+                  </div>
+                ) : (
+                  <div className="fq-journal-list">
+                    {profileJournals.map(j => {
+                      const m = moodMap[j.mood] || { icon:'📝', label:j.mood };
+                      return (
+                        <div key={j.id} className="fq-journal-entry">
+                          <div className="fq-journal-mood-icon">{m.icon}</div>
+                          <div className="fq-journal-body">
+                            <div className="fq-journal-meta">
+                              <span className="fq-journal-date">{fmtDate(j.date || j.createdAt)}</span>
+                              <span className="fq-journal-mood-label">{m.label}</span>
+                            </div>
+                            <div className="fq-journal-text">{j.text}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -1110,14 +1270,19 @@ export default function FriendPage() {
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('yc_auth'));
   const [profiles, setProfiles] = useState(loadProfiles);
   const [surveys, setSurveys] = useState(loadSurveys);
+  const [journals, setJournals] = useState(loadJournals);
   const [view, setView] = useState('dashboard'); // dashboard | create | survey | results | detail
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
   const [lastSurvey, setLastSurvey] = useState(null);
+  const [logTarget, setLogTarget] = useState(null);
 
   // Persist on change
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => { saveSurveys(surveys); }, [surveys]);
+  useEffect(() => { saveJournals(journals); }, [journals]);
+
+  function handleLogSave(entry) { setJournals(prev => [entry, ...prev]); setLogTarget(null); }
 
   function handleAuth() { setAuthed(true); }
 
@@ -1158,6 +1323,7 @@ export default function FriendPage() {
     if (!editingProfile) return;
     setProfiles(prev => prev.filter(p => p.id !== editingProfile.id));
     setSurveys(prev => prev.filter(s => s.profileId !== editingProfile.id));
+    setJournals(prev => prev.filter(j => j.profileId !== editingProfile.id));
     goToDashboard();
   }
 
@@ -1188,9 +1354,11 @@ export default function FriendPage() {
         <DashboardView
           profiles={profiles}
           surveys={surveys}
+          journals={journals}
           onSelectFriend={handleSelectFriend}
           onCreateFriend={handleAddFriend}
           onStartSurvey={handleStartSurvey}
+          onLogUpdate={p => setLogTarget(p)}
         />
       )}
 
@@ -1230,11 +1398,14 @@ export default function FriendPage() {
         <DetailView
           profile={selectedProfile}
           surveys={surveys}
+          journals={journals}
           onEdit={() => handleEditProfile(selectedProfile)}
           onStartSurvey={handleStartSurvey}
           onBack={goToDashboard}
+          onLogUpdate={p => setLogTarget(p)}
         />
       )}
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
