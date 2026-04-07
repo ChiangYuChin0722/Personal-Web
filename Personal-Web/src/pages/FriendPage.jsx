@@ -372,7 +372,6 @@ function LineChart({ surveys }) {
           </text>
         ))}
       </svg>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -405,7 +404,6 @@ function Topbar({ view, onDashboard, onAddFriend }) {
       <a href="/secret" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
       </a>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -445,7 +443,6 @@ function AuthView({ onAuth }) {
           </button>
         </form>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -614,7 +611,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           })}
         </div>
       )}
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -748,7 +744,6 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
           )}
         </div>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -923,7 +918,6 @@ function SurveyView({ profile, onComplete, onCancel }) {
           </div>
         </div>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -1040,7 +1034,6 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           ← Dashboard
         </button>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
@@ -1256,7 +1249,6 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
           })()}
         </div>
       </div>
-      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
   );
 }
