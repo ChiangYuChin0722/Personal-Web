@@ -2,10 +2,20 @@ import './FriendPage.css';
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 
 const LangCtx = createContext('zh');
+const GroupsCtx = createContext([]);
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RAINBOW_COLORS = ['#EF4444','#F97316','#EAB308','#22C55E','#3B82F6','#6366F1','#A855F7'];
+
+const DEFAULT_GROUPS = [
+  { id:'hs',     zh:'高中',   en:'High School', color:'#60A5FA' },
+  { id:'uni',    zh:'大學',   en:'University',  color:'#34D399' },
+  { id:'work',   zh:'工作',   en:'Work',        color:'#F97316' },
+  { id:'fam',    zh:'家人',   en:'Family',      color:'#F472B6' },
+  { id:'online', zh:'網友',   en:'Online',      color:'#A855F7' },
+  { id:'other',  zh:'其他',   en:'Other',       color:'#94A3B8' },
+];
 const THIS_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: THIS_YEAR - 1989 }, (_, i) => THIS_YEAR - i);
 
@@ -150,16 +160,40 @@ function loadJournals() {
   try { return JSON.parse(localStorage.getItem('fq_journals') || '[]'); } catch { return []; }
 }
 function saveJournals(j) { localStorage.setItem('fq_journals', JSON.stringify(j)); }
-function loadColorTags() {
-  try { return JSON.parse(localStorage.getItem('fq_color_tags') || '[]'); } catch { return []; }
+function loadCustomGroups() {
+  try { return JSON.parse(localStorage.getItem('fq_groups') || '[]'); } catch { return []; }
 }
-function saveColorTags(t) { localStorage.setItem('fq_color_tags', JSON.stringify(t)); }
+function saveCustomGroups(g) { localStorage.setItem('fq_groups', JSON.stringify(g)); }
 
+
+// ─── Group & Birthday helpers ─────────────────────────────────────────────────
+
+function getGroupById(id, customGroups = []) {
+  if (!id) return null;
+  return [...DEFAULT_GROUPS, ...customGroups].find(g => g.id === id) || null;
+}
+function getProfileColor(profile, customGroups = []) {
+  const g = getGroupById(profile.groupId, customGroups);
+  return g ? g.color : (profile.color || '#60A5FA');
+}
+function birthdayCountdown(birthday) {
+  if (!birthday?.month || !birthday?.day) return null;
+  const today = new Date();
+  const m = parseInt(birthday.month), d = parseInt(birthday.day);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next <= today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.ceil((next - today) / 86400000);
+}
+function birthdayStr(birthday) {
+  if (!birthday?.month || !birthday?.day) return null;
+  return `${String(birthday.month).padStart(2,'0')}/${String(birthday.day).padStart(2,'0')}`;
+}
 
 // ─── Avatar component ─────────────────────────────────────────────────────────
 
 function Avatar({ profile, size = 40, style: extra = {} }) {
-  const color = profile.color || '#2563eb';
+  const customGroups = useContext(GroupsCtx);
+  const color = getProfileColor(profile, customGroups);
   return (
     <div
       className="fq-avatar"
@@ -509,8 +543,14 @@ function AuthView({ onAuth }) {
 
 function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
   const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const [showGuide, setShowGuide] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterGroup, setFilterGroup] = useState('');
+  const [filterTier, setFilterTier] = useState('');
+  const [sortBy, setSortBy] = useState('score');
+  const [compareIds, setCompareIds] = useState([]);
 
   // KPI calculations
   function getLatestSurvey(profileId) {
@@ -535,6 +575,57 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   const sortedRecent = [...surveys].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
   const mostRecentSurvey = sortedRecent[0] || null;
   const mostRecentProfile = mostRecentSurvey ? profiles.find(p => p.id === mostRecentSurvey.profileId) : null;
+
+  // Filtered + sorted profiles
+  const filteredProfiles = profiles
+    .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => !filterGroup || p.groupId === filterGroup)
+    .filter(p => {
+      if (!filterTier) return true;
+      const s = getLatestSurvey(p.id);
+      return s && getScoreTier(s.total).tier === filterTier;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'score') {
+        const sa = getLatestSurvey(a.id)?.total ?? -1;
+        const sb = getLatestSurvey(b.id)?.total ?? -1;
+        return sb - sa;
+      }
+      if (sortBy === 'recent') {
+        const sa = getLatestSurvey(a.id)?.createdAt ?? '';
+        const sb = getLatestSurvey(b.id)?.createdAt ?? '';
+        return sb.localeCompare(sa);
+      }
+      if (sortBy === 'birthday') {
+        const da = birthdayCountdown(a.birthday) ?? 999;
+        const db = birthdayCountdown(b.birthday) ?? 999;
+        return da - db;
+      }
+      return 0;
+    });
+
+  // Overall trend: average score per survey date
+  const trendData = (() => {
+    if (surveys.length < 2) return [];
+    const sorted = [...surveys].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+    // group by month
+    const byMonth = {};
+    sorted.forEach(s => {
+      const key = s.createdAt.slice(0,7);
+      if (!byMonth[key]) byMonth[key] = [];
+      byMonth[key].push(s.total);
+    });
+    return Object.entries(byMonth).map(([month, scores]) => ({
+      label: month,
+      avg: Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),
+    }));
+  })();
+
+  // Compare panels
+  function toggleCompare(pid) {
+    setCompareIds(prev => prev.includes(pid) ? prev.filter(x=>x!==pid) : prev.length < 2 ? [...prev,pid] : [prev[1], pid]);
+  }
 
   // Type distribution
   const typeCounts = {};
@@ -627,6 +718,62 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               )}
             </div>
           </div>
+
+          {/* Birthday reminders */}
+          {(() => {
+            const upcoming = profiles
+              .map(p => ({ p, days: birthdayCountdown(p.birthday) }))
+              .filter(x => x.days !== null && x.days <= 30)
+              .sort((a,b) => a.days - b.days);
+            if (!upcoming.length) return null;
+            return (
+              <div className="fq-card">
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                  🎂 {t('即將生日','Upcoming Birthdays')}
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  {upcoming.map(({ p, days }) => (
+                    <div key={p.id} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
+                      <span style={{ fontWeight:600 }}>{p.name}</span>
+                      <span style={{ color: days <= 7 ? '#F87171' : 'var(--muted)' }}>
+                        {days === 0 ? t('今天！','Today!') : `${days}${t('天後','d')}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Overall trend mini chart */}
+          {trendData.length >= 2 && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>
+                {t('整體趨勢','Overall Trend')}
+              </div>
+              <svg width="100%" viewBox="0 0 220 70" style={{ display:'block', overflow:'visible' }}>
+                {(() => {
+                  const W=220,H=55,PL=8,PR=8,PT=6,PB=4;
+                  const vals = trendData.map(d=>d.avg);
+                  const minV = Math.min(...vals), maxV = Math.max(...vals);
+                  const range = maxV - minV || 1;
+                  const n = vals.length;
+                  const x = i => PL + (i/(n-1))*(W-PL-PR);
+                  const y = v => PT + (1 - (v-minV)/range)*(H-PT-PB);
+                  const pts = vals.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+                  return (
+                    <>
+                      <polyline points={pts} fill="none" stroke="#22D3EE" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+                      <polygon points={`${x(0)},${H} ${pts} ${x(n-1)},${H}`} fill="rgba(34,211,238,0.08)"/>
+                      {vals.map((v,i) => <circle key={i} cx={x(i)} cy={y(v)} r={3} fill="#22D3EE"/>)}
+                      <text x={x(n-1)} y={y(vals[n-1])-6} fontSize="10" fill="#22D3EE" textAnchor="middle">{vals[n-1]}</text>
+                    </>
+                  );
+                })()}
+              </svg>
+              <div style={{ fontSize:10, color:'var(--dim)', marginTop:2 }}>{t('各月平均 FQ','Monthly avg FQ')}</div>
+            </div>
+          )}
         </div>
 
         {/* ── Right panel ── */}
@@ -702,9 +849,121 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
             )}
           </div>
 
+          {/* Search + Filter bar */}
+          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
+            <input
+              className="fq-input"
+              style={{ flex:'1 1 140px', minWidth:120, padding:'7px 12px', fontSize:13 }}
+              placeholder={t('搜尋朋友…','Search friends…')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <select className="fq-input" style={{ width:120, padding:'7px 10px', fontSize:12 }} value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+              <option value="">{t('所有分組','All Groups')}</option>
+              {[...DEFAULT_GROUPS, ...customGroups].map(g => <option key={g.id} value={g.id}>{lang==='zh'?g.zh:g.en}</option>)}
+            </select>
+            <select className="fq-input" style={{ width:100, padding:'7px 10px', fontSize:12 }} value={filterTier} onChange={e => setFilterTier(e.target.value)}>
+              <option value="">{t('所有等級','All Tiers')}</option>
+              {['S','A','B','C','D','F'].map(tier => <option key={tier} value={tier}>Tier {tier}</option>)}
+            </select>
+            <select className="fq-input" style={{ width:110, padding:'7px 10px', fontSize:12 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="score">{t('依分數','By Score')}</option>
+              <option value="name">{t('依名字','By Name')}</option>
+              <option value="recent">{t('最近測驗','Last Survey')}</option>
+              <option value="birthday">{t('依生日','By Birthday')}</option>
+            </select>
+            <button
+              className={`fq-btn fq-btn-sm${compareIds.length > 0 ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
+              onClick={() => setCompareIds([])}
+              title={t('清除比較選擇','Clear compare')}
+              style={{ whiteSpace:'nowrap' }}
+            >
+              ⊕ {t('比較','Compare')} {compareIds.length > 0 ? `(${compareIds.length}/2)` : ''}
+            </button>
+          </div>
+
+          {/* Compare Panel */}
+          {compareIds.length === 2 && (() => {
+            const [pa, pb] = compareIds.map(id => profiles.find(p=>p.id===id)).filter(Boolean);
+            if (!pa || !pb) return null;
+            const sa = getLatestSurvey(pa.id), sb = getLatestSurvey(pb.id);
+            return (
+              <div className="fq-card" style={{ marginBottom:16, background:'var(--bg2)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                  <div style={{ fontSize:13, fontWeight:700 }}>⊕ {t('比較','Comparison')}: {pa.name} vs {pb.name}</div>
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setCompareIds([])}>✕</button>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:8, alignItems:'start' }}>
+                  {/* Left friend */}
+                  <div style={{ textAlign:'center' }}>
+                    <Avatar profile={pa} size={44} style={{ margin:'0 auto 6px' }} />
+                    <div style={{ fontWeight:700, fontSize:14 }}>{pa.name}</div>
+                    {sa ? <div style={{ fontSize:22, fontWeight:900, color: getScoreTier(sa.total).color }}>{sa.total}</div> : <div style={{ color:'var(--muted)', fontSize:13 }}>N/A</div>}
+                  </div>
+                  {/* Radar overlay */}
+                  <div style={{ display:'flex', flexDirection:'column', gap:10, alignItems:'center' }}>
+                    {sa && sb && (
+                      <svg width="180" height="180" viewBox="0 0 180 180" style={{ overflow:'visible' }}>
+                        {(() => {
+                          const cx=90, cy=90, maxR=62;
+                          const angles = DIM_META.map((_,i)=>(i*360)/6);
+                          const pol = (angleDeg, r) => {
+                            const rad = ((angleDeg-90)*Math.PI)/180;
+                            return {x: cx+r*Math.cos(rad), y: cy+r*Math.sin(rad)};
+                          };
+                          const grid = [0.25,0.5,0.75,1.0].map(f=>angles.map(a=>{ const p=pol(a,maxR*f); return `${p.x},${p.y}`; }).join(' '));
+                          const mkPts = scores => DIM_META.map((d,i) => { const p=pol(angles[i], maxR*Math.max((scores[d.key]||0)/100,0.02)); return `${p.x},${p.y}`; }).join(' ');
+                          return (
+                            <>
+                              {grid.map((pts,i)=><polygon key={i} points={pts} fill="none" stroke="var(--grid-line)" strokeWidth="1"/>)}
+                              {angles.map((a,i)=>{ const p=pol(a,maxR); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--grid-line)" strokeWidth="1"/>; })}
+                              <polygon points={mkPts(sa.scores)} fill="rgba(34,211,238,0.15)" stroke="#22D3EE" strokeWidth="2"/>
+                              <polygon points={mkPts(sb.scores)} fill="rgba(139,92,246,0.15)" stroke="#8B5CF6" strokeWidth="2"/>
+                              {DIM_META.map((d,i)=>{ const lp=pol(angles[i],maxR+16); return <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={d.color}>{d.key}</text>; })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    )}
+                    <div style={{ display:'flex', gap:12, fontSize:11 }}>
+                      <span style={{ color:'#22D3EE' }}>■ {pa.name}</span>
+                      <span style={{ color:'#8B5CF6' }}>■ {pb.name}</span>
+                    </div>
+                  </div>
+                  {/* Right friend */}
+                  <div style={{ textAlign:'center' }}>
+                    <Avatar profile={pb} size={44} style={{ margin:'0 auto 6px' }} />
+                    <div style={{ fontWeight:700, fontSize:14 }}>{pb.name}</div>
+                    {sb ? <div style={{ fontSize:22, fontWeight:900, color: getScoreTier(sb.total).color }}>{sb.total}</div> : <div style={{ color:'var(--muted)', fontSize:13 }}>N/A</div>}
+                  </div>
+                </div>
+                {/* Dim comparison table */}
+                {sa && sb && (
+                  <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:4 }}>
+                    {DIM_META.map(d => {
+                      const va = sa.scores[d.key], vb = sb.scores[d.key];
+                      const max = Math.max(va, vb);
+                      return (
+                        <div key={d.key} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12 }}>
+                          <span style={{ color:d.color, fontWeight:700, minWidth:28 }}>{d.key}</span>
+                          <span style={{ minWidth:28, textAlign:'right', fontWeight: va>=vb?700:400, color: va>=vb?'#22D3EE':'var(--muted)' }}>{va}</span>
+                          <div style={{ flex:1, height:6, background:'var(--bg3)', borderRadius:3, overflow:'hidden', position:'relative' }}>
+                            <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${(va/90)*100}%`, background:'#22D3EE', borderRadius:3, opacity:0.7 }}/>
+                            <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${(vb/90)*100}%`, background:'#8B5CF6', borderRadius:3, opacity:0.5 }}/>
+                          </div>
+                          <span style={{ minWidth:28, fontWeight: vb>=va?700:400, color: vb>=va?'#8B5CF6':'var(--muted)' }}>{vb}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Friend Grid */}
           <div className="fq-section-hdr">
-            <h2>{t('朋友列表', 'Friend Profiles')}</h2>
+            <h2>{t('朋友列表', 'Friend Profiles')} {filteredProfiles.length < profiles.length ? `(${filteredProfiles.length}/${profiles.length})` : `(${profiles.length})`}</h2>
             <div className="fq-line" />
             <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onCreateFriend}>
               + {t('新增', 'New')}
@@ -718,14 +977,22 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               <div className="fq-empty-sub">{t('新增第一個朋友，開始量化你的友誼。', 'Add your first friend to start quantifying your relationships.')}</div>
               <button className="fq-btn fq-btn-primary" onClick={onCreateFriend}>+ {t('建立第一個', 'Create First Profile')}</button>
             </div>
+          ) : filteredProfiles.length === 0 ? (
+            <div className="fq-empty" style={{ padding:'32px 20px' }}>
+              <div className="fq-empty-title">{t('找不到符合條件的朋友', 'No matches found')}</div>
+              <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => { setSearch(''); setFilterGroup(''); setFilterTier(''); }}>{t('清除篩選','Clear filters')}</button>
+            </div>
           ) : (
             <div className="fq-friend-grid">
-              {profiles.map(p => {
+              {filteredProfiles.map(p => {
                 const latest = getLatestSurvey(p.id);
                 const tier = latest ? getScoreTier(latest.total) : null;
                 const type = latest ? getFriendshipType(latest.scores) : null;
+                const group = getGroupById(p.groupId, customGroups);
+                const bdays = birthdayCountdown(p.birthday);
+                const inCompare = compareIds.includes(p.id);
                 return (
-                  <div key={p.id} className="fq-friend-card" onClick={() => onSelectFriend(p)}>
+                  <div key={p.id} className={`fq-friend-card${inCompare ? ' fq-compare-selected' : ''}`} onClick={() => onSelectFriend(p)}>
                     {type && (
                       <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
                         {type.key}
@@ -736,8 +1003,9 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                       <div>
                         <div className="fq-friend-name">{p.name}</div>
                         <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
-                          {p.colorTag && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background: p.color+'22', color: p.color, fontWeight:700 }}>{p.colorTag}</span>}
+                          {group && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background:group.color+'22', color:group.color, fontWeight:700 }}>{lang==='zh'?group.zh:group.en}</span>}
                           <span>{p.since ? `${t('認識於','Since')} ${p.since}` : t('年份不詳','Year unknown')}</span>
+                          {bdays !== null && bdays <= 30 && <span style={{ color: bdays<=7?'#F87171':'var(--muted)', fontWeight:600, fontSize:11 }}>🎂 {bdays===0?t('今天！','Today!'):bdays+t('天','d')}</span>}
                           {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} {t('則日誌','logs')}</span> : null; })()}
                         </div>
                       </div>
@@ -769,6 +1037,13 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                       <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
                         + {t('日誌', 'Log')}
                       </button>
+                      <button
+                        className={`fq-btn fq-btn-sm${inCompare ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
+                        onClick={e => { e.stopPropagation(); toggleCompare(p.id); }}
+                        style={{ marginLeft:'auto', padding:'4px 8px', fontSize:11 }}
+                      >
+                        ⊕
+                      </button>
                     </div>
                   </div>
                 );
@@ -784,23 +1059,24 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
 
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
-function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddColorTag }) {
+function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const isEdit = !!editProfile;
   const [name,      setName]      = useState(editProfile?.name      || '');
   const [photo,     setPhoto]     = useState(editProfile?.photo     || null);
-  const [color,     setColor]     = useState(editProfile?.color     || '#60A5FA');
-  const [colorTag,  setColorTag]  = useState(editProfile?.colorTag  || '');
+  const [groupId,   setGroupId]   = useState(editProfile?.groupId   || '');
   const [since,     setSince]     = useState(editProfile?.since     || '');
   const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
+  const [birthday,  setBirthday]  = useState(editProfile?.birthday  || { month:'', day:'' });
   const [err, setErr]             = useState('');
   const fileRef = useRef(null);
 
-  // new tag form
-  const [showTagForm,  setShowTagForm]  = useState(false);
-  const [newTagLabel,  setNewTagLabel]  = useState('');
-  const [newTagColor,  setNewTagColor]  = useState(RAINBOW_COLORS[4]);
+  // new custom group form
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [newGroupLabel, setNewGroupLabel] = useState('');
+  const [newGroupColor, setNewGroupColor] = useState(RAINBOW_COLORS[4]);
 
   // new key event form
   const [evtYear, setEvtYear] = useState('');
@@ -815,17 +1091,13 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
     reader.readAsDataURL(file);
   }
 
-  function selectTag(tag) {
-    setColor(tag.color);
-    setColorTag(tag.label);
-  }
-
-  function addNewTag() {
-    if (!newTagLabel.trim()) return;
-    const tag = { id: genId(), label: newTagLabel.trim(), color: newTagColor };
-    onAddColorTag(tag);
-    selectTag(tag);
-    setShowTagForm(false); setNewTagLabel(''); setNewTagColor(RAINBOW_COLORS[4]);
+  function addNewGroup() {
+    if (!newGroupLabel.trim()) return;
+    // parent will receive via onSave; we store in context via GroupsCtx parent update
+    const g = { id: genId(), zh: newGroupLabel.trim(), en: newGroupLabel.trim(), color: newGroupColor };
+    // bubble up via a callback - we embed it into profile save payload
+    setGroupId('__new__' + JSON.stringify(g));
+    setShowGroupForm(false); setNewGroupLabel(''); setNewGroupColor(RAINBOW_COLORS[4]);
   }
 
   function addEvent() {
@@ -840,15 +1112,29 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
 
   function handleSave() {
     if (!name.trim()) { setErr('Name is required'); return; }
+    let resolvedGroupId = groupId;
+    let newCustomGroup = null;
+    if (groupId.startsWith('__new__')) {
+      try { newCustomGroup = JSON.parse(groupId.replace('__new__','').trim()); resolvedGroupId = newCustomGroup.id; } catch {}
+    }
+    const group = getGroupById(resolvedGroupId, customGroups);
+    const color = group ? group.color : '#60A5FA';
     onSave({
       id: editProfile?.id || genId(),
-      name: name.trim(), photo, color, colorTag,
-      since, keyEvents,
+      name: name.trim(), photo, color, groupId: resolvedGroupId || '',
+      since, keyEvents, birthday,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
+      _newGroup: newCustomGroup,
     });
   }
 
-  const previewProfile = { name, photo, color };
+  const resolvedColor = (() => {
+    if (groupId.startsWith('__new__')) {
+      try { return JSON.parse(groupId.replace('__new__','').trim()).color; } catch {}
+    }
+    return getGroupById(groupId, customGroups)?.color || '#60A5FA';
+  })();
+  const previewProfile = { name, photo, color: resolvedColor, groupId };
 
   return (
     <div className="fq-body">
@@ -863,8 +1149,9 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
           <div>
             <div style={{ fontSize:16, fontWeight:700 }}>{name || '(Name)'}</div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
-              {colorTag && <span style={{ fontSize:11, padding:'2px 8px', borderRadius:10, background: color+'22', color, fontWeight:700, border:`1px solid ${color}` }}>{colorTag}</span>}
+              {groupId && !groupId.startsWith('__new__') && (() => { const g = getGroupById(groupId, customGroups); return g ? <span style={{ fontSize:11, padding:'2px 8px', borderRadius:10, background:g.color+'22', color:g.color, fontWeight:700, border:`1px solid ${g.color}` }}>{lang==='zh'?g.zh:g.en}</span> : null; })()}
               <span style={{ fontSize:12, color:'var(--muted)' }}>{since ? `${t('認識於','Since')} ${since}` : t('年份不詳','Year unknown')}</span>
+              {birthday?.month && birthday?.day && <span style={{ fontSize:12, color:'var(--muted)' }}>🎂 {birthdayStr(birthday)}</span>}
             </div>
           </div>
         </div>
@@ -895,42 +1182,62 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
           </div>
         </div>
 
-        {/* Profile Tag (color + label) */}
+        {/* Relationship Group */}
         <div className="fq-form-row">
-          <label className="fq-label">Profile Tag</label>
+          <label className="fq-label">{t('關係分組','Relationship Group')}</label>
           <div className="fq-tag-picker">
-            {colorTags.map(tag => (
-              <button key={tag.id} type="button"
-                className={`fq-tag-chip${color === tag.color && colorTag === tag.label ? ' selected' : ''}`}
-                style={{ '--tc': tag.color }}
-                onClick={() => selectTag(tag)}>
-                {tag.label}
+            {[...DEFAULT_GROUPS, ...customGroups].map(g => (
+              <button key={g.id} type="button"
+                className={`fq-tag-chip${groupId === g.id ? ' selected' : ''}`}
+                style={{ '--tc': g.color }}
+                onClick={() => setGroupId(groupId === g.id ? '' : g.id)}>
+                {lang==='zh' ? g.zh : g.en}
               </button>
             ))}
-            {showTagForm ? (
+            {showGroupForm ? (
               <div className="fq-tag-add-form">
                 <div style={{ display:'flex', gap:4, flexShrink:0 }}>
                   {RAINBOW_COLORS.map(c => (
-                    <button key={c} type="button" onClick={() => setNewTagColor(c)}
-                      style={{ width:18, height:18, borderRadius:'50%', background:c, border: newTagColor===c ? '2.5px solid var(--text)' : '2.5px solid transparent', cursor:'pointer', padding:0, flexShrink:0 }} />
+                    <button key={c} type="button" onClick={() => setNewGroupColor(c)}
+                      style={{ width:18, height:18, borderRadius:'50%', background:c, border: newGroupColor===c ? '2.5px solid var(--text)' : '2.5px solid transparent', cursor:'pointer', padding:0, flexShrink:0 }} />
                   ))}
                 </div>
-                <input value={newTagLabel} onChange={e => setNewTagLabel(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addNewTag()}
-                  placeholder="Tag name" className="fq-tag-label-inp" autoFocus />
-                <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewTag}>✓</button>
-                <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowTagForm(false)}>✕</button>
+                <input value={newGroupLabel} onChange={e => setNewGroupLabel(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addNewGroup()}
+                  placeholder={t('自訂分組名稱','Group name')} className="fq-tag-label-inp" autoFocus />
+                <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewGroup}>✓</button>
+                <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowGroupForm(false)}>✕</button>
               </div>
             ) : (
-              <button type="button" className="fq-tag-chip fq-tag-chip-add" onClick={() => setShowTagForm(true)}>＋ New Tag</button>
+              <button type="button" className="fq-tag-chip fq-tag-chip-add" onClick={() => setShowGroupForm(true)}>＋ {t('自訂','Custom')}</button>
             )}
           </div>
-          {colorTag && (
+          {groupId && !groupId.startsWith('__new__') && (
             <div style={{ marginTop:6, fontSize:12, color:'var(--muted)' }}>
-              Selected: <span style={{ color, fontWeight:700 }}>{colorTag}</span>
-              <button type="button" onClick={() => { setColorTag(''); }} style={{ marginLeft:8, fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer' }}>clear</button>
+              <button type="button" onClick={() => setGroupId('')} style={{ fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer' }}>{t('清除','clear')}</button>
             </div>
           )}
+        </div>
+
+        {/* Birthday */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('生日（月/日）','Birthday (M/D)')}</label>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <select className="fq-input" style={{ width:110 }} value={birthday.month}
+              onChange={e => setBirthday(b => ({ ...b, month: e.target.value }))}>
+              <option value="">{t('月份','Month')}</option>
+              {Array.from({length:12},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}</option>)}
+            </select>
+            <span style={{ color:'var(--muted)' }}>/</span>
+            <select className="fq-input" style={{ width:110 }} value={birthday.day}
+              onChange={e => setBirthday(b => ({ ...b, day: e.target.value }))}>
+              <option value="">{t('日期','Day')}</option>
+              {Array.from({length:31},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}</option>)}
+            </select>
+            {(birthday.month || birthday.day) && (
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setBirthday({month:'',day:''})}>{t('清除','clear')}</button>
+            )}
+          </div>
         </div>
 
         {/* Friends Since (year only) */}
@@ -1165,13 +1472,17 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
 // ─── Results View ──────────────────────────────────────────────────────────────
 
-function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
+function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail }) {
   const lang = useContext(LangCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const { scores } = survey;
   const tier = getScoreTier(scores.total);
   const type = getFriendshipType(scores);
   const suggestions = getSuggestions(scores);
+  // Previous survey for delta
+  const prevSurvey = (surveys || [])
+    .filter(s => s.profileId === profile.id && s.id !== survey.id)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
 
   return (
     <div className="fq-body">
@@ -1190,6 +1501,11 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           </div>
           <div className="fq-results-tier" style={{ color: tier.color }}>
             TIER {tier.tier} — FQ SCORE
+            {prevSurvey && (() => {
+              const diff = scores.total - prevSurvey.total;
+              if (diff === 0) return null;
+              return <span style={{ fontSize:14, marginLeft:8, color: diff>0?'var(--green)':'var(--red)', fontWeight:700 }}>{diff>0?'+':''}{diff}</span>;
+            })()}
           </div>
           <div style={{
             display:'inline-block',
@@ -1231,6 +1547,11 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
                   <span className="fq-dim-breakdown-score" style={{ color: d.color }}>
                     {scores[d.key]}
                     <span style={{ fontSize:12, fontWeight:400, color:'var(--muted)' }}>/100</span>
+                    {prevSurvey && (() => {
+                      const diff = scores[d.key] - prevSurvey.scores[d.key];
+                      if (diff === 0) return null;
+                      return <span style={{ fontSize:11, marginLeft:4, color: diff>0?'var(--green)':'var(--red)', fontWeight:700 }}>{diff>0?'+':''}{diff}</span>;
+                    })()}
                   </span>
                 </div>
                 <div className="fq-dim-breakdown-track">
@@ -1285,7 +1606,10 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
 function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate }) {
   const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
+  const group = getGroupById(profile.groupId, customGroups);
+  const bdays = birthdayCountdown(profile.birthday);
   const profileSurveys = surveys
     .filter(s => s.profileId === profile.id)
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1322,6 +1646,14 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
             {profile.since ? `${t('認識於','Friends since')} ${profile.since}` : t('年份未記錄','Year not recorded')}
+          </div>
+          <div style={{ display:'flex', justifyContent:'center', gap:8, flexWrap:'wrap', marginBottom:14 }}>
+            {group && <span style={{ fontSize:12, padding:'2px 10px', borderRadius:10, background:group.color+'22', color:group.color, fontWeight:700, border:`1px solid ${group.color}44` }}>{lang==='zh'?group.zh:group.en}</span>}
+            {profile.birthday?.month && profile.birthday?.day && (
+              <span style={{ fontSize:12, padding:'2px 10px', borderRadius:10, background:'var(--bg2)', color: bdays!==null&&bdays<=7?'#F87171':'var(--muted)', fontWeight:600, border:'1px solid var(--border)' }}>
+                🎂 {birthdayStr(profile.birthday)}{bdays!==null&&bdays<=30?' · '+(bdays===0?t('今天！','Today!'):bdays+t('天後','d')):''}
+              </span>
+            )}
           </div>
 
           {latest && (
@@ -1546,7 +1878,7 @@ export default function FriendPage() {
   const [profiles,   setProfiles]   = useState(loadProfiles);
   const [surveys,    setSurveys]    = useState(loadSurveys);
   const [journals,   setJournals]   = useState(loadJournals);
-  const [colorTags,  setColorTags]  = useState(loadColorTags);
+  const [customGroups, setCustomGroups] = useState(loadCustomGroups);
   const [view, setView] = useState('dashboard'); // dashboard | create | survey | results | detail
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
@@ -1559,11 +1891,11 @@ export default function FriendPage() {
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => { saveSurveys(surveys); }, [surveys]);
   useEffect(() => { saveJournals(journals); }, [journals]);
-  useEffect(() => { saveColorTags(colorTags); }, [colorTags]);
+  useEffect(() => { saveCustomGroups(customGroups); }, [customGroups]);
   useEffect(() => { localStorage.setItem('fq_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('fq_dark', String(darkMode)); }, [darkMode]);
 
-  function handleAddColorTag(tag) { setColorTags(prev => [...prev, tag]); }
+  function handleAddGroup(group) { setCustomGroups(prev => [...prev, group]); }
   function toggleLang() { setLang(l => l === 'zh' ? 'en' : 'zh'); }
   function toggleDark() { setDarkMode(d => !d); }
 
@@ -1603,12 +1935,16 @@ export default function FriendPage() {
   }
 
   function handleSaveProfile(profile) {
-    if (editingProfile) {
-      setProfiles(prev => prev.map(p => p.id === profile.id ? profile : p));
-    } else {
-      setProfiles(prev => [...prev, profile]);
+    if (profile._newGroup) {
+      setCustomGroups(prev => [...prev, profile._newGroup]);
     }
-    setSelectedProfile(profile);
+    const { _newGroup, ...cleanProfile } = profile;
+    if (editingProfile) {
+      setProfiles(prev => prev.map(p => p.id === cleanProfile.id ? cleanProfile : p));
+    } else {
+      setProfiles(prev => [...prev, cleanProfile]);
+    }
+    setSelectedProfile(cleanProfile);
     setEditingProfile(null);
     setView('detail');
   }
@@ -1639,9 +1975,11 @@ export default function FriendPage() {
       </div>
     );
   }
+  // also pass surveys to DashboardView (already done in render)
 
   return (
     <LangCtx.Provider value={lang}>
+    <GroupsCtx.Provider value={customGroups}>
     <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
       <Topbar
         view={view}
@@ -1674,8 +2012,6 @@ export default function FriendPage() {
             else { goToDashboard(); }
           }}
           onDelete={handleDeleteProfile}
-          colorTags={colorTags}
-          onAddColorTag={handleAddColorTag}
         />
       )}
 
@@ -1692,6 +2028,7 @@ export default function FriendPage() {
       {view === 'results' && lastSurvey && selectedProfile && (
         <ResultsView
           survey={lastSurvey}
+          surveys={surveys}
           profile={selectedProfile}
           onDone={goToDashboard}
           onRetake={() => setView('survey')}
@@ -1720,6 +2057,7 @@ export default function FriendPage() {
       )}
       {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
+    </GroupsCtx.Provider>
     </LangCtx.Provider>
   );
 }
