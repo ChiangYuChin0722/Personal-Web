@@ -187,10 +187,16 @@ function LogModal({ profile, onSave, onClose }) {
   const [mood, setMood] = useState('good');
   const [date, setDate] = useState(today);
   const [text, setText] = useState('');
+  const [markEvent, setMarkEvent] = useState(false);
+  const [eventYear, setEventYear] = useState(String(new Date().getFullYear()));
 
   function handleSave() {
     if (!text.trim()) return;
-    onSave({ id: genId(), profileId: profile.id, mood, date, text: text.trim(), createdAt: new Date().toISOString() });
+    onSave({
+      id: genId(), profileId: profile.id, mood, date,
+      text: text.trim(), createdAt: new Date().toISOString(),
+      keyEvent: markEvent ? { year: eventYear, text: text.trim() } : null,
+    });
   }
 
   return (
@@ -221,10 +227,30 @@ function LogModal({ profile, onSave, onClose }) {
             placeholder={t('記錄最近的互動、對方的近況、你的感覺...', 'Record your recent interaction, updates, feelings...')}
             value={text}
             onChange={e => setText(e.target.value)}
-            rows={5}
+            rows={4}
             autoFocus
           />
         </div>
+
+        {/* Mark as Key Event toggle */}
+        <div className="fq-form-row">
+          <button
+            type="button"
+            className={`fq-key-event-toggle${markEvent ? ' active' : ''}`}
+            onClick={() => setMarkEvent(v => !v)}
+          >
+            📌 {t('同時記為重要事件', 'Also mark as Key Event')}
+          </button>
+          {markEvent && (
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:8 }}>
+              <label className="fq-label" style={{ margin:0, whiteSpace:'nowrap' }}>{t('年份', 'Year')}</label>
+              <select className="fq-input" style={{ width:110 }} value={eventYear} onChange={e => setEventYear(e.target.value)}>
+                {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+
         <div className="fq-row" style={{ gap:10 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave} disabled={!text.trim()} style={{ opacity: text.trim()?1:0.5 }}>
             ✓ {t('儲存紀錄', 'Save Log')}
@@ -1367,6 +1393,31 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
 
         {/* Main content */}
         <div>
+          {/* Key Events Timeline */}
+          {profile.keyEvents && profile.keyEvents.length > 0 && (
+            <>
+              <div className="fq-section-hdr" style={{ marginBottom:14 }}>
+                <h2>{t('重要事件','Key Events')}</h2>
+                <div className="fq-line" />
+                <span style={{ fontSize:12, color:'var(--muted)' }}>{profile.keyEvents.length} {t('筆','events')}</span>
+              </div>
+              <div className="fq-card fq-key-event-timeline" style={{ marginBottom:20 }}>
+                {[...profile.keyEvents]
+                  .sort((a, b) => (a.year || 0) - (b.year || 0))
+                  .map((ev, i) => (
+                    <div key={ev.id || i} className="fq-ket-row">
+                      <div className="fq-ket-dot" />
+                      <div className="fq-ket-body">
+                        {ev.year && <span className="fq-ket-year">{ev.year}</span>}
+                        <span className="fq-ket-text">{ev.text}</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </>
+          )}
+
           {/* Score trend */}
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
             <h2>{t('分數趨勢','Score Trend')}</h2>
@@ -1516,7 +1567,16 @@ export default function FriendPage() {
   function toggleLang() { setLang(l => l === 'zh' ? 'en' : 'zh'); }
   function toggleDark() { setDarkMode(d => !d); }
 
-  function handleLogSave(entry) { setJournals(prev => [entry, ...prev]); setLogTarget(null); }
+  function handleLogSave(entry) {
+    setJournals(prev => [entry, ...prev]);
+    if (entry.keyEvent) {
+      const ke = { id: genId(), year: entry.keyEvent.year, text: entry.keyEvent.text };
+      setProfiles(prev => prev.map(p =>
+        p.id !== entry.profileId ? p : { ...p, keyEvents: [...(p.keyEvents || []), ke] }
+      ));
+    }
+    setLogTarget(null);
+  }
 
   function handleAuth() { setAuthed(true); }
 

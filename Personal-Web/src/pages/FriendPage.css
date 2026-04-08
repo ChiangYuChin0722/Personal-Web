@@ -581,7 +581,81 @@
 .fq-tag-color-swatch { width: 24px; height: 24px; border: none; border-radius: 50%; padding: 0; cursor: pointer; background: none; flex-shrink: 0; }
 .fq-tag-label-inp { flex: 1; background: none; border: none; color: var(--text); font-size: 13px; outline: none; min-width: 80px; }
 
-/* ─── Key Events ─── */
+/* ─── Key Event Timeline (detail view) ─── */
+.fq-key-event-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 18px;
+}
+.fq-ket-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 0;
+  position: relative;
+}
+.fq-ket-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 24px;
+  bottom: -10px;
+  width: 2px;
+  background: var(--border);
+}
+.fq-ket-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 3px;
+  border: 2px solid var(--bg1);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.fq-ket-body {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.fq-ket-year {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-light);
+  min-width: 36px;
+  flex-shrink: 0;
+}
+.fq-ket-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ─── Log modal key event toggle ─── */
+.fq-key-event-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  width: 100%;
+  justify-content: flex-start;
+}
+.fq-key-event-toggle:hover { border-color: var(--accent); color: var(--text); }
+.fq-key-event-toggle.active { border-color: var(--accent); background: var(--bg2); color: var(--accent-light); border-style: solid; }
+
+/* ─── Key Events (form/edit) ─── */
 .fq-key-events { display: flex; flex-direction: column; gap: 4px; }
 .fq-key-event-row {
   display: flex; align-items: center; gap: 8px;
