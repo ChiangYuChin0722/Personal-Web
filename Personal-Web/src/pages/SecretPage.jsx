@@ -185,13 +185,14 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
 }
 
 // ── Event Modal ───────────────────────────────────────────────
-function EventModal({ initial = {}, onSave, onClose }) {
-  const [title,    setTitle]    = useState(initial.title    || "");
-  const [date,     setDate]     = useState(initial.date     || "");
-  const [time,     setTime]     = useState(initial.time     || "");
-  const [category, setCategory] = useState(initial.category || "other");
-  const [location, setLocation] = useState(initial.location || "");
-  const [notes,    setNotes]    = useState(initial.notes    || "");
+function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }) {
+  const [title,       setTitle]       = useState(initial.title       || "");
+  const [date,        setDate]        = useState(initial.date        || "");
+  const [time,        setTime]        = useState(initial.time        || "");
+  const [category,    setCategory]    = useState(initial.category    || "other");
+  const [location,    setLocation]    = useState(initial.location    || "");
+  const [notes,       setNotes]       = useState(initial.notes       || "");
+  const [pinDeadline, setPinDeadline] = useState(initial.pinDeadline !== false);
 
   useEffect(() => {
     const onKey = e => { if (e.key === "Escape") onClose(); };
@@ -201,7 +202,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
 
   function save() {
     if (!title.trim()) return;
-    onSave({ id: initial.id || Date.now().toString(), title: title.trim(), date, time, category, location, notes });
+    onSave({ id: initial.id || Date.now().toString(), title: title.trim(), date, time, category, location, notes, pinDeadline });
     onClose();
   }
 
@@ -217,7 +218,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
             onKeyDown={e => e.key === "Enter" && save()}
             placeholder="Event title..." className="sp-modal-main-input" />
           <div className="sp-modal-label">Category</div>
-          <CategoryPicker value={category} onChange={setCategory} />
+          <CategoryPicker value={category} onChange={setCategory} categories={categories} onAddCategory={onAddCategory} />
           <div className="sp-modal-row2">
             <div className="sp-modal-field">
               <div className="sp-modal-label">Date</div>
@@ -225,7 +226,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
             </div>
             <div className="sp-modal-field">
               <div className="sp-modal-label">Time</div>
-              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="sp-modal-input" />
+              <input type="time" step="600" value={time} onChange={e => setTime(e.target.value)} className="sp-modal-input" />
             </div>
           </div>
           <div className="sp-modal-field">
@@ -238,6 +239,10 @@ function EventModal({ initial = {}, onSave, onClose }) {
             <textarea value={notes} onChange={e => setNotes(e.target.value)}
               placeholder="Add notes..." className="sp-modal-textarea" />
           </div>
+          <label className="sp-pin-toggle">
+            <input type="checkbox" checked={pinDeadline} onChange={e => setPinDeadline(e.target.checked)} />
+            <span>顯示在 Deadlines 清單</span>
+          </label>
         </div>
         <div className="sp-modal-footer">
           <button onClick={onClose} className="sp-modal-cancel">Cancel</button>
@@ -282,10 +287,16 @@ function dlBadgeLabel(days) {
 }
 
 // ── Deadlines ─────────────────────────────────────────────────
-function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
-  const [modal, setModal] = useState(null); // null | event object
+function DeadlinesSection({ events, onAdd, onEdit, onSoftDelete, categories }) {
+  const [modal, setModal] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const sorted = [...events].sort((a, b) => {
+  const pinned   = events.filter(e => e.pinDeadline !== false);
+  const active   = pinned.filter(e => !e.deleted);
+  const history  = pinned.filter(e => e.deleted);
+  const list     = showHistory ? history : active;
+
+  const sorted = [...list].sort((a, b) => {
     const da = daysLeft(a.date), db = daysLeft(b.date);
     if (da === null && db === null) return 0;
     if (da === null) return 1; if (db === null) return -1;
@@ -294,28 +305,43 @@ function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
 
   return (
     <div className="sp-deadlines">
-      <div className="sp-section-title">Deadlines</div>
+      <div className="sp-section-title sp-dl-title-row">
+        <span>Deadlines</span>
+        {history.length > 0 && (
+          <button className="sp-history-toggle" onClick={() => setShowHistory(h => !h)}>
+            {showHistory ? "← 回到清單" : `🗃 歷史 (${history.length})`}
+          </button>
+        )}
+      </div>
       <div className="sp-dl-list">
-        {sorted.length === 0 && <div className="sp-dl-empty">No events yet</div>}
+        {sorted.length === 0 && <div className="sp-dl-empty">{showHistory ? "無歷史紀錄" : "No events yet"}</div>}
         {sorted.map(d => {
           const days = daysLeft(d.date);
-          const { bg, color } = dlBadgeStyle(days);
+          const { bg, color } = showHistory
+            ? { bg: "var(--bg3)", color: "var(--dim)" }
+            : dlBadgeStyle(days);
           const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(d.date)
             ? d.date.slice(5).replace("-", "/") : d.date;
           return (
-            <div key={d.id} className="sp-dl-item sp-dl-item-click" onClick={() => setModal(d)}>
-              <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
-              <span className="sp-cat-dot" style={{ background: catColor(d.category) }} title={catLabel(d.category)} />
+            <div key={d.id} className={`sp-dl-item${d.deleted ? " sp-dl-deleted" : " sp-dl-item-click"}`}
+              onClick={() => !d.deleted && setModal(d)}>
+              <span className="sp-dl-badge" style={{ background: bg, color }}>
+                {showHistory ? "已刪除" : dlBadgeLabel(days)}
+              </span>
+              <span className="sp-cat-dot" style={{ background: catColor(d.category, categories) }}
+                title={catLabel(d.category, categories)} />
               <span className="sp-dl-name">{d.title}</span>
-              {d.time && <span className="sp-dl-time">{d.time}</span>}
+              {d.time && <span className="sp-dl-time">{d.time.slice(0,5)}</span>}
               <span className="sp-dl-datestr">{displayDate}</span>
-              <button onClick={e => { e.stopPropagation(); onRemove(d.id); }} className="sp-del">✕</button>
+              {!d.deleted && (
+                <button onClick={e => { e.stopPropagation(); onSoftDelete(d.id); }} className="sp-del">✕</button>
+              )}
             </div>
           );
         })}
       </div>
       {modal && (
-        <EventModal initial={modal}
+        <EventModal initial={modal} categories={categories}
           onSave={e => { modal.id ? onEdit(e) : onAdd(e); setModal(null); }}
           onClose={() => setModal(null)} />
       )}
@@ -575,7 +601,7 @@ function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
 
   function eventsAtHour(h) {
     const hStr = String(h).padStart(2, "0");
-    return events.filter(e => e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
+    return events.filter(e => !e.deleted && e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
   }
 
   const dayLabel = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow"
@@ -604,7 +630,7 @@ function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
                 <span key={e.id} className="sp-tl-chip"
                   style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}
                   onClick={() => setModal(e)} title="Edit event">
-                  {e.title}
+                  {e.time && <span style={{fontSize:10,opacity:0.7,marginRight:3}}>{e.time.slice(0,5)}</span>}{e.title}
                   <button onClick={ev => { ev.stopPropagation(); onRemove(e.id); }} className="sp-tl-chip-del">×</button>
                 </span>
               ))}
@@ -635,7 +661,7 @@ function CalendarSection({ events, onAdd, onEdit, onRemove }) {
   const todayISO = dateKey(now);
 
   function eventsForDate(iso) {
-    return events.filter(e => normToISO(e.date) === iso || e.date === iso)
+    return events.filter(e => !e.deleted && (normToISO(e.date) === iso || e.date === iso))
       .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   }
 
@@ -722,29 +748,110 @@ function CalendarSection({ events, onAdd, onEdit, onRemove }) {
   );
 }
 
-// ── Groceries ─────────────────────────────────────────────────
-function GroceriesSection({ items, onAdd, onToggle, onRemove }) {
+// ── Task Lists (replaces Groceries) ───────────────────────────
+function TaskListItem({ item, onToggle, onRemove }) {
+  return (
+    <div className={`sp-grocery-item${item.done ? " done" : ""}`}>
+      <input type="checkbox" checked={item.done} onChange={onToggle} />
+      <span>{item.text}</span>
+      <button onClick={onRemove} className="sp-del">✕</button>
+    </div>
+  );
+}
+
+function TaskList({ list, isOpen, onToggleOpen, onDelete, onAddItem, onToggleItem, onRemoveItem }) {
   const [input, setInput] = useState("");
 
   function add() {
     if (!input.trim()) return;
-    onAdd({ id: Date.now().toString(), text: input.trim(), done: false });
+    onAddItem(input.trim());
     setInput("");
   }
 
+  const done  = list.items.filter(i => i.done).length;
+  const total = list.items.length;
+
   return (
-    <div className="sp-groceries">
-      <div className="sp-section-title">Groceries</div>
-      {items.map((g, i) => (
-        <div key={g.id || i} className={`sp-grocery-item${g.done ? " done" : ""}`}>
-          <input type="checkbox" checked={g.done} onChange={() => onToggle(i)} />
-          <span>{g.text}</span>
-          <button onClick={() => onRemove(i)} className="sp-del">✕</button>
+    <div className="sp-tl-list">
+      <div className="sp-tl-list-header" onClick={onToggleOpen}>
+        <span className="sp-tl-list-caret">{isOpen ? "▲" : "▼"}</span>
+        <span className="sp-tl-list-name">{list.name}</span>
+        {total > 0 && <span className="sp-tl-list-count">{done}/{total}</span>}
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="sp-del" style={{marginLeft:"auto"}}>✕</button>
+      </div>
+      {isOpen && (
+        <div className="sp-tl-list-body">
+          {list.items.map(item => (
+            <TaskListItem key={item.id} item={item}
+              onToggle={() => onToggleItem(item.id)}
+              onRemove={() => onRemoveItem(item.id)} />
+          ))}
+          <div className="sp-grocery-add">
+            <input value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && add()} placeholder="新增項目..." />
+            <button onClick={add}>+</button>
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function TaskListsSection({ taskLists, onUpdate }) {
+  const [newName, setNewName] = useState("");
+  const [open, setOpen]       = useState({});
+
+  function isOpen(id) { return open[id] !== false; } // default open
+
+  function addList() {
+    if (!newName.trim()) return;
+    const id = Date.now().toString();
+    onUpdate([...taskLists, { id, name: newName.trim(), items: [] }]);
+    setOpen(o => ({ ...o, [id]: true }));
+    setNewName("");
+  }
+
+  function deleteList(id) {
+    onUpdate(taskLists.filter(l => l.id !== id));
+  }
+
+  function addItem(listId, text) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: [...l.items, { id: Date.now().toString(), text, done: false }] }
+      : l
+    ));
+  }
+
+  function toggleItem(listId, itemId) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: l.items.map(it => it.id === itemId ? { ...it, done: !it.done } : it) }
+      : l
+    ));
+  }
+
+  function removeItem(listId, itemId) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: l.items.filter(it => it.id !== itemId) }
+      : l
+    ));
+  }
+
+  return (
+    <div className="sp-tasklists">
+      <div className="sp-section-title">任務清單</div>
+      {taskLists.map(list => (
+        <TaskList key={list.id} list={list} isOpen={isOpen(list.id)}
+          onToggleOpen={() => setOpen(o => ({ ...o, [list.id]: !isOpen(list.id) }))}
+          onDelete={() => deleteList(list.id)}
+          onAddItem={text => addItem(list.id, text)}
+          onToggleItem={itemId => toggleItem(list.id, itemId)}
+          onRemoveItem={itemId => removeItem(list.id, itemId)}
+        />
       ))}
-      <div className="sp-grocery-add">
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Add item..." />
-        <button onClick={add}>+</button>
+      <div className="sp-tl-add-list">
+        <input value={newName} onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && addList()} placeholder="＋ 新增清單..." className="sp-tl-add-input" />
+        <button onClick={addList} className="sp-tl-add-btn">+</button>
       </div>
     </div>
   );
@@ -762,7 +869,8 @@ export default function SecretPage() {
   const [links,      setLinks]      = useState([]);
   const [events,     setEvents]     = useState([]);  // unified events
   const [matrix,     setMatrix]     = useState([]);
-  const [groceries,  setGroceries]  = useState([]);
+  const [taskLists,  setTaskLists]  = useState([]);
+  const [categories, setCategories] = useState(DEFAULT_CATS);
   const [globalModal,setGlobalModal]= useState(false);
 
   // Restore session
@@ -821,7 +929,8 @@ export default function SecretPage() {
         oldCal.forEach(e => unified.push({ id: e.id, title: e.title, date: e.date, time: e.time||"", category: e.category||"other" }));
       }
       setEvents(unified);
-      setGroceries(await tryLoad("yc2_groceries", []));
+      setTaskLists(await tryLoad("yc2_tasklists", []));
+      setCategories(await tryLoad("yc2_categories", DEFAULT_CATS));
     })();
   }, [loggedIn, currentPassword]);
 
@@ -845,16 +954,21 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setEvents([]); setMatrix([]); setGroceries([]);
+    setEvents([]); setMatrix([]); setTaskLists([]); setCategories(DEFAULT_CATS);
   }
 
-  const updateLinks    = v => { setLinks(v);    save("yc2_links", v); };
-  const updateEvents   = v => { setEvents(v);   save("yc2_events", v); };
-  const handleAddEvent = e => updateEvents([...events, e]);
-  const handleEditEvent= e => updateEvents(events.map(x => x.id === e.id ? e : x));
-  const handleDelEvent = id=> updateEvents(events.filter(e => e.id !== id));
-  const updateMatrix   = v => { setMatrix(v);   save("yc2_matrix", v); };
-  const updateGroceries= v => { setGroceries(v);save("yc2_groceries", v); };
+  const updateLinks     = v => { setLinks(v);      save("yc2_links", v); };
+  const updateEvents    = v => { setEvents(v);     save("yc2_events", v); };
+  const handleAddEvent  = e => updateEvents([...events, e]);
+  const handleEditEvent = e => updateEvents(events.map(x => x.id === e.id ? e : x));
+  const handleDelEvent  = id => updateEvents(events.map(e => e.id === id ? { ...e, deleted: true } : e));
+  const updateMatrix    = v => { setMatrix(v);     save("yc2_matrix", v); };
+  const updateTaskLists = v => { setTaskLists(v);  save("yc2_tasklists", v); };
+  const handleAddCategory = cat => {
+    const next = [...categories, cat];
+    setCategories(next);
+    save("yc2_categories", next);
+  };
 
   if (!loggedIn) {
     return (
@@ -890,6 +1004,7 @@ export default function SecretPage() {
       </div>
       {globalModal && (
         <EventModal initial={{ date: dateKey(new Date()) }}
+          categories={categories} onAddCategory={handleAddCategory}
           onSave={e => { handleAddEvent(e); setGlobalModal(false); }}
           onClose={() => setGlobalModal(false)} />
       )}
@@ -912,19 +1027,14 @@ export default function SecretPage() {
           <a href="/secret/friend" className="sp-pill sp-pill-link">
             <span>👥</span>Friends<span className="sp-pill-caret">→</span>
           </a>
-          <GroceriesSection
-            items={groceries}
-            onAdd={g => updateGroceries([...groceries, g])}
-            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
-            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
-          />
+          <TaskListsSection taskLists={taskLists} onUpdate={updateTaskLists} />
         </div>
 
         {/* ── MIDDLE ── */}
         <div className="sp-middle">
           <DeadlinesSection
-            events={events}
-            onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
+            events={events} categories={categories}
+            onAdd={handleAddEvent} onEdit={handleEditEvent} onSoftDelete={handleDelEvent}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
