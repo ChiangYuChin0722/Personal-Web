@@ -1048,74 +1048,102 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               <div className="fq-empty-title">{t('找不到符合條件的朋友', 'No matches found')}</div>
               <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => { setSearch(''); setFilterGroup(''); setFilterTier(''); }}>{t('清除篩選','Clear filters')}</button>
             </div>
-          ) : (
-            <div className="fq-friend-grid">
-              {filteredProfiles.map(p => {
-                const latest = getLatestSurvey(p.id);
-                const tier = latest ? getScoreTier(latest.total) : null;
-                const type = latest ? getFriendshipType(latest.scores) : null;
-                const group = getGroupById(p.groupId, customGroups);
-                const bdays = birthdayCountdown(p.birthday);
-                const inCompare = compareIds.includes(p.id);
-                return (
-                  <div key={p.id} className={`fq-friend-card${inCompare ? ' fq-compare-selected' : ''}`} onClick={() => onSelectFriend(p)}>
-                    {type && (
-                      <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
-                        {type.key}
-                      </div>
-                    )}
-                    <div className="fq-friend-card-top">
-                      <Avatar profile={p} size={40} />
-                      <div>
-                        <div className="fq-friend-name">{p.name}</div>
-                        <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
-                          {group && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background:group.color+'22', color:group.color, fontWeight:700 }}>{lang==='zh'?group.zh:group.en}</span>}
-                          <span>{p.since ? `${t('認識於','Since')} ${p.since}` : t('年份不詳','Year unknown')}</span>
-                          {bdays !== null && bdays <= 30 && <span style={{ color: bdays<=7?'#F87171':'var(--muted)', fontWeight:600, fontSize:11 }}>🎂 {bdays===0?t('今天！','Today!'):bdays+t('天','d')}</span>}
-                          {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} {t('則日誌','logs')}</span> : null; })()}
-                        </div>
-                      </div>
-                      {latest ? (
-                        <div className={`fq-score-badge tier-${tier.tier}`}>{latest.total}</div>
-                      ) : (
-                        <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>N/A</div>
-                      )}
+          ) : (() => {
+            const surveyProfiles = filteredProfiles.filter(p => !p.noSurvey);
+            const noSurveyProfiles = filteredProfiles.filter(p => p.noSurvey);
+
+            function FriendCard({ p }) {
+              const latest = getLatestSurvey(p.id);
+              const tier = latest ? getScoreTier(latest.total) : null;
+              const type = latest ? getFriendshipType(latest.scores) : null;
+              const group = getGroupById(p.groupId, customGroups);
+              const bdays = birthdayCountdown(p.birthday);
+              const inCompare = compareIds.includes(p.id);
+              return (
+                <div key={p.id} className={`fq-friend-card${inCompare ? ' fq-compare-selected' : ''}`} onClick={() => onSelectFriend(p)}>
+                  {type && (
+                    <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
+                      {type.key}
                     </div>
-                    {latest && (
-                      <div className="fq-dim-mini">
-                        {DIM_META.map(d => (
-                          <div key={d.key} className="fq-dim-pip">
-                            <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
-                            <div className="fq-dim-pip-bar">
-                              <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
-                            </div>
-                            <span>{latest.scores[d.key]}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ display:'flex', gap:6, marginTop:8 }}>
-                      {!latest && (
-                        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
-                          {t('開始測驗', 'Start Survey')} →
-                        </button>
-                      )}
-                      <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
-                        + {t('日誌', 'Log')}
-                      </button>
-                      <button
-                        className={`fq-btn fq-btn-sm${inCompare ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
-                        onClick={e => { e.stopPropagation(); toggleCompare(p.id); }}
-                        style={{ marginLeft:'auto', padding:'4px 8px', fontSize:11 }}
-                      >
-                        ⊕
-                      </button>
+                  )}
+                  {p.noSurvey && (
+                    <div className="fq-type-tag" style={{ background:'var(--bg3)', color:'var(--muted)' }}>
+                      {t('記錄','Record')}
                     </div>
+                  )}
+                  <div className="fq-friend-card-top">
+                    <Avatar profile={p} size={40} />
+                    <div>
+                      <div className="fq-friend-name">{p.name}</div>
+                      <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                        {group && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background:group.color+'22', color:group.color, fontWeight:700 }}>{lang==='zh'?group.zh:group.en}</span>}
+                        <span>{p.since ? `${t('認識於','Since')} ${p.since}` : t('年份不詳','Year unknown')}</span>
+                        {bdays !== null && bdays <= 30 && <span style={{ color: bdays<=7?'#F87171':'var(--muted)', fontWeight:600, fontSize:11 }}>🎂 {bdays===0?t('今天！','Today!'):bdays+t('天','d')}</span>}
+                        {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} {t('則日誌','logs')}</span> : null; })()}
+                      </div>
+                    </div>
+                    {!p.noSurvey && (latest ? (
+                      <div className={`fq-score-badge tier-${tier.tier}`}>{latest.total}</div>
+                    ) : (
+                      <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>N/A</div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  {latest && !p.noSurvey && (
+                    <div className="fq-dim-mini">
+                      {DIM_META.map(d => (
+                        <div key={d.key} className="fq-dim-pip">
+                          <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
+                          <div className="fq-dim-pip-bar">
+                            <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
+                          </div>
+                          <span>{latest.scores[d.key]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                    {!latest && !p.noSurvey && (
+                      <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
+                        {t('開始測驗', 'Start Survey')} →
+                      </button>
+                    )}
+                    <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
+                      + {t('日誌', 'Log')}
+                    </button>
+                    <button
+                      className={`fq-btn fq-btn-sm${inCompare ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
+                      onClick={e => { e.stopPropagation(); toggleCompare(p.id); }}
+                      style={{ marginLeft:'auto', padding:'4px 8px', fontSize:11 }}
+                    >
+                      ⊕
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {surveyProfiles.length > 0 && (
+                  <div className="fq-friend-grid">
+                    {surveyProfiles.map(p => <FriendCard key={p.id} p={p} />)}
+                  </div>
+                )}
+                {noSurveyProfiles.length > 0 && (
+                  <>
+                    <div className="fq-section-hdr" style={{ marginTop: surveyProfiles.length > 0 ? 28 : 0, marginBottom:14 }}>
+                      <h2>{t('純記錄（不評分）','Record Only')}</h2>
+                      <div className="fq-line" />
+                      <span style={{ fontSize:12, color:'var(--muted)' }}>{noSurveyProfiles.length} {t('人','profiles')}</span>
+                    </div>
+                    <div className="fq-friend-grid">
+                      {noSurveyProfiles.map(p => <FriendCard key={p.id} p={p} />)}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -1229,8 +1257,11 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const [since,     setSince]     = useState(editProfile?.since     || '');
   const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
   const [birthday,  setBirthday]  = useState(editProfile?.birthday  || { month:'', day:'' });
-  const [pros,      setPros]      = useState(editProfile?.pros      || '');
-  const [cons,      setCons]      = useState(editProfile?.cons      || '');
+  const [prosList,  setProsList]  = useState(Array.isArray(editProfile?.pros) ? editProfile.pros : []);
+  const [consList,  setConsList]  = useState(Array.isArray(editProfile?.cons) ? editProfile.cons : []);
+  const [prosInput, setProsInput] = useState('');
+  const [consInput, setConsInput] = useState('');
+  const [noSurvey,  setNoSurvey]  = useState(editProfile?.noSurvey ?? false);
   const [err, setErr]             = useState('');
   const [cropSrc, setCropSrc]     = useState(null);
   const fileRef = useRef(null);
@@ -1284,7 +1315,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
     onSave({
       id: editProfile?.id || genId(),
       name: name.trim(), photo, color, groupId: resolvedGroupId || '',
-      since, keyEvents, birthday, pros: pros.trim(), cons: cons.trim(),
+      since, keyEvents, birthday, pros: prosList, cons: consList, noSurvey: noSurvey || false,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
       _newGroup: newCustomGroup,
     });
@@ -1444,20 +1475,70 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
           </div>
         </div>
 
-        {/* Pros & Cons */}
+        {/* Pros */}
         <div className="fq-form-row">
           <label className="fq-label">{t('優點','Strengths')}</label>
-          <textarea className="fq-input" rows={3}
-            placeholder={t('這個人讓你欣賞的特質、讓友誼值得維繫的優點…', "Qualities you admire, reasons this friendship is worth keeping…")}
-            value={pros} onChange={e => setPros(e.target.value)}
-            style={{ resize:'vertical', lineHeight:1.6 }} />
+          <div className="fq-key-events">
+            {prosList.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('尚未新增任何優點。','No strengths added yet.')}</div>
+            )}
+            {prosList.map((item, i) => (
+              <div key={i} className="fq-key-event-row">
+                <span style={{ color:'#34D399', fontWeight:800, minWidth:14 }}>•</span>
+                <span className="fq-key-event-text">{item}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => setProsList(prev => prev.filter((_,idx) => idx !== i))}>✕</button>
+              </div>
+            ))}
+            <div className="fq-key-event-add">
+              <IMEInput className="fq-key-event-text-inp" value={prosInput}
+                onChange={e => setProsInput(e.target.value)}
+                onEnterKey={() => { if (prosInput.trim()) { setProsList(prev => [...prev, prosInput.trim()]); setProsInput(''); }}}
+                placeholder={t('例：很懂得傾聽、樂於幫忙','e.g. Great listener, always willing to help')} />
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm"
+                onClick={() => { if (prosInput.trim()) { setProsList(prev => [...prev, prosInput.trim()]); setProsInput(''); }}}>＋</button>
+            </div>
+          </div>
         </div>
+
+        {/* Cons */}
         <div className="fq-form-row">
           <label className="fq-label">{t('缺點 / 挑戰','Weaknesses / Challenges')}</label>
-          <textarea className="fq-input" rows={3}
-            placeholder={t('相處上的摩擦點、讓你感到困擾或需要包容的地方…', "Friction points, things that are hard to accept or require patience…")}
-            value={cons} onChange={e => setCons(e.target.value)}
-            style={{ resize:'vertical', lineHeight:1.6 }} />
+          <div className="fq-key-events">
+            {consList.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('尚未新增任何缺點。','No weaknesses added yet.')}</div>
+            )}
+            {consList.map((item, i) => (
+              <div key={i} className="fq-key-event-row">
+                <span style={{ color:'#F87171', fontWeight:800, minWidth:14 }}>•</span>
+                <span className="fq-key-event-text">{item}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => setConsList(prev => prev.filter((_,idx) => idx !== i))}>✕</button>
+              </div>
+            ))}
+            <div className="fq-key-event-add">
+              <IMEInput className="fq-key-event-text-inp" value={consInput}
+                onChange={e => setConsInput(e.target.value)}
+                onEnterKey={() => { if (consInput.trim()) { setConsList(prev => [...prev, consInput.trim()]); setConsInput(''); }}}
+                placeholder={t('例：容易遲到、有時太直接','e.g. Often late, sometimes too blunt')} />
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm"
+                onClick={() => { if (consInput.trim()) { setConsList(prev => [...prev, consInput.trim()]); setConsInput(''); }}}>＋</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Survey toggle */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('FQ 測驗','FQ Survey')}</label>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button type="button" onClick={() => setNoSurvey(v => !v)}
+              style={{ width:44, height:24, borderRadius:12, border:'none', cursor:'pointer', padding:0,
+                background: noSurvey ? 'var(--border)' : 'var(--accent)', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+              <span style={{ position:'absolute', top:3, left: noSurvey ? 3 : 23, width:18, height:18,
+                borderRadius:'50%', background:'white', transition:'left 0.2s', display:'block' }}/>
+            </button>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>
+              {noSurvey ? t('不做 FQ 測驗（純記錄用）','No FQ survey — record only') : t('啟用 FQ 測驗評分','FQ scoring enabled')}
+            </span>
+          </div>
         </div>
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
@@ -1834,9 +1915,11 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
         <div className="fq-line" />
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ {t('編輯', 'Edit')}</button>
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('日誌', 'Log')}</button>
-        <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-          + {t('測驗', 'Survey')}
-        </button>
+        {!profile.noSurvey && (
+          <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
+            + {t('測驗', 'Survey')}
+          </button>
+        )}
         <button className="fq-btn fq-btn-danger fq-btn-sm" onClick={onDelete}>
           🗑 {t('刪除', 'Delete')}
         </button>
@@ -1915,22 +1998,32 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             </div>
           )}
           {/* Pros & Cons */}
-          {(profile.pros || profile.cons) && (
+          {((Array.isArray(profile.pros) && profile.pros.length > 0) || (Array.isArray(profile.cons) && profile.cons.length > 0)) && (
             <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
-              {profile.pros && (
-                <div style={{ marginBottom: profile.cons ? 10 : 0 }}>
-                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:5 }}>
+              {Array.isArray(profile.pros) && profile.pros.length > 0 && (
+                <div style={{ marginBottom: (Array.isArray(profile.cons) && profile.cons.length > 0) ? 10 : 0 }}>
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:6 }}>
                     {t('優點','Strengths')}
                   </div>
-                  <div style={{ fontSize:13, color:'var(--text)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{profile.pros}</div>
+                  {profile.pros.map((item, i) => (
+                    <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                      <span style={{ color:'#34D399', fontWeight:800, flexShrink:0 }}>•</span>
+                      <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
+                    </div>
+                  ))}
                 </div>
               )}
-              {profile.cons && (
+              {Array.isArray(profile.cons) && profile.cons.length > 0 && (
                 <div>
-                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:5 }}>
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:6 }}>
                     {t('缺點 / 挑戰','Weaknesses / Challenges')}
                   </div>
-                  <div style={{ fontSize:13, color:'var(--text)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{profile.cons}</div>
+                  {profile.cons.map((item, i) => (
+                    <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                      <span style={{ color:'#F87171', fontWeight:800, flexShrink:0 }}>•</span>
+                      <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1990,7 +2083,8 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             </>
           )}
 
-          {/* Score trend */}
+          {/* Score trend + radar + survey history (survey-enabled only) */}
+          {!profile.noSurvey && (<>
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
             <h2>{t('分數趨勢','Score Trend')}</h2>
             <div className="fq-line" />
@@ -1999,7 +2093,6 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             <LineChart surveys={profileSurveys} />
           </div>
 
-          {/* Latest radar */}
           {latest && (
             <>
               <div className="fq-section-hdr" style={{ marginBottom:14 }}>
@@ -2013,7 +2106,6 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             </>
           )}
 
-          {/* Survey history */}
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
             <h2>{t('測驗記錄','Survey History')}</h2>
             <div className="fq-line" />
@@ -2023,10 +2115,10 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
           {profileSurveys.length === 0 ? (
             <div className="fq-empty" style={{ padding:'40px 20px' }}>
               <div className="fq-empty-icon">📊</div>
-              <div className="fq-empty-title">No surveys yet</div>
-              <div className="fq-empty-sub">Start a survey to begin quantifying this friendship.</div>
+              <div className="fq-empty-title">{t('尚無測驗記錄','No surveys yet')}</div>
+              <div className="fq-empty-sub">{t('開始第一次測驗來量化這段友誼。','Start a survey to begin quantifying this friendship.')}</div>
               <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-                + Start Survey
+                + {t('開始測驗','Start Survey')}
               </button>
             </div>
           ) : (
@@ -2063,6 +2155,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
               })}
             </div>
           )}
+          </>)}
 
           {/* Journal / Log entries */}
           {(() => {
