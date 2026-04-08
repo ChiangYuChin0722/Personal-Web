@@ -1876,11 +1876,34 @@ function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail 
 
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
-function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate }) {
+function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate, onProfileUpdate }) {
   const lang = useContext(LangCtx);
   const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const [photoLightbox, setPhotoLightbox] = useState(false);
+  const [evtYear, setEvtYear] = useState('');
+  const [evtText, setEvtText] = useState('');
+  const [prosInput, setProsInput] = useState('');
+  const [consInput, setConsInput] = useState('');
+
+  function addEvent() {
+    if (!evtText.trim()) return;
+    const updated = { ...profile, keyEvents: [...(profile.keyEvents || []), { id: genId(), year: evtYear, text: evtText.trim() }] };
+    onProfileUpdate(updated);
+    setEvtYear(''); setEvtText('');
+  }
+  function addPro() {
+    if (!prosInput.trim()) return;
+    const updated = { ...profile, pros: [...(Array.isArray(profile.pros) ? profile.pros : []), prosInput.trim()] };
+    onProfileUpdate(updated);
+    setProsInput('');
+  }
+  function addCon() {
+    if (!consInput.trim()) return;
+    const updated = { ...profile, cons: [...(Array.isArray(profile.cons) ? profile.cons : []), consInput.trim()] };
+    onProfileUpdate(updated);
+    setConsInput('');
+  }
   const group = getGroupById(profile.groupId, customGroups);
   const bdays = birthdayCountdown(profile.birthday);
   const profileSurveys = surveys
@@ -1985,49 +2008,70 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             ))}
           </div>
 
-          {profile.keyEvents && profile.keyEvents.length > 0 && (
-            <div style={{ marginTop:14 }}>
-              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('重要事件','Key Events')}</div>
-              {profile.keyEvents.map((ev, i) => (
-                <div key={ev.id || i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
-                  {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
-                  <span style={{ color:'var(--text)', lineHeight:1.5 }}>{ev.text}</span>
+          <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('重要事件','Key Events')}</div>
+            {(profile.keyEvents || []).length === 0 && (
+              <div style={{ fontSize:12, color:'var(--dim)', marginBottom:8 }}>{t('尚無事件','No events yet')}</div>
+            )}
+            {[...(profile.keyEvents || [])].sort((a,b)=>(b.year||0)-(a.year||0)).map((ev, i) => (
+              <div key={ev.id || i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
+                {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+                <span style={{ color:'var(--text)', lineHeight:1.5 }}>{ev.text}</span>
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:4, marginTop:6 }}>
+              <IMEInput value={evtYear} onChange={e => setEvtYear(e.target.value)}
+                placeholder={t('年份','Year')} type="number" min="1990" max={THIS_YEAR}
+                style={{ width:64, padding:'4px 6px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', flexShrink:0 }} />
+              <IMEInput value={evtText} onChange={e => setEvtText(e.target.value)}
+                onEnterKey={addEvent}
+                placeholder={t('新增事件…','Add event…')}
+                style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+              <button onClick={addEvent} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--muted)', cursor:'pointer', flexShrink:0 }}>＋</button>
+            </div>
+          </div>
+          {/* Pros & Cons */}
+          <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
+            {/* Pros */}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:6 }}>
+                {t('優點','Strengths')}
+              </div>
+              {(Array.isArray(profile.pros) ? profile.pros : []).map((item, i) => (
+                <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                  <span style={{ color:'#34D399', fontWeight:800, flexShrink:0 }}>•</span>
+                  <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
                 </div>
               ))}
+              <div style={{ display:'flex', gap:4, marginTop:4 }}>
+                <IMEInput value={prosInput} onChange={e => setProsInput(e.target.value)}
+                  onEnterKey={addPro}
+                  placeholder={t('新增優點…','Add strength…')}
+                  style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+                <button onClick={addPro} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'#34D399', cursor:'pointer', flexShrink:0 }}>＋</button>
+              </div>
             </div>
-          )}
-          {/* Pros & Cons */}
-          {((Array.isArray(profile.pros) && profile.pros.length > 0) || (Array.isArray(profile.cons) && profile.cons.length > 0)) && (
-            <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
-              {Array.isArray(profile.pros) && profile.pros.length > 0 && (
-                <div style={{ marginBottom: (Array.isArray(profile.cons) && profile.cons.length > 0) ? 10 : 0 }}>
-                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:6 }}>
-                    {t('優點','Strengths')}
-                  </div>
-                  {profile.pros.map((item, i) => (
-                    <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
-                      <span style={{ color:'#34D399', fontWeight:800, flexShrink:0 }}>•</span>
-                      <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
-                    </div>
-                  ))}
+            {/* Cons */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:6 }}>
+                {t('缺點 / 挑戰','Weaknesses / Challenges')}
+              </div>
+              {(Array.isArray(profile.cons) ? profile.cons : []).map((item, i) => (
+                <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                  <span style={{ color:'#F87171', fontWeight:800, flexShrink:0 }}>•</span>
+                  <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
                 </div>
-              )}
-              {Array.isArray(profile.cons) && profile.cons.length > 0 && (
-                <div>
-                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:6 }}>
-                    {t('缺點 / 挑戰','Weaknesses / Challenges')}
-                  </div>
-                  {profile.cons.map((item, i) => (
-                    <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
-                      <span style={{ color:'#F87171', fontWeight:800, flexShrink:0 }}>•</span>
-                      <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
+              <div style={{ display:'flex', gap:4, marginTop:4 }}>
+                <IMEInput value={consInput} onChange={e => setConsInput(e.target.value)}
+                  onEnterKey={addCon}
+                  placeholder={t('新增缺點…','Add weakness…')}
+                  style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+                <button onClick={addCon} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'#F87171', cursor:'pointer', flexShrink:0 }}>＋</button>
+              </div>
             </div>
-          )}
+          </div>
 
           {/* legacy notes support */}
           {profile.notes && !profile.keyEvents && (
@@ -2318,6 +2362,11 @@ export default function FriendPage() {
     setView('create');
   }
 
+  function handleProfileUpdate(updatedProfile) {
+    setProfiles(prev => prev.map(p => p.id === updatedProfile.id ? updatedProfile : p));
+    setSelectedProfile(updatedProfile);
+  }
+
   if (!authed) {
     return (
       <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
@@ -2403,6 +2452,7 @@ export default function FriendPage() {
           onStartSurvey={handleStartSurvey}
           onBack={goToDashboard}
           onLogUpdate={p => setLogTarget(p)}
+          onProfileUpdate={handleProfileUpdate}
         />
       )}
       {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
