@@ -426,7 +426,7 @@
 .fq-survey-history-type { font-size: 12px; color: var(--dim); flex: 1; }
 
 /* ─── Detail view ─── */
-.fq-detail-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start; }
+.fq-detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
 .fq-detail-sidebar { position: sticky; top: 72px; }
 
 .fq-detail-avatar-big {
