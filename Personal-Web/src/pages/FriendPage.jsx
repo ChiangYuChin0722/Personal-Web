@@ -1134,6 +1134,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
     }
     return getGroupById(groupId, customGroups)?.color || '#60A5FA';
   })();
+  const color = resolvedColor;
   const previewProfile = { name, photo, color: resolvedColor, groupId };
 
   return (
