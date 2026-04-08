@@ -952,6 +952,7 @@ export default function SecretPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("sp_dark") !== "false");
 
   const [links,      setLinks]      = useState([]);
   const [events,     setEvents]     = useState([]);  // unified events
@@ -1080,12 +1081,15 @@ export default function SecretPage() {
   }
 
   return (
-    <div className="sp-root">
+    <div className={`sp-root${darkMode ? "" : " sp-light"}`}>
       <div className="sp-topbar">
         <div className="sp-brand">YC<span>.</span> Private</div>
         <div className="sp-topbar-right">
           <button className="sp-new-ev-btn" onClick={() => setGlobalModal(true)}>＋ Event</button>
           <span className="sp-username">{currentUser}</span>
+          <button className="sp-theme-btn" onClick={() => setDarkMode(d => { localStorage.setItem("sp_dark", String(!d)); return !d; })} title="Toggle theme">
+            {darkMode ? "☀️" : "🌙"}
+          </button>
           <button className="sp-logout-btn" onClick={handleLogout}>Sign Out</button>
         </div>
       </div>
