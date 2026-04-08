@@ -54,35 +54,59 @@ const MOODS = [
 
 const QUESTIONS = [
   // F 頻率 Frequency
-  { dim:'F', text:'不計群組訊息，這段友誼中一對一私下聯絡（傳訊息、通話、見面）的平均頻率大概是？', opts:['幾乎沒有聯絡（一年一次或更少）','一年幾次','每個月幾次','每週或更頻繁'] },
-  { dim:'F', text:'過去三個月，這段友誼中主動發起對話或約出來的比例是？', opts:['完全由一方單獨維持','大多是同一方在主動','大概各半','雙方主動程度相當'] },
-  { dim:'F', text:'若有兩週沒有主動聯絡，這個人是否會察覺並主動找來？', opts:['很不可能，對方大概不會注意到','應該不會','對方大概會來問一下','對方一定會，完全不用懷疑'] },
-  { dim:'F', text:'和一年前相比，這段友誼的聯絡頻率有什麼變化？', opts:['明顯減少了很多','有一點變少','大概差不多','比以前更頻繁了'] },
+  { dim:'F', text:'不計群組訊息，這段友誼中一對一私下聯絡（傳訊息、通話、見面）的平均頻率大概是？', opts:['幾乎沒有聯絡（一年一次或更少）','一年幾次','每個月幾次','每週或更頻繁'],
+    en:'Excluding group chats, how often is there one-on-one private contact (messages, calls, meetups) in this friendship?', enOpts:['Almost never (once a year or less)','A few times a year','A few times a month','Weekly or more'] },
+  { dim:'F', text:'過去三個月，這段友誼中主動發起對話或約出來的比例是？', opts:['完全由一方單獨維持','大多是同一方在主動','大概各半','雙方主動程度相當'],
+    en:'Over the past three months, who has been more likely to initiate conversations or make plans?', enOpts:['Entirely one-sided','Mostly one side','Roughly equal','Both sides equally'] },
+  { dim:'F', text:'若有兩週沒有主動聯絡，這個人是否會察覺並主動找來？', opts:['很不可能，對方大概不會注意到','應該不會','對方大概會來問一下','對方一定會，完全不用懷疑'],
+    en:'If there were two weeks of no contact, would this person notice and reach out?', enOpts:["Very unlikely — they probably wouldn't notice",'Probably not','They would likely check in','Definitely — no doubt about it'] },
+  { dim:'F', text:'和一年前相比，這段友誼的聯絡頻率有什麼變化？', opts:['明顯減少了很多','有一點變少','大概差不多','比以前更頻繁了'],
+    en:'Compared to a year ago, how has the contact frequency in this friendship changed?', enOpts:['Decreased significantly','Decreased somewhat','About the same','More frequent than before'] },
   // R 互惠 Reciprocity
-  { dim:'R', text:'在分享個人困擾、喜悅或私事這方面，這段友誼中雙方的投入程度是否均衡？', opts:['明顯不均衡，一方分享多另一方幾乎不開口','有些不均衡','大致均衡','非常均衡，雙方都很主動分享'] },
-  { dim:'R', text:'這個人對另一方目前生活中最重要的事，了解程度有多深？', opts:['幾乎不知道近況','只知道一些表面的事','了解大部分重要的事','非常清楚，對現在的狀態完全掌握'] },
-  { dim:'R', text:'當一方對這段友誼付出時間和心力，另一方的回應通常是？', opts:['幾乎沒有任何回應','偶爾有回應但少有對等付出','通常有類似程度的回應','完全對等，一致地相互付出'] },
-  { dim:'R', text:'在真正需要幫助時，開口請這個人協助是否自然？', opts:['很難開口，寧可不說','有些不自在','還算自然，大部分情況能開口','完全自然，不需要任何猶豫'] },
+  { dim:'R', text:'在分享個人困擾、喜悅或私事這方面，這段友誼中雙方的投入程度是否均衡？', opts:['明顯不均衡，一方分享多另一方幾乎不開口','有些不均衡','大致均衡','非常均衡，雙方都很主動分享'],
+    en:'When it comes to sharing personal struggles, joys, or private matters, how balanced is both sides\' investment?', enOpts:['Clearly unbalanced — one shares a lot, the other rarely opens up','Somewhat unbalanced','Roughly balanced','Very balanced — both actively share'] },
+  { dim:'R', text:'這個人對另一方目前生活中最重要的事，了解程度有多深？', opts:['幾乎不知道近況','只知道一些表面的事','了解大部分重要的事','非常清楚，對現在的狀態完全掌握'],
+    en:'How well does this person know what matters most in the other person\'s current life?', enOpts:["Almost unaware of what's going on",'Only knows surface-level things','Knows most of what matters','Very aware — fully understands the current situation'] },
+  { dim:'R', text:'當一方對這段友誼付出時間和心力，另一方的回應通常是？', opts:['幾乎沒有任何回應','偶爾有回應但少有對等付出','通常有類似程度的回應','完全對等，一致地相互付出'],
+    en:'When one person invests time and care into this friendship, how does the other typically respond?', enOpts:['Almost no response','Occasionally responds but rarely reciprocates equally','Usually responds in kind','Fully and consistently reciprocal'] },
+  { dim:'R', text:'在真正需要幫助時，開口請這個人協助是否自然？', opts:['很難開口，寧可不說','有些不自在','還算自然，大部分情況能開口','完全自然，不需要任何猶豫'],
+    en:'When help is genuinely needed, how natural is it to ask this person?', enOpts:["Hard to ask — would rather stay silent",'A bit uncomfortable','Fairly natural in most situations','Completely natural — no hesitation at all'] },
   // S 支持 Support
-  { dim:'S', text:'回想生命中最艱難的一段時期，這個人扮演了什麼樣的角色？', opts:['完全不在場或不知情','知道但沒有給什麼實質支持','在那段時間給了真正的幫助','是當時最重要的支柱之一'] },
-  { dim:'S', text:'面對重大人生決定時，這個人是否是想聽取意見的對象？', opts:['完全不在考慮範圍內','應該不會','也許會，可能會考慮','絕對是，會是第一個想找的人'] },
-  { dim:'S', text:'這個人給予的支持，是否符合對方真正的需要？', opts:['常常不對，不太懂對方需要什麼','有時候對有時候不對','通常蠻準確的','幾乎總是非常精準，深度理解'] },
-  { dim:'S', text:'這個人是否曾在對方沒有開口的情況下，主動察覺狀態不好並關心？', opts:['從來沒有過','偶爾有一兩次','有幾次讓人很感動','這幾乎是他的常態，很自然'] },
+  { dim:'S', text:'回想生命中最艱難的一段時期，這個人扮演了什麼樣的角色？', opts:['完全不在場或不知情','知道但沒有給什麼實質支持','在那段時間給了真正的幫助','是當時最重要的支柱之一'],
+    en:'Thinking back to the most difficult period in life, what role did this person play?', enOpts:['Completely absent or unaware','Knew about it but gave no real support','Provided genuine help during that time','Was one of the most important pillars of support'] },
+  { dim:'S', text:'面對重大人生決定時，這個人是否是想聽取意見的對象？', opts:['完全不在考慮範圍內','應該不會','也許會，可能會考慮','絕對是，會是第一個想找的人'],
+    en:'When facing a major life decision, is this person someone whose opinion would be sought?', enOpts:['Not considered at all','Probably not','Maybe — worth considering','Absolutely — would be the first person to turn to'] },
+  { dim:'S', text:'這個人給予的支持，是否符合對方真正的需要？', opts:['常常不對，不太懂對方需要什麼','有時候對有時候不對','通常蠻準確的','幾乎總是非常精準，深度理解'],
+    en:'How well does the support this person gives match what is actually needed?', enOpts:["Often off — doesn't understand what's needed",'Sometimes right, sometimes not','Usually quite accurate','Almost always precise — deeply understanding'] },
+  { dim:'S', text:'這個人是否曾在對方沒有開口的情況下，主動察覺狀態不好並關心？', opts:['從來沒有過','偶爾有一兩次','有幾次讓人很感動','這幾乎是他的常態，很自然'],
+    en:'Has this person ever noticed something was wrong and reached out without being asked?', enOpts:['Never','Once or twice','A few times — genuinely touching','This is almost always how they are'] },
   // T 信任 Trust
-  { dim:'T', text:'在這個人面前，是否曾說過顯得脆弱、不完美或尷尬的事？', opts:['從來沒有，那一面一直藏著','說過一點點','說過蠻多的','幾乎什麼都說過，包括最低落的時刻'] },
-  { dim:'T', text:'若犯了嚴重的錯誤，這個人是否是會主動告知的對象？', opts:['不會，不想讓他知道','需要猶豫很久才決定','大概會告訴他','他會是第一個想找的人'] },
-  { dim:'T', text:'對這個人說的話和做出的承諾，信任程度有多高？', opts:['常常會有所質疑','有一些保留','大致上相信','完全信任，毫無保留'] },
-  { dim:'T', text:'若兩人之間發生誤會或衝突，是否相信可以透過直接對話解決？', opts:['不相信，這種事只能逃避或放著','會很困難，但也許有可能','通常可以，雙方能夠溝通','完全相信，一定有辦法處理'] },
+  { dim:'T', text:'在這個人面前，是否曾說過顯得脆弱、不完美或尷尬的事？', opts:['從來沒有，那一面一直藏著','說過一點點','說過蠻多的','幾乎什麼都說過，包括最低落的時刻'],
+    en:'Has anything been shared with this person that reveals vulnerability, imperfection, or embarrassment?', enOpts:['Never — that side has always been hidden','A little bit','Quite a lot','Almost everything — including the lowest moments'] },
+  { dim:'T', text:'若犯了嚴重的錯誤，這個人是否是會主動告知的對象？', opts:['不會，不想讓他知道','需要猶豫很久才決定','大概會告訴他','他會是第一個想找的人'],
+    en:'If a serious mistake were made, would this person be someone to confide in?', enOpts:["No — wouldn't want them to know",'Would hesitate for a long time','Probably yes','They would be the first person to turn to'] },
+  { dim:'T', text:'對這個人說的話和做出的承諾，信任程度有多高？', opts:['常常會有所質疑','有一些保留','大致上相信','完全信任，毫無保留'],
+    en:'How much trust is placed in what this person says and promises?', enOpts:['Often questioned','Some reservations','Generally trusted','Completely trusted — no reservations at all'] },
+  { dim:'T', text:'若兩人之間發生誤會或衝突，是否相信可以透過直接對話解決？', opts:['不相信，這種事只能逃避或放著','會很困難，但也許有可能','通常可以，雙方能夠溝通','完全相信，一定有辦法處理'],
+    en:'If a misunderstanding or conflict arose, is it believable that direct conversation could resolve it?', enOpts:['No — avoidance is the only option','Very difficult, but maybe possible','Usually yes — communication works','Absolutely — it would always be worked out'] },
   // St 穩定 Stability
-  { dim:'St', text:'過去兩年之間，這段友誼有沒有出現過嚴重的緊張或幾乎斷掉的危機？', opts:['有過嚴重的危機，且目前還沒有完全解決','有過一些摩擦，影響了親近程度','有過小誤會，但都解決了','完全穩定，什麼問題都沒發生過'] },
-  { dim:'St', text:'在一段時間沒有聯絡之後，兩人重新接觸時的自然程度是？', opts:['很尷尬，需要很長時間才能找回感覺','有一點生疏，要花點力氣','需要一點暖身，但很快就回來了','立刻就很自然，完全沒有斷層感'] },
-  { dim:'St', text:'這段友誼面對重大人生變化（換工作、搬家、交新對象等）的韌性如何？', opts:['任何大改變都可能讓這段友誼變淡','人生的改變已讓彼此連結變弱了','大致上維持住了，只是見面少了','不管發生什麼都還是很穩固'] },
-  { dim:'St', text:'五年後，這段友誼是否仍會是生命中重要的存在？', opts:['很不可能','不太確定','應該會','幾乎可以確定'] },
+  { dim:'St', text:'過去兩年之間，這段友誼有沒有出現過嚴重的緊張或幾乎斷掉的危機？', opts:['有過嚴重的危機，且目前還沒有完全解決','有過一些摩擦，影響了親近程度','有過小誤會，但都解決了','完全穩定，什麼問題都沒發生過'],
+    en:'Over the past two years, has this friendship gone through any serious tension or near-breaking points?', enOpts:['There was a serious crisis that has not been fully resolved','Some conflicts that affected closeness','Minor misunderstandings, all resolved','Completely stable — nothing has gone wrong'] },
+  { dim:'St', text:'在一段時間沒有聯絡之後，兩人重新接觸時的自然程度是？', opts:['很尷尬，需要很長時間才能找回感覺','有一點生疏，要花點力氣','需要一點暖身，但很快就回來了','立刻就很自然，完全沒有斷層感'],
+    en:'After a period of no contact, how natural is it when the two reconnect?', enOpts:['Awkward — takes a long time to feel comfortable','A bit distant — requires effort','Needs a little warm-up but quickly returns','Immediately natural — no sense of a gap at all'] },
+  { dim:'St', text:'這段友誼面對重大人生變化（換工作、搬家、交新對象等）的韌性如何？', opts:['任何大改變都可能讓這段友誼變淡','人生的改變已讓彼此連結變弱了','大致上維持住了，只是見面少了','不管發生什麼都還是很穩固'],
+    en:'How resilient is this friendship against major life changes (new job, moving, new relationship, etc.)?', enOpts:['Any big change could fade this friendship','Life changes have already weakened the bond','Mostly maintained — just fewer meetups','Stays strong no matter what'] },
+  { dim:'St', text:'五年後，這段友誼是否仍會是生命中重要的存在？', opts:['很不可能','不太確定','應該會','幾乎可以確定'],
+    en:'Will this friendship still be an important part of life five years from now?', enOpts:['Very unlikely','Not sure','Probably yes','Almost certain'] },
   // E 情感能量 Energy
-  { dim:'E', text:'想到要主動聯絡這個人時，第一個直覺感受是什麼？', opts:['有壓力、有負擔，甚至想逃避','有一點猶豫或抗拒','沒什麼特別的感覺','期待，真的很想聊'] },
-  { dim:'E', text:'和這個人進行一次深度交流或見面之後，通常會有什麼感覺？', opts:['很疲憊，需要時間獨自恢復','有一點消耗','還好，沒什麼特別','充電了，心情更好'] },
-  { dim:'E', text:'在這個人面前，是否可以做自己，不需要表演或管理形象？', opts:['不太行，會有壓力要呈現某種樣子','有時候會注意怎麼表現','大多數情況可以','完全可以，從來不需要偽裝'] },
-  { dim:'E', text:'整體而言，這段友誼帶來的感受是什麼？', opts:['主要是壓力、義務感或情緒消耗','沒什麼特別，正負面都不強','讓生活更豐富、感覺更好','是非常珍視的滋養，心存感激'] },
+  { dim:'E', text:'想到要主動聯絡這個人時，第一個直覺感受是什麼？', opts:['有壓力、有負擔，甚至想逃避','有一點猶豫或抗拒','沒什麼特別的感覺','期待，真的很想聊'],
+    en:'When thinking about reaching out to this person, what is the first instinctive feeling?', enOpts:['Pressure, burden, or even avoidance','A little hesitation or reluctance','Nothing particular — just neutral','Excited — genuinely looking forward to it'] },
+  { dim:'E', text:'和這個人進行一次深度交流或見面之後，通常會有什麼感覺？', opts:['很疲憊，需要時間獨自恢復','有一點消耗','還好，沒什麼特別','充電了，心情更好'],
+    en:'After a deep conversation or meetup with this person, how does it usually feel?', enOpts:['Exhausted — need alone time to recover','Somewhat drained','Fine — nothing special','Recharged — in a better mood'] },
+  { dim:'E', text:'在這個人面前，是否可以做自己，不需要表演或管理形象？', opts:['不太行，會有壓力要呈現某種樣子','有時候會注意怎麼表現','大多數情況可以','完全可以，從來不需要偽裝'],
+    en:'Is it possible to be oneself around this person, without performing or managing an image?', enOpts:['Not really — there is pressure to present a certain self','Sometimes feel the need to manage how things come across','In most situations, yes','Completely — never need to pretend'] },
+  { dim:'E', text:'整體而言，這段友誼帶來的感受是什麼？', opts:['主要是壓力、義務感或情緒消耗','沒什麼特別，正負面都不強','讓生活更豐富、感覺更好','是非常珍視的滋養，心存感激'],
+    en:'Overall, what does this friendship bring to life?', enOpts:['Mostly stress, obligation, or emotional drain','Nothing particular — neither strongly positive nor negative','Makes life richer and feels better','A deeply valued source of nourishment — genuinely grateful'] },
 ];
 
 
@@ -1522,10 +1546,10 @@ function SurveyView({ profile, onComplete, onCancel }) {
             [{dimMeta.en.toUpperCase()}] {lang === 'zh' ? dimMeta.label : dimMeta.en}
           </div>
           <div className="fq-survey-q-num">{t('第','Question')} {currentQ + 1} {t('題，共24題','of 24')}</div>
-          <div className="fq-survey-q-text">{q.text}</div>
+          <div className="fq-survey-q-text">{lang === 'zh' ? q.text : q.en}</div>
 
           <div className="fq-likert">
-            {q.opts.map((opt, oi) => {
+            {(lang === 'zh' ? q.opts : q.enOpts).map((opt, oi) => {
               const val = oi + 1;
               const selected = answers[currentQ] === val;
               return (
