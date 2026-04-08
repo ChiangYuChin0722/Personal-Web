@@ -84,9 +84,7 @@
 
 /* ─── Body ─── */
 .fq-body {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 20px 60px;
+  padding: 24px 32px 60px;
 }
 
 /* ─── Section title ─── */
@@ -121,8 +119,8 @@
 /* ─── Dashboard two-column ─── */
 .fq-dash-two-col {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 20px;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
   align-items: start;
 }
 .fq-dash-left {
@@ -267,7 +265,7 @@
 .fq-btn-sm { padding: 6px 12px; font-size: 13px; }
 
 /* ─── Form ─── */
-.fq-form { max-width: 500px; }
+.fq-form { max-width: 680px; }
 .fq-form-row { margin-bottom: 18px; }
 
 .fq-label {
