@@ -5,7 +5,7 @@ export default function FunPage() {
         <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
         <h1 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px" }}>Fun Things</h1>
         <p style={{ color: "#94a3b8", marginBottom: "24px" }}>Coming soon...</p>
-        <a href="/secret" style={{ color: "#93c5fd", fontSize: "14px" }}>← Back to dashboard</a>
+        <a href="/dashboard" style={{ color: "#93c5fd", fontSize: "14px" }}>← Back to dashboard</a>
       </div>
     </div>
   );

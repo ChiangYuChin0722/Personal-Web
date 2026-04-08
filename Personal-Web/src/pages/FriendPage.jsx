@@ -480,7 +480,7 @@ function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, 
       <button className="fq-icon-btn" onClick={onToggleDark} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
         {darkMode ? '☀️' : '🌙'}
       </button>
-      <a href="/secret" className="fq-topbar-back" style={{ marginLeft: 0 }}>
+      <a href="/dashboard" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
       </a>
     </div>
