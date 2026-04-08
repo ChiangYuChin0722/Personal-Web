@@ -546,15 +546,15 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   });
 
   const FRIENDSHIP_TYPES = [
-    { key:'SS',  name:'Soul Partner',   color:'#22D3EE', desc:'Deep trust, high energy, long-term stable. The rarest type.' },
-    { key:'SHQ', name:'Stable Core',    color:'#34D399', desc:'Solid quality and deep trust. A long-term reliable friend.' },
-    { key:'ASL', name:'Active Surface', color:'#93C5FD', desc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
-    { key:'QDB', name:'Quiet Deep Bond',color:'#8B5CF6', desc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
-    { key:'ED',  name:'Energy Drain',   color:'#F87171', desc:'This relationship feels draining. Worth evaluating your investment.' },
-    { key:'AOS', name:'One-Sided',      color:'#FB923C', desc:'Unbalanced giving. May lead to burnout over time.' },
-    { key:'FNR', name:'Fragile',        color:'#FBBF24', desc:'Cracks in the relationship. Proactive communication needed.' },
-    { key:'SLD', name:'Stable Lite',    color:'#94A3B8', desc:'Steady but not deep. Good for casual connection.' },
-    { key:'FAD', name:'Fading',         color:'#475569', desc:"Friendship is fading. Decide if it's worth reinvesting." },
+    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
+    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#34D399', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
+    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#93C5FD', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
+    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
+    { key:'ED',  zh:'情感消耗型', en:'Energy Drain',    color:'#F87171', zhDesc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。',     enDesc:'This relationship feels draining. Worth evaluating your investment.' },
+    { key:'AOS', zh:'單向付出型', en:'One-Sided',       color:'#FB923C', zhDesc:'付出不對等，長期下來會造成疲憊感。',                   enDesc:'Unbalanced giving. May lead to burnout over time.' },
+    { key:'FNR', zh:'脆弱待修型', en:'Fragile',         color:'#FBBF24', zhDesc:'關係出現裂縫，需要主動溝通修復才能重建。',             enDesc:'Cracks in the relationship. Proactive communication needed.' },
+    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
+    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#475569', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
   ];
 
   const TIERS = [
@@ -602,7 +602,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {FRIENDSHIP_TYPES.filter(ft => typeCounts[ft.key]).map(ft => (
                   <div key={ft.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 8px', borderRadius:7, background: ft.color+'14', border:`1px solid ${ft.color}33` }}>
-                    <span style={{ fontSize:12, fontWeight:700, color: ft.color }}>{ft.name}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color: ft.color }}>{lang === 'zh' ? ft.zh : ft.en}</span>
                     <span style={{ fontSize:13, fontWeight:800, color: ft.color }}>{typeCounts[ft.key]}</span>
                   </div>
                 ))}
@@ -674,8 +674,8 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                   {FRIENDSHIP_TYPES.map(ft => (
                     <div key={ft.key} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'7px 10px', borderRadius:8, background:'var(--bg2)' }}>
                       <span style={{ fontWeight:800, color: ft.color, minWidth:36, fontSize:12 }}>{ft.key}</span>
-                      <span style={{ fontWeight:700, color: ft.color, minWidth:96, fontSize:12 }}>{ft.name}</span>
-                      <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{ft.desc}</span>
+                      <span style={{ fontWeight:700, color: ft.color, minWidth:96, fontSize:12 }}>{lang === 'zh' ? ft.zh : ft.en}</span>
+                      <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{lang === 'zh' ? ft.zhDesc : ft.enDesc}</span>
                     </div>
                   ))}
                 </div>
