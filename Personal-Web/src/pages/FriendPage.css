@@ -265,7 +265,7 @@
 .fq-btn-sm { padding: 6px 12px; font-size: 13px; }
 
 /* ─── Form ─── */
-.fq-form { max-width: 680px; }
+.fq-form { max-width: 680px; margin: 0 auto; }
 .fq-form-row { margin-bottom: 18px; }
 
 .fq-label {
