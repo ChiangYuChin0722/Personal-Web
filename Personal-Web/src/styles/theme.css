@@ -439,14 +439,11 @@ body {
 
 /* ── Scroll indicator ── */
 .hero-scroll-indicator {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  margin-top: 32px;
   opacity: 0;
   animation: heroIn 0.7s ease 1.4s both;
 }
