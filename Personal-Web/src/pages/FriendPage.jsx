@@ -75,18 +75,20 @@ function calcScores(answers) {
   DIMS.forEach(d => {
     const slice = answers.slice(d.from, d.from + 4);
     const sum = slice.reduce((a, b) => a + b, 0);
-    scores[d.key] = Math.round(((sum - 4) / 16) * 100);
+    // range: min sum=4, max sum=16 → range=12; scale to 0-100 per dim
+    scores[d.key] = Math.round(((sum - 4) / 12) * 100);
   });
-  scores.total = Math.round(DIMS.reduce((acc, d) => acc + d.weight * scores[d.key], 0));
+  // total capped at 90 (× 0.9 so a perfect run → 90, not 100)
+  scores.total = Math.round(DIMS.reduce((acc, d) => acc + d.weight * scores[d.key], 0) * 0.9);
   return scores;
 }
 
 function getFriendshipType(scores) {
   const { F, R, S, T, St, E } = scores;
   const tot = scores.total;
-  if (tot >= 78 && T >= 70 && E >= 65 && St >= 65)
+  if (tot >= 70 && T >= 70 && E >= 65 && St >= 65)
     return { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' };
-  if (tot >= 65 && T >= 60 && St >= 60 && R >= 58)
+  if (tot >= 58 && T >= 60 && St >= 60 && R >= 58)
     return { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' };
   if (F >= 68 && E >= 60 && T < 55)
     return { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' };
@@ -98,17 +100,17 @@ function getFriendshipType(scores) {
     return { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' };
   if (St < 42 || T < 40)
     return { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' };
-  if (tot >= 50)
+  if (tot >= 45)
     return { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' };
   return   { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' };
 }
 
 function getScoreTier(total) {
-  if (total >= 85) return { tier:'S', color:'#22D3EE' };
-  if (total >= 70) return { tier:'A', color:'#34D399' };
-  if (total >= 55) return { tier:'B', color:'#60A5FA' };
-  if (total >= 40) return { tier:'C', color:'#FBBF24' };
-  if (total >= 25) return { tier:'D', color:'#FB923C' };
+  if (total >= 81) return { tier:'S', color:'#22D3EE' };
+  if (total >= 67) return { tier:'A', color:'#34D399' };
+  if (total >= 52) return { tier:'B', color:'#60A5FA' };
+  if (total >= 36) return { tier:'C', color:'#FBBF24' };
+  if (total >= 20) return { tier:'D', color:'#FB923C' };
   return { tier:'F', color:'#F87171' };
 }
 
@@ -494,7 +496,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   const total = profiles.length;
   const latestScores = profiles.map(p => getLatestSurvey(p.id)?.total).filter(v => v != null);
   const avgScore = latestScores.length > 0 ? Math.round(latestScores.reduce((a,b)=>a+b,0)/latestScores.length) : null;
-  const needAttention = profiles.filter(p => { const s = getLatestSurvey(p.id); return s && s.total < 45; }).length;
+  const needAttention = profiles.filter(p => { const s = getLatestSurvey(p.id); return s && s.total < 40; }).length;
   const totalSurveys = surveys.length;
   const totalLogs = journals.length;
 
@@ -530,11 +532,11 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   ];
 
   const TIERS = [
-    { tier:'S', min:85, color:'#22D3EE', label:'Exceptional' },
-    { tier:'A', min:70, color:'#34D399', label:'Strong' },
-    { tier:'B', min:55, color:'#60A5FA', label:'Good' },
-    { tier:'C', min:40, color:'#FBBF24', label:'Moderate' },
-    { tier:'D', min:25, color:'#FB923C', label:'Weak' },
+    { tier:'S', min:81, color:'#22D3EE', label:'Exceptional' },
+    { tier:'A', min:67, color:'#34D399', label:'Strong' },
+    { tier:'B', min:52, color:'#60A5FA', label:'Good' },
+    { tier:'C', min:36, color:'#FBBF24', label:'Moderate' },
+    { tier:'D', min:20, color:'#FB923C', label:'Weak' },
     { tier:'F', min:0,  color:'#F87171', label:'Critical' },
   ];
 
@@ -554,7 +556,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               { label: t('最佳朋友', 'Top Friend'),   value: highestProfile ? highestProfile.name : '—', sub: null, color: null, small: !!highestProfile },
               { label: t('測驗次數', 'Surveys'),       value: totalSurveys, sub: null,       color: null },
               { label: t('日誌條目', 'Log Entries'),   value: totalLogs,  sub: null,          color: null },
-              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於45', 'Score < 45'), color: needAttention > 0 ? '#F87171' : null },
+              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於40', 'Score < 40'), color: needAttention > 0 ? '#F87171' : null },
             ].map(({ label, value, sub, color, small }) => (
               <div key={label} className="fq-kpi-list-item">
                 <span className="fq-kpi-list-label">{label}</span>
@@ -624,8 +626,8 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                   ))}
                 </div>
                 <div style={{ fontSize:12, color:'var(--muted)', marginBottom:14, fontFamily:'monospace', background:'var(--bg2)', padding:'8px 12px', borderRadius:8 }}>
-                  FQ = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
-                  <br />{t('每維度：((4題總和 − 4) ÷ 16) × 100，範圍 0–100', 'Per dim: ((4-answer sum − 4) ÷ 16) × 100, range 0–100')}
+                  FQ = (F×15% + R×18% + S×20% + T×20% + St×15% + E×12%) × 0.9
+                  <br />{t('每維度：((4題總和 − 4) ÷ 12) × 100；總分 ×0.9 → 最高 90 分', 'Per dim: ((sum−4)÷12)×100; total ×0.9 → max 90')}
                 </div>
 
                 {/* Tiers */}
@@ -1231,7 +1233,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           </div>
           <div className="fq-divider" />
           <div style={{ fontSize:11, color:'var(--muted)', lineHeight:1.6 }}>
-            FQ Score = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
+            FQ = (F×15% + R×18% + S×20% + T×20% + St×15% + E×12%) × 0.9 → max 90
           </div>
         </div>
       </div>
