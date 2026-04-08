@@ -5,7 +5,7 @@ const LangCtx = createContext('zh');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const COLOR_PRESETS = ['#60A5FA','#22D3EE','#34D399','#8B5CF6','#F472B6','#FB923C','#FBBF24','#F87171'];
+const RAINBOW_COLORS = ['#EF4444','#F97316','#EAB308','#22C55E','#3B82F6','#6366F1','#A855F7'];
 const THIS_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: THIS_YEAR - 1989 }, (_, i) => THIS_YEAR - i);
 
@@ -772,7 +772,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
   // new tag form
   const [showTagForm,  setShowTagForm]  = useState(false);
   const [newTagLabel,  setNewTagLabel]  = useState('');
-  const [newTagColor,  setNewTagColor]  = useState('#60A5FA');
+  const [newTagColor,  setNewTagColor]  = useState(RAINBOW_COLORS[4]);
 
   // new key event form
   const [evtYear, setEvtYear] = useState('');
@@ -797,7 +797,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
     const tag = { id: genId(), label: newTagLabel.trim(), color: newTagColor };
     onAddColorTag(tag);
     selectTag(tag);
-    setShowTagForm(false); setNewTagLabel(''); setNewTagColor('#60A5FA');
+    setShowTagForm(false); setNewTagLabel(''); setNewTagColor(RAINBOW_COLORS[4]);
   }
 
   function addEvent() {
@@ -881,7 +881,12 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
             ))}
             {showTagForm ? (
               <div className="fq-tag-add-form">
-                <input type="color" value={newTagColor} onChange={e => setNewTagColor(e.target.value)} className="fq-tag-color-swatch" />
+                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                  {RAINBOW_COLORS.map(c => (
+                    <button key={c} type="button" onClick={() => setNewTagColor(c)}
+                      style={{ width:18, height:18, borderRadius:'50%', background:c, border: newTagColor===c ? '2.5px solid var(--text)' : '2.5px solid transparent', cursor:'pointer', padding:0, flexShrink:0 }} />
+                  ))}
+                </div>
                 <input value={newTagLabel} onChange={e => setNewTagLabel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addNewTag()}
                   placeholder="Tag name" className="fq-tag-label-inp" autoFocus />
@@ -1250,7 +1255,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
-function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack, onLogUpdate }) {
+function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate }) {
   const lang = useContext(LangCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const profileSurveys = surveys
@@ -1276,6 +1281,9 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('日誌', 'Log')}</button>
         <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
           + {t('測驗', 'Survey')}
+        </button>
+        <button className="fq-btn fq-btn-danger fq-btn-sm" onClick={onDelete}>
+          🗑 {t('刪除', 'Delete')}
         </button>
       </div>
 
@@ -1635,6 +1643,14 @@ export default function FriendPage() {
           surveys={surveys}
           journals={journals}
           onEdit={() => handleEditProfile(selectedProfile)}
+          onDelete={() => {
+            if (!window.confirm(`Delete ${selectedProfile.name}? This cannot be undone.`)) return;
+            const pid = selectedProfile.id;
+            setProfiles(prev => prev.filter(p => p.id !== pid));
+            setSurveys(prev => prev.filter(s => s.profileId !== pid));
+            setJournals(prev => prev.filter(j => j.profileId !== pid));
+            goToDashboard();
+          }}
           onStartSurvey={handleStartSurvey}
           onBack={goToDashboard}
           onLogUpdate={p => setLogTarget(p)}
