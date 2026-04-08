@@ -1230,7 +1230,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
                   ))}
                 </div>
                 <input value={newGroupLabel} onChange={e => setNewGroupLabel(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addNewGroup()}
+                  onKeyDown={e => e.key === 'Enter' && !e.isComposing && addNewGroup()}
                   placeholder={t('自訂分組名稱','Group name')} className="fq-tag-label-inp" autoFocus />
                 <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewGroup}>✓</button>
                 <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowGroupForm(false)}>✕</button>
@@ -1297,7 +1297,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
                 min="1990" max={THIS_YEAR} />
               <input className="fq-key-event-text-inp" value={evtText}
                 onChange={e => setEvtText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addEvent()}
+                onKeyDown={e => e.key === 'Enter' && !e.isComposing && addEvent()}
                 placeholder={t('例：創業','e.g. Started his own company')} />
               <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
             </div>

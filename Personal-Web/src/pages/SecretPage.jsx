@@ -48,7 +48,7 @@ function CategoryPicker({ value, onChange, categories, onAddCategory }) {
         <div className="sp-cat-add-inline">
           <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
           <input value={newLabel} onChange={e => setNewLabel(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addCat()} placeholder="Label name"
+            onKeyDown={e => e.key === "Enter" && !e.isComposing && addCat()} placeholder="Label name"
             className="sp-cat-label-inp" autoFocus />
           <button onClick={addCat} type="button" className="sp-cat-add-ok">✓</button>
           <button onClick={() => setShowAdd(false)} type="button" className="sp-del">✕</button>
@@ -165,7 +165,7 @@ function QuickLinks({ links, onAdd, onRemove }) {
           </div>
           <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
           <input value={url} onChange={e => setUrl(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addCustom()} placeholder="URL" />
+            onKeyDown={e => e.key === "Enter" && !e.isComposing && addCustom()} placeholder="URL" />
           <button onClick={addCustom} className="ql-add-btn">+</button>
           <button onClick={() => setShowCustom(false)} className="sp-del">✕</button>
         </div>
@@ -200,7 +200,7 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
             </div>
           ))}
           <div className="sp-pill-add-row">
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder={placeholder} />
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.isComposing && add()} placeholder={placeholder} />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -270,7 +270,7 @@ function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }
         </div>
         <div className="sp-modal-body">
           <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && save()}
+            onKeyDown={e => e.key === "Enter" && !e.isComposing && save()}
             placeholder="Event title..." className="sp-modal-main-input" />
           <div className="sp-modal-label">Category</div>
           <CategoryPicker value={category} onChange={setCategory} categories={categories} onAddCategory={onAddCategory} />
@@ -575,7 +575,7 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
             <div className="em-modal-field">
               <label>Title</label>
               <input autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && addItem()} placeholder="Task title..." />
+                onKeyDown={e => e.key === "Enter" && !e.isComposing && addItem()} placeholder="Task title..." />
             </div>
             <div className="em-modal-field">
               <label>Deadline</label>
@@ -615,7 +615,7 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
                     <label>Title</label>
                     <input autoFocus value={editForm.title}
                       onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-                      onKeyDown={e => e.key === "Enter" && saveEdit(viewItem.id)} />
+                      onKeyDown={e => e.key === "Enter" && !e.isComposing && saveEdit(viewItem.id)} />
                   </div>
                   <div className="em-modal-field">
                     <label>Deadline</label>
@@ -875,7 +875,7 @@ function TaskList({ list, isOpen, onToggleOpen, onDelete, onAddItem, onToggleIte
           ))}
           <div className="sp-grocery-add">
             <input value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && add()} placeholder="Add item..." />
+              onKeyDown={e => e.key === "Enter" && !e.isComposing && add()} placeholder="Add item..." />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -937,7 +937,7 @@ function TaskListsSection({ taskLists, onUpdate }) {
       ))}
       <div className="sp-tl-add-list">
         <input value={newName} onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && addList()} placeholder="+ New list..." className="sp-tl-add-input" />
+          onKeyDown={e => e.key === "Enter" && !e.isComposing && addList()} placeholder="+ New list..." className="sp-tl-add-input" />
         <button onClick={addList} className="sp-tl-add-btn">+</button>
       </div>
     </div>
@@ -1070,7 +1070,7 @@ export default function SecretPage() {
           </div>
           <div className="sp-field">
             <label>PASSWORD</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="Enter password" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.isComposing && handleLogin()} placeholder="Enter password" />
           </div>
           <button className="sp-login-btn" onClick={handleLogin}>Sign In</button>
           {loginError && <div className="sp-login-error">Incorrect username or password.</div>}
