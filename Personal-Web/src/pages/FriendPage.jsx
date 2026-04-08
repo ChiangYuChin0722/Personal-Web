@@ -1159,26 +1159,26 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 
         {/* Name */}
         <div className="fq-form-row">
-          <label className="fq-label">Name *</label>
-          <input className="fq-input" placeholder="Friend's name or nickname"
+          <label className="fq-label">{t('姓名 *','Name *')}</label>
+          <input className="fq-input" placeholder={t("朋友的名字或暱稱","Friend's name or nickname")}
             value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
           {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:6 }}>{err}</div>}
         </div>
 
         {/* Photo */}
         <div className="fq-form-row">
-          <label className="fq-label">Photo</label>
+          <label className="fq-label">{t('照片','Photo')}</label>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
             <div className="fq-photo-upload" onClick={() => fileRef.current?.click()} style={{ background: color + '22', borderColor: photo ? color : undefined }}>
               {photo
                 ? <img src={photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                : <span className="fq-photo-upload-hint">Click<br/>Upload</span>
+                : <span className="fq-photo-upload-hint">{t('點擊','Click')}<br/>{t('上傳','Upload')}</span>
               }
             </div>
             <div>
               <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
-              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>PNG / JPG, max 2 MB</div>
-              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>Remove photo</button>}
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('PNG / JPG，最大 2 MB','PNG / JPG, max 2 MB')}</div>
+              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>{t('移除照片','Remove photo')}</button>}
             </div>
           </div>
         </div>
@@ -1243,19 +1243,19 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 
         {/* Friends Since (year only) */}
         <div className="fq-form-row">
-          <label className="fq-label">Friends Since</label>
+          <label className="fq-label">{t('認識時間','Friends Since')}</label>
           <select className="fq-input" value={since} onChange={e => setSince(e.target.value)}>
-            <option value="">— Select year —</option>
+            <option value="">{t('— 選擇年份 —','— Select year —')}</option>
             {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}</option>)}
           </select>
         </div>
 
         {/* Key Events */}
         <div className="fq-form-row">
-          <label className="fq-label">Key Events</label>
+          <label className="fq-label">{t('重要事件','Key Events')}</label>
           <div className="fq-key-events">
             {keyEvents.length === 0 && (
-              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>No events yet — add milestones, memories, or news.</div>
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>{t('尚無事件 — 新增里程碑、回憶或消息。','No events yet — add milestones, memories, or news.')}</div>
             )}
             {keyEvents.map((ev, idx) => (
               <div key={ev.id} className="fq-key-event-row">
@@ -1267,12 +1267,12 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
             ))}
             <div className="fq-key-event-add">
               <input className="fq-key-event-year-inp" value={evtYear}
-                onChange={e => setEvtYear(e.target.value)} placeholder="Year" type="number"
+                onChange={e => setEvtYear(e.target.value)} placeholder={t('年份','Year')} type="number"
                 min="1990" max={THIS_YEAR} />
               <input className="fq-key-event-text-inp" value={evtText}
                 onChange={e => setEvtText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addEvent()}
-                placeholder="e.g. Started his own company" />
+                placeholder={t('例：創業','e.g. Started his own company')} />
               <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
             </div>
           </div>
@@ -1280,12 +1280,12 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave}>
-            {isEdit ? '✓ Save Changes' : '✓ Create Profile'}
+            {isEdit ? t('✓ 儲存變更','✓ Save Changes') : t('✓ 建立資料','✓ Create Profile')}
           </button>
-          <button className="fq-btn fq-btn-ghost" onClick={onCancel}>Cancel</button>
+          <button className="fq-btn fq-btn-ghost" onClick={onCancel}>{t('取消','Cancel')}</button>
           {isEdit && (
             <button className="fq-btn fq-btn-danger fq-btn-sm" style={{ marginLeft:'auto' }} onClick={onDelete}>
-              Delete Profile
+              {t('刪除資料','Delete Profile')}
             </button>
           )}
         </div>
