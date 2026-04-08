@@ -209,7 +209,7 @@
 .fq-friend-card:hover { border-color: var(--accent); background: var(--bg2); }
 
 .fq-friend-card-top {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px; margin-top: 20px;
 }
 
 .fq-avatar {

@@ -1150,8 +1150,19 @@ function PhotoCropModal({ src, onApply, onCancel }) {
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const PREVIEW = 260;
   const [scale, setScale] = useState(1);
-  const [minScale, setMinScale] = useState(0.05);
+  const [fillScale, setFillScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  // Log-scale slider: fillScale/ZOOM_K at 0%, fillScale at 50%, fillScale*ZOOM_K at 100%
+  const ZOOM_K = 5;
+  function sliderVal() {
+    const mn = fillScale / ZOOM_K, mx = fillScale * ZOOM_K;
+    return Math.log(Math.max(scale, mn) / mn) / Math.log(mx / mn) * 100;
+  }
+  function scaleFromSlider(v) {
+    const mn = fillScale / ZOOM_K, mx = fillScale * ZOOM_K;
+    return mn * Math.pow(mx / mn, v / 100);
+  }
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef(null);
   const imgRef = useRef(null);
@@ -1211,18 +1222,17 @@ function PhotoCropModal({ src, onApply, onCancel }) {
             }} onLoad={() => {
               const img = imgRef.current;
               const W = img.naturalWidth, H = img.naturalHeight;
-              const fillScale = Math.max(PREVIEW / W, PREVIEW / H);
-              const fitScale  = Math.min(PREVIEW / W, PREVIEW / H);
-              setMinScale(fitScale);
-              setScale(fillScale);
+              const fs = Math.max(PREVIEW / W, PREVIEW / H);
+              setFillScale(fs);
+              setScale(fs);
             }} />
           </div>
           <div style={{ width:'100%' }}>
             <label style={{ fontSize:12, color:'var(--muted)', display:'block', marginBottom:6 }}>
               {t('縮放', 'Zoom')}
             </label>
-            <input type="range" min={minScale} max="4" step={minScale / 10} value={scale}
-              onChange={e => setScale(parseFloat(e.target.value))}
+            <input type="range" min="0" max="100" step="0.5" value={sliderVal()}
+              onChange={e => setScale(scaleFromSlider(parseFloat(e.target.value)))}
               style={{ width:'100%', accentColor:'var(--accent)' }} />
           </div>
           <canvas ref={canvasRef} style={{ display:'none' }} />
