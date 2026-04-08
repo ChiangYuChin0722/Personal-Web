@@ -25,36 +25,36 @@ const MOODS = [
 ];
 
 const QUESTIONS = [
-  // F 頻率
-  { dim:'F', text:'不計群組訊息，我們私下一對一聯絡的平均頻率？', opts:['幾乎不聯絡','每月一次左右','每週一次以上','幾乎每天'] },
-  { dim:'F', text:'最近三個月，是誰更常主動開啟對話或約見面？', opts:['幾乎都是我','大多是我','差不多','對方更多或差不多'] },
-  { dim:'F', text:'如果我連續兩週沒有主動聯絡，對方會注意到並主動找我嗎？', opts:['不會','不確定，可能不會','應該會','一定會'] },
-  { dim:'F', text:'我們友誼的「聯絡熱度」和一年前相比？', opts:['明顯降溫','稍微減少','差不多','變得更頻繁'] },
-  // R 互惠
-  { dim:'R', text:'我們分享個人困擾、喜悅和私事的程度，是否雙向對等？', opts:['幾乎是我在分享','偏向我多分享','大致對等','非常對等雙向'] },
-  { dim:'R', text:'對方了解我現在生活中最重要、最在意的事嗎？', opts:['幾乎不知道','只知道表面的事','了解大部分','非常清楚'] },
-  { dim:'R', text:'我付出的關心、時間和精力，對方是否有相應的回應？', opts:['完全沒有對應','回應很少','大致有回應','充分且對等'] },
-  { dim:'R', text:'當我需要幫忙或支持時，主動開口的難度？', opts:['非常難，寧可不說','有點難','還好，可以說','很自然，毫無障礙'] },
-  // S 支持
-  { dim:'S', text:'在我人生中最困難的一段時期，對方的角色是？', opts:['完全不在場','知道但沒怎麼幫助','有提供支持','是重要的支柱之一'] },
-  { dim:'S', text:'如果我明天要做一個重大決定，我會想先聽對方的意見嗎？', opts:['不會','不太會','可能會','一定會'] },
-  { dim:'S', text:'對方的支持符合「我真正需要的」的程度？', opts:['差很多，不理解需要','有時對有時錯','大多能給到位','非常精準，深度理解'] },
-  { dim:'S', text:'對方曾在沒有明確求助的情況下，主動察覺並關心過我嗎？', opts:['從來沒有','偶爾','有幾次讓我很感動','這是他的常態'] },
-  // T 信任
-  { dim:'T', text:'我是否曾對對方說過讓自己顯得脆弱、不完美或尷尬的事？', opts:['從不，不敢說','說過一點點','說過不少','幾乎什麼都說過'] },
-  { dim:'T', text:'如果我犯了一個嚴重的錯誤，我願意主動告訴對方嗎？', opts:['不願意','有點猶豫','應該會告訴他','第一個想到的就是他'] },
-  { dim:'T', text:'對方說過的話、做出的承諾，我的信任程度是？', opts:['經常懷疑','有些保留','大致相信','完全信任'] },
-  { dim:'T', text:'如果我們發生誤會或衝突，我相信問題可以被直接溝通解決嗎？', opts:['不相信，很難談','很困難但或許可以','大多能解決','完全相信，我們能處理'] },
-  // St 穩定性
-  { dim:'St', text:'這段友誼在過去兩年內有沒有出現過「差點斷掉」的危機？', opts:['有嚴重危機且未修復','有摩擦影響了關係','有小誤會但都解決了','非常穩定從沒出現過'] },
-  { dim:'St', text:'即使一段時間沒有聯絡，再次見面或聊天時的自在感？', opts:['非常尷尬，需要很久暖身','有些生疏','稍微需要一點時間','完全自然，像從沒斷過'] },
-  { dim:'St', text:'考慮各種人生變化（換工作、搬家、新對象），這段友誼的韌性？', opts:['人生一變就消失了','有些影響，關係變淡了','大致維持，只是見面少了','人生變了依然穩固'] },
-  { dim:'St', text:'我預計五年後，我們是否仍然是彼此生命中重要的人？', opts:['不太可能','不確定','應該會','幾乎確定'] },
-  // E 情感能量
-  { dim:'E', text:'想到要主動聯絡對方，我的第一個直覺反應是？', opts:['有負擔或逃避感','有點猶豫','還好沒特別感覺','期待，很想聊'] },
-  { dim:'E', text:'和對方進行一次深度交流或見面之後，我通常感覺？', opts:['很累，需要獨自恢復','有些消耗','普通，沒什麼特別','充電感，精神變好'] },
-  { dim:'E', text:'這段友誼是否讓我感覺「被接納」——不需要表演、可以做自己？', opts:['不太行，有壓力要表現','有時有壓力','大多可以','完全可以，就是我'] },
-  { dim:'E', text:'整體來說，這段友誼對我的生活帶來什麼？', opts:['主要是消耗或壓力','普通，沒什麼特別','讓生活更豐富','是我非常珍惜的滋養'] },
+  // F 頻率 Frequency
+  { dim:'F', text:'不計群組訊息，你們私下一對一聯絡（傳訊息、通話、見面）的平均頻率大概是？', opts:['幾乎沒有聯絡（一年一次或更少）','一年幾次','每個月幾次','每週或更頻繁'] },
+  { dim:'F', text:'過去三個月，你們之間是誰更常主動發起對話或約出來？', opts:['幾乎都是我在主動','大多數都是我','大概差不多各半','大多數是對方或兩邊差不多'] },
+  { dim:'F', text:'假設你連續兩週沒有主動聯絡對方，對方會注意到並主動找你嗎？', opts:['很不可能，他大概不會發現','應該不會','他大概會來問一下','絕對會，完全不用懷疑'] },
+  { dim:'F', text:'和一年前相比，你們的聯絡頻率有什麼變化？', opts:['明顯減少了很多','有一點變少','大概差不多','比以前更頻繁了'] },
+  // R 互惠 Reciprocity
+  { dim:'R', text:'當你分享個人困擾、開心的事或私事時，對方是否也會同等地向你分享？', opts:['我分享很多但他幾乎不開口','我分享的比他多','我們分享的程度大概差不多','非常均衡，都很願意主動分享'] },
+  { dim:'R', text:'這個人對你目前生活中最重要的事了解有多深？', opts:['幾乎不知道我的近況','只知道一些表面的事','了解大部分對我重要的事','非常清楚，對我現在的狀態完全掌握'] },
+  { dim:'R', text:'當你對這段友誼投入時間、關心和精力，對方通常怎麼回應？', opts:['幾乎沒有任何回應','偶爾有回應但很少對等付出','通常有類似程度的回應','完全、一致地相互付出'] },
+  { dim:'R', text:'當你真正需要幫助或支持時，主動開口請對方幫忙對你來說有多容易？', opts:['很難開口，我寧可不說','有點不自在','還算容易，大部分情況都可以開口','完全自然，不需要任何猶豫'] },
+  // S 支持 Support
+  { dim:'S', text:'回想你生命中最艱難的一段時期，這個人扮演了什麼樣的角色？', opts:['他完全不在場或不知情','他知道但沒有給什麼實質支持','他在那段時間給了真正的幫助','他是我最重要的支柱之一'] },
+  { dim:'S', text:'如果明天你要做一個重大的人生決定，你會想要事先聽他的意見嗎？', opts:['完全不會，他不在我的考慮範圍','應該不會','也許會，我可能會考慮','絕對會，他會是我第一個想找的人'] },
+  { dim:'S', text:'當對方給你支持時，那份支持有多符合你真正需要的是什麼？', opts:['常常不對，他不太懂我需要什麼','有時候對有時候不對','通常都蠻準確的','幾乎總是非常精準，深度理解我的需求'] },
+  { dim:'S', text:'對方有沒有在你沒有開口的情況下，主動察覺到你狀態不好並關心你？', opts:['從來沒有過這種事','偶爾有一兩次','有幾次讓我很感動','這幾乎是他的常態，很自然'] },
+  // T 信任 Trust
+  { dim:'T', text:'你有沒有對這個人說過讓你顯得脆弱、不完美或尷尬的事？', opts:['從來沒有，我把那一面藏起來','說過一點點','說過蠻多的','幾乎什麼都說過，包括我最低落的時刻'] },
+  { dim:'T', text:'如果你犯了一個嚴重的錯誤，你會主動去告訴這個人嗎？', opts:['不會，我不想讓他知道','猶豫很久才決定要不要說','會，我大概會告訴他','他會是我第一個想找的人'] },
+  { dim:'T', text:'你對這個人說的話和做的承諾，信任程度有多高？', opts:['常常會質疑他說的話','有一些保留','大致上相信他','完全信任，毫無保留'] },
+  { dim:'T', text:'如果你們之間發生了誤會或衝突，你相信可以透過直接對話解決嗎？', opts:['不相信，這種事我們只能逃避或放著','會很困難，但也許有可能','通常可以，我們能夠溝通','完全相信，我們一定有辦法處理'] },
+  // St 穩定 Stability
+  { dim:'St', text:'過去兩年之間，這段友誼有沒有出現過嚴重的緊張或幾乎斷掉的危機？', opts:['有過嚴重的危機，且目前還沒有完全解決','有過一些摩擦，影響了親近程度','有過小誤會，但都解決了','完全穩定，什麼問題都沒發生過'] },
+  { dim:'St', text:'在一段時間沒有聯絡之後，你們重新接觸時的自然程度是？', opts:['很尷尬，需要很長時間才能找回感覺','有一點生疏，要花點力氣','需要一點暖身，但很快就回來了','立刻就很自然，完全沒有斷層感'] },
+  { dim:'St', text:'這段友誼面對重大人生變化（換工作、搬家、交新對象等）的韌性如何？', opts:['任何大改變都可能讓這段友誼變淡或結束','人生的改變已經讓我們的連結變弱了','大致上維持住了，只是見面少了','不管發生什麼都還是很穩固'] },
+  { dim:'St', text:'你預計五年後，這個人對你來說還會是重要的存在嗎？', opts:['我覺得不太可能','我不太確定','我認為應該會','幾乎可以確定'] },
+  // E 情感能量 Energy
+  { dim:'E', text:'當你想到要主動去聯絡這個人時，你第一個冒出來的直覺感受是？', opts:['有壓力、有負擔，甚至想逃避','有一點猶豫或抗拒','沒什麼特別的感覺，就是普通','期待，真的很想聊'] },
+  { dim:'E', text:'在和這個人進行一次深度交流或見面之後，你通常感覺如何？', opts:['很疲憊，需要時間獨自恢復','有一點消耗','還好，沒什麼特別','充電了，心情更好'] },
+  { dim:'E', text:'在這個人面前，你是否可以做自己，不需要表演或管理別人的觀感？', opts:['不太行，我會有壓力要呈現某種形象','有時候會覺得要注意怎麼表現','大多數情況可以','完全可以，從來不需要偽裝'] },
+  { dim:'E', text:'整體而言，這段友誼對你的生活帶來的是什麼？', opts:['主要是壓力、義務感或情緒消耗','沒什麼特別，正面負面都不強','讓生活更豐富、讓我感覺更好','是我非常珍視的滋養，讓我很感激'] },
 ];
 
 
@@ -416,15 +416,18 @@ function Topbar({ view, onDashboard, onAddFriend }) {
 
 
 // ─── Auth View ─────────────────────────────────────────────────────────────────
+const FQ_USER = "chianghebe";
+const FQ_PASS = "Hebe0722";
 
 function AuthView({ onAuth }) {
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState('');
+  const [user, setUser] = useState('');
+  const [pw,   setPw]   = useState('');
+  const [err,  setErr]  = useState('');
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!pw.trim()) { setErr('請輸入密碼'); return; }
-    sessionStorage.setItem('yc_auth', pw);
+    if (user !== FQ_USER || pw !== FQ_PASS) { setErr('Incorrect username or password.'); return; }
+    sessionStorage.setItem('yc_auth', 'fq_ok');
     onAuth();
   }
 
@@ -433,19 +436,28 @@ function AuthView({ onAuth }) {
       <div className="fq-auth-box">
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
         <div className="fq-auth-title">FQ SYSTEM</div>
-        <div className="fq-auth-sub">Friendship Quantification v2.1<br />請輸入密碼以繼續</div>
+        <div className="fq-auth-sub">Friendship Quantification v2.1</div>
         <form onSubmit={handleSubmit}>
           <input
             className="fq-auth-input"
+            type="text"
+            placeholder="Username"
+            value={user}
+            onChange={e => { setUser(e.target.value); setErr(''); }}
+            autoFocus
+            autoComplete="off"
+            style={{ marginBottom: 8 }}
+          />
+          <input
+            className="fq-auth-input"
             type="password"
-            placeholder="••••••••"
+            placeholder="Password"
             value={pw}
             onChange={e => { setPw(e.target.value); setErr(''); }}
-            autoFocus
           />
           {err && <div className="fq-auth-err">{err}</div>}
-          <button type="submit" className="fq-btn fq-btn-primary" style={{ width:'100%', justifyContent:'center' }}>
-            AUTHENTICATE
+          <button type="submit" className="fq-btn fq-btn-primary" style={{ width:'100%', justifyContent:'center', marginTop: 4 }}>
+            SIGN IN
           </button>
         </form>
       </div>
@@ -457,81 +469,189 @@ function AuthView({ onAuth }) {
 // ─── Dashboard View ────────────────────────────────────────────────────────────
 
 function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
+  const [showGuide, setShowGuide] = useState(false);
+
   // KPI calculations
-  const total = profiles.length;
-  const avgScore = total === 0 ? null : (() => {
-    const scored = profiles.map(p => {
-      const ps = surveys.filter(s => s.profileId === p.id);
-      if (ps.length === 0) return null;
-      return ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].total;
-    }).filter(v => v !== null);
-    if (scored.length === 0) return null;
-    return Math.round(scored.reduce((a,b) => a+b,0) / scored.length);
-  })();
-
-  const highestProfile = (() => {
-    let best = null, bestScore = -1;
-    profiles.forEach(p => {
-      const ps = surveys.filter(s => s.profileId === p.id);
-      if (ps.length === 0) return;
-      const latest = ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      if (latest.total > bestScore) { bestScore = latest.total; best = p; }
-    });
-    return best;
-  })();
-
-  const mostRecentSurvey = surveys.length === 0 ? null :
-    surveys.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-  const mostRecentProfile = mostRecentSurvey
-    ? profiles.find(p => p.id === mostRecentSurvey.profileId)
-    : null;
-
-  // Latest score per profile
   function getLatestSurvey(profileId) {
     const ps = surveys.filter(s => s.profileId === profileId);
     if (!ps.length) return null;
     return ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
   }
 
+  const total = profiles.length;
+  const latestScores = profiles.map(p => getLatestSurvey(p.id)?.total).filter(v => v != null);
+  const avgScore = latestScores.length > 0 ? Math.round(latestScores.reduce((a,b)=>a+b,0)/latestScores.length) : null;
+  const needAttention = profiles.filter(p => { const s = getLatestSurvey(p.id); return s && s.total < 45; }).length;
+  const totalSurveys = surveys.length;
+  const totalLogs = journals.length;
+
+  let highestProfile = null, highestScore = -1;
+  profiles.forEach(p => {
+    const s = getLatestSurvey(p.id);
+    if (s && s.total > highestScore) { highestScore = s.total; highestProfile = p; }
+  });
+
+  const sortedRecent = [...surveys].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const mostRecentSurvey = sortedRecent[0] || null;
+  const mostRecentProfile = mostRecentSurvey ? profiles.find(p => p.id === mostRecentSurvey.profileId) : null;
+
+  // Type distribution
+  const typeCounts = {};
+  profiles.forEach(p => {
+    const s = getLatestSurvey(p.id);
+    if (!s) return;
+    const t = getFriendshipType(s.scores).key;
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+
+  const FRIENDSHIP_TYPES = [
+    { key:'SS',  name:'Soul Partner',   color:'#22D3EE', desc:'Deep trust, high energy, long-term stable. The rarest type.' },
+    { key:'SHQ', name:'Stable Core',    color:'#34D399', desc:'Solid quality and deep trust. A long-term reliable friend.' },
+    { key:'ASL', name:'Active Surface', color:'#93C5FD', desc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
+    { key:'QDB', name:'Quiet Deep Bond',color:'#8B5CF6', desc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
+    { key:'ED',  name:'Energy Drain',   color:'#F87171', desc:'This relationship feels draining. Worth evaluating your investment.' },
+    { key:'AOS', name:'One-Sided',      color:'#FB923C', desc:'Unbalanced giving. May lead to burnout over time.' },
+    { key:'FNR', name:'Fragile',        color:'#FBBF24', desc:'Cracks in the relationship. Proactive communication needed.' },
+    { key:'SLD', name:'Stable Lite',    color:'#94A3B8', desc:'Steady but not deep. Good for casual connection.' },
+    { key:'FAD', name:'Fading',         color:'#475569', desc:"Friendship is fading. Decide if it's worth reinvesting." },
+  ];
+
+  const TIERS = [
+    { tier:'S', min:85, color:'#22D3EE', label:'Exceptional' },
+    { tier:'A', min:70, color:'#34D399', label:'Strong' },
+    { tier:'B', min:55, color:'#60A5FA', label:'Good' },
+    { tier:'C', min:40, color:'#FBBF24', label:'Moderate' },
+    { tier:'D', min:25, color:'#FB923C', label:'Weak' },
+    { tier:'F', min:0,  color:'#F87171', label:'Critical' },
+  ];
+
   return (
     <div className="fq-body">
       {/* KPI Row */}
-      <div className="fq-kpi-row">
+      <div className="fq-kpi-row" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
         <div className="fq-kpi">
-          <div className="fq-kpi-label">Total Friends</div>
+          <div className="fq-kpi-label">Friends</div>
           <div className="fq-kpi-value">{total}</div>
-          <div className="fq-kpi-sub">registered profiles</div>
+          <div className="fq-kpi-sub">profiles</div>
         </div>
         <div className="fq-kpi">
-          <div className="fq-kpi-label">Avg FQ Score</div>
+          <div className="fq-kpi-label">Avg FQ</div>
           <div className="fq-kpi-value" style={{ color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--muted)' }}>
-            {avgScore !== null ? avgScore : '—'}
+            {avgScore ?? '—'}
           </div>
-          <div className="fq-kpi-sub">across all friends</div>
+          <div className="fq-kpi-sub">avg score</div>
         </div>
         <div className="fq-kpi">
-          <div className="fq-kpi-label">Highest Scorer</div>
-          <div className="fq-kpi-value" style={{ fontSize: highestProfile ? 22 : 30, paddingTop: highestProfile ? 4 : 0 }}>
-            {highestProfile ? (
-              <span>{highestProfile.name}</span>
-            ) : '—'}
+          <div className="fq-kpi-label">Top Friend</div>
+          <div className="fq-kpi-value" style={{ fontSize: highestProfile ? 18 : 30 }}>
+            {highestProfile ? highestProfile.name : '—'}
           </div>
-          <div className="fq-kpi-sub">
-            {highestProfile ? (() => {
-              const s = getLatestSurvey(highestProfile.id);
-              return s ? `Score: ${s.total}` : 'no survey';
-            })() : 'no data yet'}
-          </div>
+          <div className="fq-kpi-sub">{highestScore > -1 ? `Score ${highestScore}` : 'no data'}</div>
         </div>
         <div className="fq-kpi">
-          <div className="fq-kpi-label">Most Recent Survey</div>
-          <div className="fq-kpi-value" style={{ fontSize: 22, paddingTop: 4 }}>
-            {mostRecentProfile ? mostRecentProfile.name : '—'}
+          <div className="fq-kpi-label">Surveys</div>
+          <div className="fq-kpi-value">{totalSurveys}</div>
+          <div className="fq-kpi-sub">total taken</div>
+        </div>
+        <div className="fq-kpi">
+          <div className="fq-kpi-label">Log Entries</div>
+          <div className="fq-kpi-value">{totalLogs}</div>
+          <div className="fq-kpi-sub">journal logs</div>
+        </div>
+        <div className="fq-kpi">
+          <div className="fq-kpi-label">Need Attention</div>
+          <div className="fq-kpi-value" style={{ color: needAttention > 0 ? '#F87171' : 'var(--muted)' }}>
+            {needAttention}
           </div>
-          <div className="fq-kpi-sub">
-            {mostRecentSurvey ? fmtDate(mostRecentSurvey.createdAt) : 'none yet'}
+          <div className="fq-kpi-sub">score below 45</div>
+        </div>
+      </div>
+
+      {/* Type distribution + last surveyed */}
+      {profiles.length > 0 && Object.keys(typeCounts).length > 0 && (
+        <div className="fq-card" style={{ marginBottom: 20 }}>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:12 }}>
+            Friendship Type Distribution
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {FRIENDSHIP_TYPES.filter(t => typeCounts[t.key]).map(t => (
+              <div key={t.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:8, background: t.color+'18', border:`1px solid ${t.color}44` }}>
+                <span style={{ fontSize:13, fontWeight:800, color: t.color }}>{typeCounts[t.key]}</span>
+                <span style={{ fontSize:12, fontWeight:600, color: t.color }}>{t.name}</span>
+              </div>
+            ))}
           </div>
         </div>
+      )}
+
+      {/* Scoring Guide (collapsible) */}
+      <div className="fq-card" style={{ marginBottom: 20 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }} onClick={() => setShowGuide(g => !g)}>
+          <div style={{ fontSize:13, fontWeight:700 }}>📖 Scoring Guide & Reference</div>
+          <span style={{ fontSize:12, color:'var(--muted)' }}>{showGuide ? '▲ collapse' : '▼ expand'}</span>
+        </div>
+        {showGuide && (
+          <div style={{ marginTop:16 }}>
+            {/* Formula */}
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Score Formula</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+              {DIM_META.map(d => (
+                <div key={d.key} style={{ padding:'4px 10px', borderRadius:8, background: d.color+'18', border:`1px solid ${d.color}33`, fontSize:12 }}>
+                  <span style={{ fontWeight:800, color: d.color }}>{d.key}</span>
+                  <span style={{ color:'var(--muted)', marginLeft:4 }}>{d.label}</span>
+                  <span style={{ color:'var(--dim)', marginLeft:4 }}>×{({'F':15,'R':18,'S':20,'T':20,'St':15,'E':12})[d.key]}%</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize:12, color:'var(--muted)', marginBottom:16, fontFamily:'monospace', background:'var(--bg2)', padding:'8px 12px', borderRadius:8 }}>
+              FQ Score = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
+              <br />Each dimension: ((sum of 4 answers − 4) ÷ 16) × 100 → range 0–100
+            </div>
+
+            {/* Tiers */}
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Score Tiers</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+              {TIERS.map(t => (
+                <div key={t.tier} style={{ padding:'4px 10px', borderRadius:8, background: t.color+'18', border:`1px solid ${t.color}44`, fontSize:12 }}>
+                  <span style={{ fontWeight:800, color: t.color }}>Tier {t.tier}</span>
+                  <span style={{ color:'var(--muted)', marginLeft:6 }}>{t.min}+</span>
+                  <span style={{ color:'var(--dim)', marginLeft:6 }}>{t.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Friendship Types */}
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Friendship Types</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {FRIENDSHIP_TYPES.map(t => (
+                <div key={t.key} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'8px 10px', borderRadius:8, background:'var(--bg2)' }}>
+                  <span style={{ fontWeight:800, color: t.color, minWidth:36, fontSize:12 }}>{t.key}</span>
+                  <span style={{ fontWeight:700, color: t.color, minWidth:100, fontSize:12 }}>{t.name}</span>
+                  <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{t.desc}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Dimensions */}
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginTop:16, marginBottom:10 }}>The 6 Dimensions</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {DIM_META.map(d => (
+                <div key={d.key} style={{ display:'flex', gap:10, fontSize:12 }}>
+                  <span style={{ fontWeight:800, color: d.color, minWidth:28 }}>{d.key}</span>
+                  <span style={{ fontWeight:700, color: d.color, minWidth:70 }}>{d.label}</span>
+                  <span style={{ color:'var(--muted)' }}>{{
+                    'F':'How often you actually connect, and who drives it.',
+                    'R':'Whether the relationship is balanced and mutually invested.',
+                    'S':'Whether they show up when it actually matters.',
+                    'T':'Depth of trust, vulnerability, and psychological safety.',
+                    'St':'Resilience of the friendship through time and life changes.',
+                    'E':'The emotional energy this relationship gives or takes from you.',
+                  }[d.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Friend Grid */}
@@ -1342,7 +1462,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
 // ─── Main FriendPage ───────────────────────────────────────────────────────────
 
 export default function FriendPage() {
-  const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('yc_auth'));
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('yc_auth') === 'fq_ok');
   const [profiles,   setProfiles]   = useState(loadProfiles);
   const [surveys,    setSurveys]    = useState(loadSurveys);
   const [journals,   setJournals]   = useState(loadJournals);
