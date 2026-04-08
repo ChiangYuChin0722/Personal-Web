@@ -1083,6 +1083,99 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
 }
 
 
+// ─── Photo Crop Modal ──────────────────────────────────────────────────────────
+
+function PhotoCropModal({ src, onApply, onCancel }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const PREVIEW = 260;
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const imgRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  function startDrag(clientX, clientY) {
+    dragStart.current = { x: clientX - offset.x, y: clientY - offset.y };
+    setDragging(true);
+  }
+  function moveDrag(clientX, clientY) {
+    if (!dragStart.current) return;
+    setOffset({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y });
+  }
+  function endDrag() { dragStart.current = null; setDragging(false); }
+
+  function handleApply() {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    const OUT = 400;
+    canvas.width = OUT; canvas.height = OUT;
+    const ctx = canvas.getContext('2d');
+    const W = img.naturalWidth, H = img.naturalHeight;
+    // image top-left in preview container coords
+    const ix = PREVIEW / 2 + offset.x - (W * scale) / 2;
+    const iy = PREVIEW / 2 + offset.y - (H * scale) / 2;
+    // map preview → output
+    const r = OUT / PREVIEW;
+    ctx.drawImage(img, ix * r, iy * r, W * scale * r, H * scale * r);
+    onApply(canvas.toDataURL('image/jpeg', 0.92));
+  }
+
+  return (
+    <div className="fq-log-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div className="fq-log-panel" style={{ maxWidth: 340 }}>
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title">{t('調整照片', 'Adjust Photo')}</div>
+          <button className="fq-log-close" onClick={onCancel}>✕</button>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+          <div style={{
+            width: PREVIEW, height: PREVIEW, borderRadius:'50%', overflow:'hidden',
+            border:'3px solid var(--accent)', position:'relative', background:'var(--bg2)',
+            cursor: dragging ? 'grabbing' : 'grab', userSelect:'none', flexShrink:0
+          }}
+            onMouseDown={e => { e.preventDefault(); startDrag(e.clientX, e.clientY); }}
+            onMouseMove={e => dragging && moveDrag(e.clientX, e.clientY)}
+            onMouseUp={endDrag} onMouseLeave={endDrag}
+            onTouchStart={e => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); }}
+            onTouchMove={e => { e.preventDefault(); const t = e.touches[0]; moveDrag(t.clientX, t.clientY); }}
+            onTouchEnd={endDrag}
+          >
+            <img ref={imgRef} src={src} alt="" draggable={false} style={{
+              position:'absolute', left:'50%', top:'50%', maxWidth:'none',
+              width: imgRef.current ? imgRef.current.naturalWidth * scale : 'auto',
+              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+              pointerEvents:'none'
+            }} onLoad={() => {
+              // Set initial scale so image fills the circle
+              const img = imgRef.current;
+              const initScale = Math.max(PREVIEW / img.naturalWidth, PREVIEW / img.naturalHeight);
+              setScale(initScale);
+            }} />
+          </div>
+          <div style={{ width:'100%' }}>
+            <label style={{ fontSize:12, color:'var(--muted)', display:'block', marginBottom:6 }}>
+              {t('縮放', 'Zoom')}
+            </label>
+            <input type="range" min="0.3" max="4" step="0.01" value={scale}
+              onChange={e => setScale(parseFloat(e.target.value))}
+              style={{ width:'100%', accentColor:'var(--accent)' }} />
+          </div>
+          <canvas ref={canvasRef} style={{ display:'none' }} />
+          <div className="fq-row" style={{ gap:10, width:'100%' }}>
+            <button className="fq-btn fq-btn-primary" style={{ flex:1 }} onClick={handleApply}>
+              ✓ {t('套用', 'Apply')}
+            </button>
+            <button className="fq-btn fq-btn-ghost" onClick={onCancel}>{t('取消', 'Cancel')}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
 function CreateView({ editProfile, onSave, onCancel, onDelete }) {
@@ -1097,6 +1190,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
   const [birthday,  setBirthday]  = useState(editProfile?.birthday  || { month:'', day:'' });
   const [err, setErr]             = useState('');
+  const [cropSrc, setCropSrc]     = useState(null);
   const fileRef = useRef(null);
 
   // new custom group form
@@ -1111,9 +1205,9 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setErr('Photo too large (max 2 MB)'); return; }
+    if (file.size > 2 * 1024 * 1024) { setErr(t('照片太大（最大 2 MB）','Photo too large (max 2 MB)')); return; }
     const reader = new FileReader();
-    reader.onload = ev => setPhoto(ev.target.result);
+    reader.onload = ev => { setCropSrc(ev.target.result); e.target.value = ''; };
     reader.readAsDataURL(file);
   }
 
@@ -1164,6 +1258,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const previewProfile = { name, photo, color: resolvedColor, groupId };
 
   return (
+    <>
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 28 }}>
         <h2>{isEdit ? t('編輯資料','Edit Profile') : t('新增朋友','New Friend Profile')}</h2>
@@ -1204,7 +1299,10 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
             <div>
               <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
               <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('PNG / JPG，最大 2 MB','PNG / JPG, max 2 MB')}</div>
-              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>{t('移除照片','Remove photo')}</button>}
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setCropSrc(photo)}>{t('重新調整','Adjust')}</button>}
+                {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>{t('移除照片','Remove photo')}</button>}
+              </div>
             </div>
           </div>
         </div>
@@ -1317,6 +1415,14 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
         </div>
       </div>
     </div>
+    {cropSrc && (
+      <PhotoCropModal
+        src={cropSrc}
+        onApply={result => { setPhoto(result); setCropSrc(null); }}
+        onCancel={() => setCropSrc(null)}
+      />
+    )}
+    </>
   );
 }
 
@@ -1635,6 +1741,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
   const lang = useContext(LangCtx);
   const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
+  const [photoLightbox, setPhotoLightbox] = useState(false);
   const group = getGroupById(profile.groupId, customGroups);
   const bdays = birthdayCountdown(profile.birthday);
   const profileSurveys = surveys
@@ -1662,6 +1769,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
     (ratedLogs.reduce((acc, j) => acc + j.rating, 0) / ratedLogs.length).toFixed(1);
 
   return (
+    <>
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
         <h2>{t('朋友詳情', 'Friend Detail')}</h2>
@@ -1679,7 +1787,10 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
       <div className="fq-detail-layout">
         {/* Sidebar */}
         <div className="fq-detail-sidebar fq-card">
-          <Avatar profile={profile} size={68} style={{ margin:'0 auto 14px', display:'flex' }} />
+          <div onClick={() => profile.photo && setPhotoLightbox(true)}
+            style={{ cursor: profile.photo ? 'zoom-in' : 'default', display:'flex', justifyContent:'center', marginBottom:14 }}>
+            <Avatar profile={profile} size={68} />
+          </div>
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
             {profile.since ? `${t('認識於','Friends since')} ${profile.since}` : t('年份未記錄','Year not recorded')}
@@ -1916,6 +2027,23 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
         </div>
       </div>
     </div>
+    {photoLightbox && profile.photo && (
+      <div onClick={() => setPhotoLightbox(false)} style={{
+        position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:999,
+        display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-out'
+      }}>
+        <img src={profile.photo} alt={profile.name} onClick={e => e.stopPropagation()} style={{
+          maxWidth:'90vw', maxHeight:'90vh', borderRadius:16,
+          boxShadow:'0 24px 80px rgba(0,0,0,0.7)', objectFit:'contain'
+        }} />
+        <button onClick={() => setPhotoLightbox(false)} style={{
+          position:'absolute', top:24, right:28, background:'rgba(255,255,255,0.1)',
+          border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%',
+          width:40, height:40, color:'#fff', fontSize:18, cursor:'pointer'
+        }}>✕</button>
+      </div>
+    )}
+    </>
   );
 }
 
