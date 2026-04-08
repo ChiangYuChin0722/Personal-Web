@@ -1255,7 +1255,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
           <label className="fq-label">{t('重要事件','Key Events')}</label>
           <div className="fq-key-events">
             {keyEvents.length === 0 && (
-              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>{t('尚無事件 — 新增里程碑、回憶或消息。','No events yet — add milestones, memories, or news.')}</div>
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>{t('尚無事件，新增里程碑、回憶或消息吧。','No events yet. Add milestones, memories, or news.')}</div>
             )}
             {keyEvents.map((ev, idx) => (
               <div key={ev.id} className="fq-key-event-row">
