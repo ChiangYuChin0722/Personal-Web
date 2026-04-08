@@ -1,5 +1,7 @@
 import './FriendPage.css';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+
+const LangCtx = createContext('zh');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -17,11 +19,11 @@ const DIM_META = [
 ];
 
 const MOODS = [
-  { key:'great',   icon:'🌟', label:'感覺很好' },
-  { key:'good',    icon:'😊', label:'還不錯' },
-  { key:'neutral', icon:'😐', label:'普通' },
-  { key:'drained', icon:'😔', label:'有點累' },
-  { key:'tense',   icon:'⚡', label:'有些摩擦' },
+  { key:'great',   icon:'🌟', zh:'感覺很好', en:'Feeling great' },
+  { key:'good',    icon:'😊', zh:'還不錯',   en:'Pretty good'   },
+  { key:'neutral', icon:'😐', zh:'普通',     en:'Neutral'       },
+  { key:'drained', icon:'😔', zh:'有點累',   en:'Drained'       },
+  { key:'tense',   icon:'⚡', zh:'有些摩擦', en:'Tension'       },
 ];
 
 const QUESTIONS = [
@@ -112,13 +114,13 @@ function getScoreTier(total) {
 
 function getSuggestions(scores) {
   const tips = [];
-  if (scores.F < 50) tips.push({ icon:'📅', text:'建議增加主動聯絡的頻率，定期 check-in 能有效維繫感情。' });
-  if (scores.R < 50) tips.push({ icon:'⚖️', text:'注意互動的平衡性，試著讓對方也有機會主動分享和傾訴。' });
-  if (scores.S < 50) tips.push({ icon:'🤝', text:'在對方遇到困難時多給予支持，這是深化友誼的關鍵。' });
-  if (scores.T < 50) tips.push({ icon:'🔐', text:'試著分享更多真實的想法和脆弱，建立信任需要雙方的勇氣。' });
-  if (scores.St < 50) tips.push({ icon:'🛠️', text:'若有未解決的摩擦，主動開口溝通比沉默更有效。' });
-  if (scores.E < 50) tips.push({ icon:'⚡', text:'注意這段關係帶給你的能量狀態，健康的友誼應該讓你感到充電。' });
-  if (tips.length === 0) tips.push({ icon:'✨', text:'這段友誼狀態良好！持續用心維護，它會越來越珍貴。' });
+  if (scores.F < 50) tips.push({ icon:'📅', zh:'建議增加主動聯絡的頻率，定期 check-in 能有效維繫感情。', en:'Try reaching out more often — regular check-ins help sustain the bond.' });
+  if (scores.R < 50) tips.push({ icon:'⚖️', zh:'注意互動的平衡性，試著讓對方也有機會主動分享和傾訴。', en:'Balance the exchange — give the other person space to share too.' });
+  if (scores.S < 50) tips.push({ icon:'🤝', zh:'在對方遇到困難時多給予支持，這是深化友誼的關鍵。', en:'Show up for them when it matters — support deepens friendship.' });
+  if (scores.T < 50) tips.push({ icon:'🔐', zh:'試著分享更多真實的想法和脆弱，建立信任需要雙方的勇氣。', en:'Share more authentically — trust is built through mutual vulnerability.' });
+  if (scores.St < 50) tips.push({ icon:'🛠️', zh:'若有未解決的摩擦，主動開口溝通比沉默更有效。', en:'Address unresolved friction directly — talking beats silence.' });
+  if (scores.E < 50) tips.push({ icon:'⚡', zh:'注意這段關係帶給你的能量狀態，健康的友誼應該讓你感到充電。', en:'Pay attention to how this relationship makes you feel — it should energize you.' });
+  if (tips.length === 0) tips.push({ icon:'✨', zh:'這段友誼狀態良好！持續用心維護，它會越來越珍貴。', en:'This friendship is in great shape! Keep nurturing it.' });
   return tips;
 }
 
@@ -177,6 +179,8 @@ function Avatar({ profile, size = 40, style: extra = {} }) {
 // ─── Log Modal ────────────────────────────────────────────────────────────────
 
 function LogModal({ profile, onSave, onClose }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const today = new Date().toISOString().split('T')[0];
   const [mood, setMood] = useState('good');
   const [date, setDate] = useState(today);
@@ -191,28 +195,28 @@ function LogModal({ profile, onSave, onClose }) {
     <div className="fq-log-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="fq-log-panel">
         <div className="fq-log-panel-hdr">
-          <div className="fq-log-panel-title">Log Update — {profile.name}</div>
+          <div className="fq-log-panel-title">{t('記錄互動', 'Log Update')} — {profile.name}</div>
           <button className="fq-log-close" onClick={onClose}>✕</button>
         </div>
         <div className="fq-form-row">
-          <label className="fq-label">今天跟他的感覺</label>
+          <label className="fq-label">{t('今天跟他的感覺', 'How do you feel about them today?')}</label>
           <div className="fq-mood-row">
             {MOODS.map(m => (
               <button key={m.key} type="button" className={`fq-mood-btn${mood===m.key?' selected':''}`} onClick={() => setMood(m.key)}>
-                {m.icon} {m.label}
+                {m.icon} {lang === 'zh' ? m.zh : m.en}
               </button>
             ))}
           </div>
         </div>
         <div className="fq-form-row">
-          <label className="fq-label">日期</label>
+          <label className="fq-label">{t('日期', 'Date')}</label>
           <input className="fq-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
         </div>
         <div className="fq-form-row">
-          <label className="fq-label">近況 / 八卦 / 感受</label>
+          <label className="fq-label">{t('近況 / 感受', 'Notes / Feelings')}</label>
           <textarea
             className="fq-textarea"
-            placeholder="記錄最近的互動、對方的近況、你的感覺、發生了什麼事..."
+            placeholder={t('記錄最近的互動、對方的近況、你的感覺...', 'Record your recent interaction, updates, feelings...')}
             value={text}
             onChange={e => setText(e.target.value)}
             rows={5}
@@ -221,9 +225,9 @@ function LogModal({ profile, onSave, onClose }) {
         </div>
         <div className="fq-row" style={{ gap:10 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave} disabled={!text.trim()} style={{ opacity: text.trim()?1:0.5 }}>
-            ✓ 儲存紀錄
+            ✓ {t('儲存紀錄', 'Save Log')}
           </button>
-          <button className="fq-btn fq-btn-ghost" onClick={onClose}>取消</button>
+          <button className="fq-btn fq-btn-ghost" onClick={onClose}>{t('取消', 'Cancel')}</button>
         </div>
       </div>
     </div>
@@ -267,14 +271,14 @@ function RadarChart({ scores, size = 240 }) {
           key={gi}
           points={makePolygon(f)}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="var(--grid-line)"
           strokeWidth={f === 1.0 ? 1.5 : 1}
         />
       ))}
       {/* spokes */}
       {angles.map((a, i) => {
         const outer = polarToXY(a, maxR, cx, cy);
-        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="var(--grid-line)" strokeWidth="1" />;
       })}
       {/* data fill */}
       <polygon
@@ -286,7 +290,7 @@ function RadarChart({ scores, size = 240 }) {
       />
       {/* data dots */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="#090909" strokeWidth="2" />
+        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="var(--bg)" strokeWidth="2" />
       ))}
       {/* labels */}
       {dims.map((d, i) => {
@@ -340,7 +344,7 @@ function LineChart({ surveys }) {
         {/* grid lines */}
         {[0, 25, 50, 75, 100].map(v => (
           <g key={v}>
-            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
+            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="var(--grid-line)" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
             <text x={PL - 6} y={yOf(v)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#94A3B8">{v}</text>
           </g>
         ))}
@@ -362,7 +366,7 @@ function LineChart({ surveys }) {
             onMouseLeave={() => setHoveredIdx(null)}
             style={{ cursor:'pointer' }}
           >
-            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="#090909" strokeWidth="2" />
+            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="var(--bg)" strokeWidth="2" />
             {hoveredIdx === i && (
               <g>
                 <rect x={xOf(i) - 28} y={yOf(s.total) - 30} width="56" height="22" rx="4" fill="#0f0f12" stroke="rgba(255,255,255,0.1)" />
@@ -385,7 +389,8 @@ function LineChart({ surveys }) {
 
 // ─── Topbar ────────────────────────────────────────────────────────────────────
 
-function Topbar({ view, onDashboard, onAddFriend }) {
+function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, onToggleDark }) {
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   return (
     <div className="fq-topbar">
       <div className="fq-topbar-logo">
@@ -401,11 +406,17 @@ function Topbar({ view, onDashboard, onAddFriend }) {
       <div style={{ flex:1 }} />
       {view !== 'dashboard' && (
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onDashboard}>
-          ← Dashboard
+          ← {t('儀表板', 'Dashboard')}
         </button>
       )}
       <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onAddFriend}>
-        + Add Friend
+        + {t('新增朋友', 'Add Friend')}
+      </button>
+      <button className="fq-lang-btn" onClick={onToggleLang} title="Toggle language">
+        {lang === 'zh' ? 'EN' : '中'}
+      </button>
+      <button className="fq-icon-btn" onClick={onToggleDark} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+        {darkMode ? '☀️' : '🌙'}
       </button>
       <a href="/secret" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
@@ -469,6 +480,8 @@ function AuthView({ onAuth }) {
 // ─── Dashboard View ────────────────────────────────────────────────────────────
 
 function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const [showGuide, setShowGuide] = useState(false);
 
   // KPI calculations
@@ -527,217 +540,215 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
 
   return (
     <div className="fq-body">
-      {/* KPI Row */}
-      <div className="fq-kpi-row" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Friends</div>
-          <div className="fq-kpi-value">{total}</div>
-          <div className="fq-kpi-sub">profiles</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Avg FQ</div>
-          <div className="fq-kpi-value" style={{ color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--muted)' }}>
-            {avgScore ?? '—'}
-          </div>
-          <div className="fq-kpi-sub">avg score</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Top Friend</div>
-          <div className="fq-kpi-value" style={{ fontSize: highestProfile ? 18 : 30 }}>
-            {highestProfile ? highestProfile.name : '—'}
-          </div>
-          <div className="fq-kpi-sub">{highestScore > -1 ? `Score ${highestScore}` : 'no data'}</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Surveys</div>
-          <div className="fq-kpi-value">{totalSurveys}</div>
-          <div className="fq-kpi-sub">total taken</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Log Entries</div>
-          <div className="fq-kpi-value">{totalLogs}</div>
-          <div className="fq-kpi-sub">journal logs</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Need Attention</div>
-          <div className="fq-kpi-value" style={{ color: needAttention > 0 ? '#F87171' : 'var(--muted)' }}>
-            {needAttention}
-          </div>
-          <div className="fq-kpi-sub">score below 45</div>
-        </div>
-      </div>
+      <div className="fq-dash-two-col">
 
-      {/* Type distribution + last surveyed */}
-      {profiles.length > 0 && Object.keys(typeCounts).length > 0 && (
-        <div className="fq-card" style={{ marginBottom: 20 }}>
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:12 }}>
-            Friendship Type Distribution
-          </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {FRIENDSHIP_TYPES.filter(t => typeCounts[t.key]).map(t => (
-              <div key={t.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:8, background: t.color+'18', border:`1px solid ${t.color}44` }}>
-                <span style={{ fontSize:13, fontWeight:800, color: t.color }}>{typeCounts[t.key]}</span>
-                <span style={{ fontSize:12, fontWeight:600, color: t.color }}>{t.name}</span>
+        {/* ── Left panel ── */}
+        <div className="fq-dash-left">
+
+          {/* KPI list */}
+          <div className="fq-kpi-list">
+            {[
+              { label: t('朋友數', 'Friends'),       value: total,      sub: null,          color: null },
+              { label: t('平均分數', 'Avg FQ'),       value: avgScore ?? '—', sub: null,    color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--muted)' },
+              { label: t('最高分', 'Top Score'),      value: highestScore > -1 ? highestScore : '—', sub: null, color: highestScore > -1 ? getScoreTier(highestScore).color : null },
+              { label: t('最佳朋友', 'Top Friend'),   value: highestProfile ? highestProfile.name : '—', sub: null, color: null, small: !!highestProfile },
+              { label: t('測驗次數', 'Surveys'),       value: totalSurveys, sub: null,       color: null },
+              { label: t('日誌條目', 'Log Entries'),   value: totalLogs,  sub: null,          color: null },
+              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於45', 'Score < 45'), color: needAttention > 0 ? '#F87171' : null },
+            ].map(({ label, value, sub, color, small }) => (
+              <div key={label} className="fq-kpi-list-item">
+                <span className="fq-kpi-list-label">{label}</span>
+                <span className="fq-kpi-list-value" style={{ color: color || 'var(--text)', fontSize: small ? 14 : 18 }}>
+                  {value}
+                </span>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Scoring Guide (collapsible) */}
-      <div className="fq-card" style={{ marginBottom: 20 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }} onClick={() => setShowGuide(g => !g)}>
-          <div style={{ fontSize:13, fontWeight:700 }}>📖 Scoring Guide & Reference</div>
-          <span style={{ fontSize:12, color:'var(--muted)' }}>{showGuide ? '▲ collapse' : '▼ expand'}</span>
-        </div>
-        {showGuide && (
-          <div style={{ marginTop:16 }}>
-            {/* Formula */}
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Score Formula</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
-              {DIM_META.map(d => (
-                <div key={d.key} style={{ padding:'4px 10px', borderRadius:8, background: d.color+'18', border:`1px solid ${d.color}33`, fontSize:12 }}>
-                  <span style={{ fontWeight:800, color: d.color }}>{d.key}</span>
-                  <span style={{ color:'var(--muted)', marginLeft:4 }}>{d.label}</span>
-                  <span style={{ color:'var(--dim)', marginLeft:4 }}>×{({'F':15,'R':18,'S':20,'T':20,'St':15,'E':12})[d.key]}%</span>
-                </div>
-              ))}
+          {/* Type distribution */}
+          {profiles.length > 0 && Object.keys(typeCounts).length > 0 && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                {t('友誼類型分布', 'Type Distribution')}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {FRIENDSHIP_TYPES.filter(ft => typeCounts[ft.key]).map(ft => (
+                  <div key={ft.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 8px', borderRadius:7, background: ft.color+'14', border:`1px solid ${ft.color}33` }}>
+                    <span style={{ fontSize:12, fontWeight:700, color: ft.color }}>{ft.name}</span>
+                    <span style={{ fontSize:13, fontWeight:800, color: ft.color }}>{typeCounts[ft.key]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ fontSize:12, color:'var(--muted)', marginBottom:16, fontFamily:'monospace', background:'var(--bg2)', padding:'8px 12px', borderRadius:8 }}>
-              FQ Score = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
-              <br />Each dimension: ((sum of 4 answers − 4) ÷ 16) × 100 → range 0–100
-            </div>
+          )}
 
-            {/* Tiers */}
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Score Tiers</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
-              {TIERS.map(t => (
-                <div key={t.tier} style={{ padding:'4px 10px', borderRadius:8, background: t.color+'18', border:`1px solid ${t.color}44`, fontSize:12 }}>
-                  <span style={{ fontWeight:800, color: t.color }}>Tier {t.tier}</span>
-                  <span style={{ color:'var(--muted)', marginLeft:6 }}>{t.min}+</span>
-                  <span style={{ color:'var(--dim)', marginLeft:6 }}>{t.label}</span>
-                </div>
-              ))}
+          {/* Quick actions */}
+          <div className="fq-card">
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+              {t('快速操作', 'Quick Actions')}
             </div>
-
-            {/* Friendship Types */}
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>Friendship Types</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {FRIENDSHIP_TYPES.map(t => (
-                <div key={t.key} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'8px 10px', borderRadius:8, background:'var(--bg2)' }}>
-                  <span style={{ fontWeight:800, color: t.color, minWidth:36, fontSize:12 }}>{t.key}</span>
-                  <span style={{ fontWeight:700, color: t.color, minWidth:100, fontSize:12 }}>{t.name}</span>
-                  <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{t.desc}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Dimensions */}
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginTop:16, marginBottom:10 }}>The 6 Dimensions</div>
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              {DIM_META.map(d => (
-                <div key={d.key} style={{ display:'flex', gap:10, fontSize:12 }}>
-                  <span style={{ fontWeight:800, color: d.color, minWidth:28 }}>{d.key}</span>
-                  <span style={{ fontWeight:700, color: d.color, minWidth:70 }}>{d.label}</span>
-                  <span style={{ color:'var(--muted)' }}>{{
-                    'F':'How often you actually connect, and who drives it.',
-                    'R':'Whether the relationship is balanced and mutually invested.',
-                    'S':'Whether they show up when it actually matters.',
-                    'T':'Depth of trust, vulnerability, and psychological safety.',
-                    'St':'Resilience of the friendship through time and life changes.',
-                    'E':'The emotional energy this relationship gives or takes from you.',
-                  }[d.key]}</span>
+              <button className="fq-btn fq-btn-primary" style={{ justifyContent:'center' }} onClick={onCreateFriend}>
+                + {t('新增朋友', 'Add Friend')}
+              </button>
+              {mostRecentProfile && (
+                <div style={{ fontSize:12, color:'var(--muted)', marginTop:4, lineHeight:1.5 }}>
+                  {t('最近測驗', 'Last surveyed')}: <span style={{ color:'var(--text)', fontWeight:600 }}>{mostRecentProfile.name}</span>
+                  <br /><span style={{ fontSize:11 }}>{fmtDate(mostRecentSurvey.createdAt)}</span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Friend Grid */}
-      <div className="fq-section-hdr">
-        <h2>Friend Profiles</h2>
-        <div className="fq-line" />
-        <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onCreateFriend}>
-          + New Friend
-        </button>
-      </div>
-
-      {profiles.length === 0 ? (
-        <div className="fq-empty">
-          <div className="fq-empty-icon">📡</div>
-          <div className="fq-empty-title">No profiles yet</div>
-          <div className="fq-empty-sub">Add your first friend to start quantifying your relationships.</div>
-          <button className="fq-btn fq-btn-primary" onClick={onCreateFriend}>+ Create First Profile</button>
         </div>
-      ) : (
-        <div className="fq-friend-grid">
-          {profiles.map(p => {
-            const latest = getLatestSurvey(p.id);
-            const tier = latest ? getScoreTier(latest.total) : null;
-            const type = latest ? getFriendshipType(latest.scores) : null;
-            return (
-              <div
-                key={p.id}
-                className="fq-friend-card"
-                onClick={() => onSelectFriend(p)}
-              >
-                {type && (
-                  <div
-                    className="fq-type-tag"
-                    style={{ background: type.color + '22', color: type.color }}
-                  >
-                    {type.key}
-                  </div>
-                )}
-                <div className="fq-friend-card-top">
-                  <Avatar profile={p} size={40} />
-                  <div>
-                    <div className="fq-friend-name">{p.name}</div>
-                    <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
-                      {p.colorTag && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background: p.color+'22', color: p.color, fontWeight:700 }}>{p.colorTag}</span>}
-                      <span>{p.since ? `Since ${p.since}` : 'Year unknown'}</span>
-                      {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} logs</span> : null; })()}
+
+        {/* ── Right panel ── */}
+        <div className="fq-dash-right">
+
+          {/* Scoring Guide (collapsible) */}
+          <div className="fq-card" style={{ marginBottom: 20 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }} onClick={() => setShowGuide(g => !g)}>
+              <div style={{ fontSize:13, fontWeight:700 }}>📖 {t('評分說明', 'Scoring Guide & Reference')}</div>
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{showGuide ? '▲' : '▼'}</span>
+            </div>
+            {showGuide && (
+              <div style={{ marginTop:16 }}>
+                {/* Formula */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>{t('計算公式', 'Score Formula')}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
+                  {DIM_META.map(d => (
+                    <div key={d.key} style={{ padding:'4px 10px', borderRadius:8, background: d.color+'18', border:`1px solid ${d.color}33`, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: d.color }}>{d.key}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:4 }}>{lang === 'zh' ? d.label : d.en}</span>
+                      <span style={{ color:'var(--dim)', marginLeft:4 }}>×{({'F':15,'R':18,'S':20,'T':20,'St':15,'E':12})[d.key]}%</span>
                     </div>
-                  </div>
-                  {latest ? (
-                    <div className={`fq-score-badge tier-${tier.tier}`}>
-                      {latest.total}
-                    </div>
-                  ) : (
-                    <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>
-                      N/A
-                    </div>
-                  )}
+                  ))}
                 </div>
-                {latest && (
-                  <div className="fq-dim-mini">
-                    {DIM_META.map(d => (
-                      <div key={d.key} className="fq-dim-pip">
-                        <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
-                        <div className="fq-dim-pip-bar">
-                          <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
-                        </div>
-                        <span>{latest.scores[d.key]}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display:'flex', gap:6, marginTop:8 }}>
-                  {!latest && (
-                    <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
-                      Start Survey →
-                    </button>
-                  )}
-                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
-                    + Log
-                  </button>
+                <div style={{ fontSize:12, color:'var(--muted)', marginBottom:14, fontFamily:'monospace', background:'var(--bg2)', padding:'8px 12px', borderRadius:8 }}>
+                  FQ = F×15% + R×18% + S×20% + T×20% + St×15% + E×12%
+                  <br />{t('每維度：((4題總和 − 4) ÷ 16) × 100，範圍 0–100', 'Per dim: ((4-answer sum − 4) ÷ 16) × 100, range 0–100')}
+                </div>
+
+                {/* Tiers */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('分數等級', 'Score Tiers')}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+                  {TIERS.map(tier => (
+                    <div key={tier.tier} style={{ padding:'4px 10px', borderRadius:8, background: tier.color+'18', border:`1px solid ${tier.color}44`, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: tier.color }}>Tier {tier.tier}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:6 }}>{tier.min}+</span>
+                      <span style={{ color:'var(--dim)', marginLeft:6 }}>{tier.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Friendship Types */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('友誼類型', 'Friendship Types')}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:14 }}>
+                  {FRIENDSHIP_TYPES.map(ft => (
+                    <div key={ft.key} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'7px 10px', borderRadius:8, background:'var(--bg2)' }}>
+                      <span style={{ fontWeight:800, color: ft.color, minWidth:36, fontSize:12 }}>{ft.key}</span>
+                      <span style={{ fontWeight:700, color: ft.color, minWidth:96, fontSize:12 }}>{ft.name}</span>
+                      <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{ft.desc}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dimensions */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('六個維度', 'The 6 Dimensions')}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                  {DIM_META.map(d => (
+                    <div key={d.key} style={{ display:'flex', gap:10, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: d.color, minWidth:28 }}>{d.key}</span>
+                      <span style={{ fontWeight:700, color: d.color, minWidth:70 }}>{lang === 'zh' ? d.label : d.en}</span>
+                      <span style={{ color:'var(--muted)' }}>{{
+                        'F': t('聯絡頻率與誰主動推動。','How often you connect, and who drives it.'),
+                        'R': t('互動是否平衡、雙方是否都在投入。','Whether the relationship is balanced and mutually invested.'),
+                        'S': t('真正需要時對方是否在場。','Whether they show up when it actually matters.'),
+                        'T': t('信任、脆弱與心理安全感的深度。','Depth of trust, vulnerability, and psychological safety.'),
+                        'St': t('面對時間與生活變化的友誼韌性。','Resilience of the friendship through time and life changes.'),
+                        'E': t('這段關係給你帶來能量還是消耗你。','The emotional energy this relationship gives or takes from you.'),
+                      }[d.key]}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {/* Friend Grid */}
+          <div className="fq-section-hdr">
+            <h2>{t('朋友列表', 'Friend Profiles')}</h2>
+            <div className="fq-line" />
+            <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onCreateFriend}>
+              + {t('新增', 'New')}
+            </button>
+          </div>
+
+          {profiles.length === 0 ? (
+            <div className="fq-empty">
+              <div className="fq-empty-icon">📡</div>
+              <div className="fq-empty-title">{t('尚無朋友資料', 'No profiles yet')}</div>
+              <div className="fq-empty-sub">{t('新增第一個朋友，開始量化你的友誼。', 'Add your first friend to start quantifying your relationships.')}</div>
+              <button className="fq-btn fq-btn-primary" onClick={onCreateFriend}>+ {t('建立第一個', 'Create First Profile')}</button>
+            </div>
+          ) : (
+            <div className="fq-friend-grid">
+              {profiles.map(p => {
+                const latest = getLatestSurvey(p.id);
+                const tier = latest ? getScoreTier(latest.total) : null;
+                const type = latest ? getFriendshipType(latest.scores) : null;
+                return (
+                  <div key={p.id} className="fq-friend-card" onClick={() => onSelectFriend(p)}>
+                    {type && (
+                      <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
+                        {type.key}
+                      </div>
+                    )}
+                    <div className="fq-friend-card-top">
+                      <Avatar profile={p} size={40} />
+                      <div>
+                        <div className="fq-friend-name">{p.name}</div>
+                        <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                          {p.colorTag && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background: p.color+'22', color: p.color, fontWeight:700 }}>{p.colorTag}</span>}
+                          <span>{p.since ? `${t('認識於','Since')} ${p.since}` : t('年份不詳','Year unknown')}</span>
+                          {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} {t('則日誌','logs')}</span> : null; })()}
+                        </div>
+                      </div>
+                      {latest ? (
+                        <div className={`fq-score-badge tier-${tier.tier}`}>{latest.total}</div>
+                      ) : (
+                        <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>N/A</div>
+                      )}
+                    </div>
+                    {latest && (
+                      <div className="fq-dim-mini">
+                        {DIM_META.map(d => (
+                          <div key={d.key} className="fq-dim-pip">
+                            <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
+                            <div className="fq-dim-pip-bar">
+                              <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
+                            </div>
+                            <span>{latest.scores[d.key]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                      {!latest && (
+                        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
+                          {t('開始測驗', 'Start Survey')} →
+                        </button>
+                      )}
+                      <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
+                        + {t('日誌', 'Log')}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -746,6 +757,8 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
 function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddColorTag }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const isEdit = !!editProfile;
   const [name,      setName]      = useState(editProfile?.name      || '');
   const [photo,     setPhoto]     = useState(editProfile?.photo     || null);
@@ -812,7 +825,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 28 }}>
-        <h2>{isEdit ? 'Edit Profile' : 'New Friend Profile'}</h2>
+        <h2>{isEdit ? t('編輯資料','Edit Profile') : t('新增朋友','New Friend Profile')}</h2>
         <div className="fq-line" />
       </div>
       <div className="fq-form">
@@ -823,7 +836,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
             <div style={{ fontSize:16, fontWeight:700 }}>{name || '(Name)'}</div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
               {colorTag && <span style={{ fontSize:11, padding:'2px 8px', borderRadius:10, background: color+'22', color, fontWeight:700, border:`1px solid ${color}` }}>{colorTag}</span>}
-              <span style={{ fontSize:12, color:'var(--muted)' }}>{since ? `Since ${since}` : 'Year unknown'}</span>
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{since ? `${t('認識於','Since')} ${since}` : t('年份不詳','Year unknown')}</span>
             </div>
           </div>
         </div>
@@ -944,6 +957,8 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddC
 // ─── Survey View ───────────────────────────────────────────────────────────────
 
 function SurveyView({ profile, onComplete, onCancel }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState(Array(24).fill(null));
 
@@ -1002,9 +1017,9 @@ function SurveyView({ profile, onComplete, onCancel }) {
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 20 }}>
         <Avatar profile={profile} size={32} />
-        <h2 style={{ fontSize:14, letterSpacing:0 }}>{profile.name} — FQ Survey</h2>
+        <h2 style={{ fontSize:14, letterSpacing:0 }}>{profile.name} — FQ {t('測驗','Survey')}</h2>
         <div className="fq-line" />
-        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onCancel}>✕ Cancel</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onCancel}>✕ {t('取消','Cancel')}</button>
       </div>
 
       <div className="fq-survey-layout">
@@ -1015,9 +1030,9 @@ function SurveyView({ profile, onComplete, onCancel }) {
           </div>
 
           <div className="fq-survey-dim-header" style={{ color: dimMeta.color }}>
-            [{dimMeta.en.toUpperCase()}] {dimMeta.label}
+            [{dimMeta.en.toUpperCase()}] {lang === 'zh' ? dimMeta.label : dimMeta.en}
           </div>
-          <div className="fq-survey-q-num">Question {currentQ + 1} of 24</div>
+          <div className="fq-survey-q-num">{t('第','Question')} {currentQ + 1} {t('題，共24題','of 24')}</div>
           <div className="fq-survey-q-text">{q.text}</div>
 
           <div className="fq-likert">
@@ -1047,7 +1062,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
               disabled={currentQ === 0}
               style={{ opacity: currentQ === 0 ? 0.4 : 1 }}
             >
-              ← Prev
+              ← {t('上一題','Prev')}
             </button>
             <span className="fq-q-counter">{currentQ + 1} / 24</span>
             <button
@@ -1056,7 +1071,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
               disabled={answers[currentQ] === null}
               style={{ opacity: answers[currentQ] === null ? 0.5 : 1 }}
             >
-              {currentQ === 23 ? '完成 →' : 'Next →'}
+              {currentQ === 23 ? `${t('完成','Done')} →` : `${t('下一題','Next')} →`}
             </button>
           </div>
         </div>
@@ -1074,7 +1089,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
               return (
                 <div key={d.key} className="fq-dim-bar-row">
                   <div className="fq-dim-bar-top">
-                    <span className="fq-dim-bar-name" style={{ color: d.color }}>{d.label}</span>
+                    <span className="fq-dim-bar-name" style={{ color: d.color }}>{lang === 'zh' ? d.label : d.en}</span>
                     <span className="fq-dim-bar-score" style={{ color: d.color }}>
                       {partial !== null ? partial : '—'}
                     </span>
@@ -1106,7 +1121,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
             ))}
           </div>
           <div style={{ fontSize:11, color:'var(--muted)', marginTop:8 }}>
-            {answers.filter(a => a !== null).length} / 24 answered
+            {answers.filter(a => a !== null).length} / 24 {t('已回答','answered')}
           </div>
         </div>
       </div>
@@ -1118,6 +1133,8 @@ function SurveyView({ profile, onComplete, onCancel }) {
 // ─── Results View ──────────────────────────────────────────────────────────────
 
 function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const { scores } = survey;
   const tier = getScoreTier(scores.total);
   const type = getFriendshipType(scores);
@@ -1127,7 +1144,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
         <Avatar profile={profile} size={32} />
-        <h2 style={{ fontSize:14 }}>{profile.name} — Analysis Results</h2>
+        <h2 style={{ fontSize:14 }}>{profile.name} — {t('分析結果','Analysis Results')}</h2>
         <div className="fq-line" />
         <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(survey.createdAt)}</span>
       </div>
@@ -1154,7 +1171,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           }}>
             {type.key} · {type.en}
           </div>
-          <div className="fq-results-type-name">{type.name}</div>
+          <div className="fq-results-type-name">{lang === 'zh' ? type.name : type.en}</div>
           <div className="fq-results-type-desc">{type.desc}</div>
         </div>
 
@@ -1168,7 +1185,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
         {/* Dimension breakdown */}
         <div className="fq-card">
           <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
-            Dimension Breakdown
+            {t('維度分析','Dimension Breakdown')}
           </div>
           <div className="fq-dim-breakdown">
             {DIM_META.map(d => (
@@ -1176,7 +1193,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
                 <div className="fq-dim-breakdown-top">
                   <span className="fq-dim-breakdown-name">
                     <span style={{ width:10, height:10, borderRadius:'50%', background: d.color, display:'inline-block' }} />
-                    {d.label} <span style={{ color:'var(--muted)', fontWeight:400, fontSize:12 }}>({d.en})</span>
+                    {lang === 'zh' ? d.label : d.en}
                   </span>
                   <span className="fq-dim-breakdown-score" style={{ color: d.color }}>
                     {scores[d.key]}
@@ -1197,13 +1214,13 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
         {/* Suggestions */}
         <div className="fq-card">
           <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
-            AI Suggestions
+            {t('建議','Suggestions')}
           </div>
           <div className="fq-flags">
             {suggestions.map((s, i) => (
               <div key={i} className="fq-flag">
                 <span className="fq-flag-icon">{s.icon}</span>
-                <span>{s.text}</span>
+                <span>{lang === 'zh' ? s.zh : s.en}</span>
               </div>
             ))}
           </div>
@@ -1217,13 +1234,13 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
       {/* Actions */}
       <div className="fq-row" style={{ marginTop:24, gap:10 }}>
         <button className="fq-btn fq-btn-primary" onClick={onViewDetail}>
-          View Full History →
+          {t('查看完整歷史','View Full History')} →
         </button>
         <button className="fq-btn fq-btn-ghost" onClick={onRetake}>
-          Retake Survey
+          {t('重新測驗','Retake Survey')}
         </button>
         <button className="fq-btn fq-btn-ghost" onClick={onDone}>
-          ← Dashboard
+          ← {t('儀表板','Dashboard')}
         </button>
       </div>
     </div>
@@ -1234,6 +1251,8 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
 function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack, onLogUpdate }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const profileSurveys = surveys
     .filter(s => s.profileId === profile.id)
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1251,12 +1270,12 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
-        <h2>Friend Detail</h2>
+        <h2>{t('朋友詳情', 'Friend Detail')}</h2>
         <div className="fq-line" />
-        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ Edit</button>
-        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ Log</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ {t('編輯', 'Edit')}</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('日誌', 'Log')}</button>
         <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-          + Survey
+          + {t('測驗', 'Survey')}
         </button>
       </div>
 
@@ -1266,7 +1285,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
           <Avatar profile={profile} size={68} style={{ margin:'0 auto 14px', display:'flex' }} />
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
-            {profile.since ? `Friends since ${profile.since}` : 'Year not recorded'}
+            {profile.since ? `${t('認識於','Friends since')} ${profile.since}` : t('年份未記錄','Year not recorded')}
           </div>
 
           {latest && (
@@ -1285,10 +1304,10 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
 
           <div style={{ borderTop:'1px solid var(--border)', paddingTop:14 }}>
             {[
-              ['Surveys taken', surveyCount],
-              ['Avg score', avgScore !== null ? avgScore : '—'],
-              ['Best score', bestScore !== null ? bestScore : '—'],
-              ['Last survey', latest ? fmtDate(latest.createdAt) : '—'],
+              [t('測驗次數','Surveys taken'), surveyCount],
+              [t('平均分數','Avg score'), avgScore !== null ? avgScore : '—'],
+              [t('最高分','Best score'), bestScore !== null ? bestScore : '—'],
+              [t('最近測驗','Last survey'), latest ? fmtDate(latest.createdAt) : '—'],
             ].map(([label, val]) => (
               <div key={label} className="fq-detail-stat">
                 <span className="fq-detail-stat-label">{label}</span>
@@ -1299,7 +1318,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
 
           {profile.keyEvents && profile.keyEvents.length > 0 && (
             <div style={{ marginTop:14 }}>
-              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>Key Events</div>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('重要事件','Key Events')}</div>
               {profile.keyEvents.map((ev, i) => (
                 <div key={ev.id || i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
@@ -1319,7 +1338,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
           {latest && (
             <div style={{ marginTop:16 }}>
               <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
-                Latest Dimensions
+                {t('最新維度','Latest Dimensions')}
               </div>
               {DIM_META.map(d => (
                 <div key={d.key} style={{ marginBottom:8 }}>
@@ -1340,7 +1359,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
         <div>
           {/* Score trend */}
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-            <h2>Score Trend</h2>
+            <h2>{t('分數趨勢','Score Trend')}</h2>
             <div className="fq-line" />
           </div>
           <div className="fq-card" style={{ marginBottom:20 }}>
@@ -1351,7 +1370,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
           {latest && (
             <>
               <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-                <h2>Latest Radar</h2>
+                <h2>{t('最新雷達圖','Latest Radar')}</h2>
                 <div className="fq-line" />
                 <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(latest.createdAt)}</span>
               </div>
@@ -1363,9 +1382,9 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
 
           {/* Survey history */}
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-            <h2>Survey History</h2>
+            <h2>{t('測驗記錄','Survey History')}</h2>
             <div className="fq-line" />
-            <span style={{ fontSize:12, color:'var(--muted)' }}>{surveyCount} records</span>
+            <span style={{ fontSize:12, color:'var(--muted)' }}>{surveyCount} {t('筆','records')}</span>
           </div>
 
           {profileSurveys.length === 0 ? (
@@ -1421,14 +1440,14 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
             return (
               <>
                 <div className="fq-section-hdr" style={{ marginBottom:14, marginTop:24 }}>
-                  <h2>近況日誌</h2>
+                  <h2>{t('互動日誌','Interaction Log')}</h2>
                   <div className="fq-line" />
-                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ 新增</button>
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('新增','Add')}</button>
                 </div>
                 {profileJournals.length === 0 ? (
                   <div className="fq-empty" style={{ padding:'28px 20px' }}>
-                    <div className="fq-empty-title">尚無日誌紀錄</div>
-                    <div className="fq-empty-sub">隨時點擊「+ Log」記錄最新的互動感受。</div>
+                    <div className="fq-empty-title">{t('尚無日誌','No logs yet')}</div>
+                    <div className="fq-empty-sub">{t('點擊「+ 日誌」記錄最新的互動感受。','Click "+ Log" to record your latest interaction.')}</div>
                   </div>
                 ) : (
                   <div className="fq-journal-list">
@@ -1440,7 +1459,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
                           <div className="fq-journal-body">
                             <div className="fq-journal-meta">
                               <span className="fq-journal-date">{fmtDate(j.date || j.createdAt)}</span>
-                              <span className="fq-journal-mood-label">{m.label}</span>
+                              <span className="fq-journal-mood-label">{lang === 'zh' ? (m.zh || m.label || j.mood) : (m.en || j.mood)}</span>
                             </div>
                             <div className="fq-journal-text">{j.text}</div>
                           </div>
@@ -1472,14 +1491,20 @@ export default function FriendPage() {
   const [editingProfile, setEditingProfile] = useState(null);
   const [lastSurvey, setLastSurvey] = useState(null);
   const [logTarget, setLogTarget] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem('fq_lang') || 'zh');
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('fq_dark') !== 'false');
 
   // Persist on change
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => { saveSurveys(surveys); }, [surveys]);
   useEffect(() => { saveJournals(journals); }, [journals]);
   useEffect(() => { saveColorTags(colorTags); }, [colorTags]);
+  useEffect(() => { localStorage.setItem('fq_lang', lang); }, [lang]);
+  useEffect(() => { localStorage.setItem('fq_dark', String(darkMode)); }, [darkMode]);
 
   function handleAddColorTag(tag) { setColorTags(prev => [...prev, tag]); }
+  function toggleLang() { setLang(l => l === 'zh' ? 'en' : 'zh'); }
+  function toggleDark() { setDarkMode(d => !d); }
 
   function handleLogSave(entry) { setJournals(prev => [entry, ...prev]); setLogTarget(null); }
 
@@ -1538,15 +1563,24 @@ export default function FriendPage() {
   }
 
   if (!authed) {
-    return <AuthView onAuth={handleAuth} />;
+    return (
+      <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
+        <AuthView onAuth={handleAuth} />
+      </div>
+    );
   }
 
   return (
-    <div className="fq-root">
+    <LangCtx.Provider value={lang}>
+    <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
       <Topbar
         view={view}
         onDashboard={goToDashboard}
         onAddFriend={handleAddFriend}
+        lang={lang}
+        onToggleLang={toggleLang}
+        darkMode={darkMode}
+        onToggleDark={toggleDark}
       />
 
       {view === 'dashboard' && (
@@ -1608,5 +1642,6 @@ export default function FriendPage() {
       )}
       {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
+    </LangCtx.Provider>
   );
 }

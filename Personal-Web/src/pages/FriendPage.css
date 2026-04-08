@@ -14,6 +14,7 @@
   --red:          #f87171;
   --green:        #34d399;
   --border:       rgba(255,255,255,0.07);
+  --grid-line:    rgba(255,255,255,0.08);
 
   /* dimension-specific (charts/radar only) */
   --fq-cyan:   #22d3ee;
@@ -27,6 +28,25 @@
   min-height: 100vh;
   font-size: 15px;
 }
+
+/* ─── Light mode ─── */
+.fq-root.fq-light {
+  --bg:           #f4f6fb;
+  --bg1:          #ffffff;
+  --bg2:          #edf0f7;
+  --bg3:          #e2e6f0;
+  --text:         #0f172a;
+  --muted:        #64748b;
+  --dim:          #94a3b8;
+  --border:       rgba(0,0,0,0.09);
+  --grid-line:    rgba(0,0,0,0.07);
+}
+.fq-root.fq-light .fq-topbar {
+  background: rgba(244,246,251,0.92);
+  border-bottom-color: rgba(0,0,0,0.09);
+}
+.fq-root.fq-light .fq-log-overlay { background: rgba(0,0,0,0.45); }
+.fq-root.fq-light .fq-auth { background: linear-gradient(135deg,#e2e8f0 0%,#f4f6fb 100%); }
 
 .fq-root a { color: var(--accent-light); text-decoration: none; }
 .fq-root a:hover { text-decoration: underline; }
@@ -98,7 +118,60 @@
   padding: 14px 16px;
 }
 
-/* ─── KPI row ─── */
+/* ─── Dashboard two-column ─── */
+.fq-dash-two-col {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.fq-dash-left {
+  position: sticky;
+  top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fq-dash-right { min-width: 0; }
+
+/* Compact KPI list (left panel) */
+.fq-kpi-list {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fq-kpi-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.fq-kpi-list-item:last-child { border-bottom: none; }
+.fq-kpi-list-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.fq-kpi-list-value { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; }
+
+/* Topbar icon buttons */
+.fq-icon-btn {
+  width: 30px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--muted); cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, color 0.15s; flex-shrink: 0;
+}
+.fq-icon-btn:hover { border-color: var(--accent); color: var(--text); }
+.fq-lang-btn {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 4px 9px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--muted); cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s; flex-shrink: 0;
+}
+.fq-lang-btn:hover { border-color: var(--accent); color: var(--text); }
+
+/* ─── KPI row (legacy, used in other views) ─── */
 .fq-kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -479,6 +552,8 @@
   .fq-survey-layout { grid-template-columns: 1fr; }
   .fq-detail-layout { grid-template-columns: 1fr; }
   .fq-survey-sidebar, .fq-detail-sidebar { position: static; }
+  .fq-dash-two-col { grid-template-columns: 1fr; }
+  .fq-dash-left { position: static; }
 }
 @media (max-width: 600px) {
   .fq-body { padding: 16px 14px 60px; }
