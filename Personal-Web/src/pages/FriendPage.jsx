@@ -768,22 +768,17 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           )}
 
           {/* Quick actions */}
-          <div className="fq-card">
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
-              {t('快速操作', 'Quick Actions')}
+          {mostRecentProfile && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:6 }}>
+                {t('最近測驗', 'Last surveyed')}
+              </div>
+              <div style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>
+                <span style={{ color:'var(--text)', fontWeight:600 }}>{mostRecentProfile.name}</span>
+                <br /><span style={{ fontSize:11 }}>{fmtDate(mostRecentSurvey.createdAt)}</span>
+              </div>
             </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              <button className="fq-btn fq-btn-primary" style={{ justifyContent:'center' }} onClick={onCreateFriend}>
-                + {t('新增朋友', 'Add Friend')}
-              </button>
-              {mostRecentProfile && (
-                <div style={{ fontSize:12, color:'var(--muted)', marginTop:4, lineHeight:1.5 }}>
-                  {t('最近測驗', 'Last surveyed')}: <span style={{ color:'var(--text)', fontWeight:600 }}>{mostRecentProfile.name}</span>
-                  <br /><span style={{ fontSize:11 }}>{fmtDate(mostRecentSurvey.createdAt)}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Birthday reminders */}
           {(() => {
@@ -1031,9 +1026,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           <div className="fq-section-hdr">
             <h2>{t('朋友列表', 'Friend Profiles')} {filteredProfiles.length < profiles.length ? `(${filteredProfiles.length}/${profiles.length})` : `(${profiles.length})`}</h2>
             <div className="fq-line" />
-            <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onCreateFriend}>
-              + {t('新增', 'New')}
-            </button>
           </div>
 
           {profiles.length === 0 ? (
