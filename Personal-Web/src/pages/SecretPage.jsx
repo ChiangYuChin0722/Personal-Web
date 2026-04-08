@@ -8,7 +8,7 @@ const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const CARD_COLORS = ["#2563eb", "#7c3aed", "#dc2626", "#059669", "#d97706", "#0891b2"];
 const CIRCLED = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩"];
 
-const EVENT_CATS = [
+const DEFAULT_CATS = [
   { id: "exam",     label: "考試",   color: "#ef4444" },
   { id: "meal",     label: "聚餐",   color: "#f97316" },
   { id: "work",     label: "工作",   color: "#3b82f6" },
@@ -17,13 +17,26 @@ const EVENT_CATS = [
   { id: "deadline", label: "截止日", color: "#e11d48" },
   { id: "other",    label: "其他",   color: "#64748b" },
 ];
-function catColor(id) { return EVENT_CATS.find(c => c.id === id)?.color ?? "#64748b"; }
-function catLabel(id) { return EVENT_CATS.find(c => c.id === id)?.label ?? id; }
+function catColor(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.color ?? "#64748b"; }
+function catLabel(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.label ?? id; }
 
-function CategoryPicker({ value, onChange }) {
+function CategoryPicker({ value, onChange, categories, onAddCategory }) {
+  const cats = categories || DEFAULT_CATS;
+  const [showAdd, setShowAdd] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newColor, setNewColor] = useState("#3b82f6");
+
+  function addCat() {
+    if (!newLabel.trim()) return;
+    const id = "custom_" + Date.now();
+    onAddCategory?.({ id, label: newLabel.trim(), color: newColor });
+    onChange(id);
+    setShowAdd(false); setNewLabel(""); setNewColor("#3b82f6");
+  }
+
   return (
     <div className="sp-cat-picker">
-      {EVENT_CATS.map(c => (
+      {cats.map(c => (
         <button key={c.id}
           className={`sp-cat-chip${value === c.id ? " active" : ""}`}
           style={{ "--cat": c.color }}
@@ -31,6 +44,18 @@ function CategoryPicker({ value, onChange }) {
           type="button"
         >{c.label}</button>
       ))}
+      {showAdd ? (
+        <div className="sp-cat-add-inline">
+          <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
+          <input value={newLabel} onChange={e => setNewLabel(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addCat()} placeholder="標籤名稱"
+            className="sp-cat-label-inp" autoFocus />
+          <button onClick={addCat} type="button" className="sp-cat-add-ok">✓</button>
+          <button onClick={() => setShowAdd(false)} type="button" className="sp-del">✕</button>
+        </div>
+      ) : (
+        <button className="sp-cat-chip" style={{ "--cat": "#64748b" }} onClick={() => setShowAdd(true)} type="button">＋ 新增</button>
+      )}
     </div>
   );
 }
