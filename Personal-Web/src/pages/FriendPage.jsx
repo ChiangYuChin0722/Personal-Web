@@ -1150,6 +1150,7 @@ function PhotoCropModal({ src, onApply, onCancel }) {
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const PREVIEW = 260;
   const [scale, setScale] = useState(1);
+  const [minScale, setMinScale] = useState(0.05);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef(null);
@@ -1208,17 +1209,19 @@ function PhotoCropModal({ src, onApply, onCancel }) {
               transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
               pointerEvents:'none'
             }} onLoad={() => {
-              // Set initial scale so image fills the circle
               const img = imgRef.current;
-              const initScale = Math.max(PREVIEW / img.naturalWidth, PREVIEW / img.naturalHeight);
-              setScale(initScale);
+              const W = img.naturalWidth, H = img.naturalHeight;
+              const fillScale = Math.max(PREVIEW / W, PREVIEW / H);
+              const fitScale  = Math.min(PREVIEW / W, PREVIEW / H);
+              setMinScale(fitScale);
+              setScale(fillScale);
             }} />
           </div>
           <div style={{ width:'100%' }}>
             <label style={{ fontSize:12, color:'var(--muted)', display:'block', marginBottom:6 }}>
               {t('縮放', 'Zoom')}
             </label>
-            <input type="range" min="0.3" max="4" step="0.01" value={scale}
+            <input type="range" min={minScale} max="4" step={minScale / 10} value={scale}
               onChange={e => setScale(parseFloat(e.target.value))}
               style={{ width:'100%', accentColor:'var(--accent)' }} />
           </div>
