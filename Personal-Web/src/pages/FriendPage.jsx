@@ -54,14 +54,14 @@ const MOODS = [
 
 const QUESTIONS = [
   // F 頻率 Frequency
-  { dim:'F', text:'不計群組訊息，這段友誼中一對一私下聯絡（傳訊息、通話、見面）的平均頻率大概是？', opts:['幾乎沒有聯絡（一年一次或更少）','一年幾次','每個月幾次','每週或更頻繁'],
-    en:'Excluding group chats, how often is there one-on-one private contact (messages, calls, meetups) in this friendship?', enOpts:['Almost never (once a year or less)','A few times a year','A few times a month','Weekly or more'] },
+  { dim:'F', text:'不計群組訊息，這段友誼目前的一對一聯絡頻率，你覺得是否足夠？', opts:['遠遠不夠，幾乎沒有私下互動','有點不足，偶爾希望多聯繫','差不多剛好，符合這段友誼的節奏','完全夠，甚至超過需要的頻率'],
+    en:'Excluding group chats, is the current one-on-one contact frequency in this friendship sufficient?', enOpts:['Far from enough — almost no private interaction','Slightly lacking — occasionally wish for more','About right — fits the rhythm of this friendship','More than enough — even exceeds what is needed'] },
   { dim:'F', text:'過去三個月，這段友誼中主動發起對話或約出來的比例是？', opts:['完全由一方單獨維持','大多是同一方在主動','大概各半','雙方主動程度相當'],
     en:'Over the past three months, who has been more likely to initiate conversations or make plans?', enOpts:['Entirely one-sided','Mostly one side','Roughly equal','Both sides equally'] },
   { dim:'F', text:'若有兩週沒有主動聯絡，這個人是否會察覺並主動找來？', opts:['很不可能，對方大概不會注意到','應該不會','對方大概會來問一下','對方一定會，完全不用懷疑'],
     en:'If there were two weeks of no contact, would this person notice and reach out?', enOpts:["Very unlikely — they probably wouldn't notice",'Probably not','They would likely check in','Definitely — no doubt about it'] },
-  { dim:'F', text:'和一年前相比，這段友誼的聯絡頻率有什麼變化？', opts:['明顯減少了很多','有一點變少','大概差不多','比以前更頻繁了'],
-    en:'Compared to a year ago, how has the contact frequency in this friendship changed?', enOpts:['Decreased significantly','Decreased somewhat','About the same','More frequent than before'] },
+  { dim:'F', text:'這段友誼對「沉默一段時間不聯絡」的包容度如何？', opts:['包容度低，沉默就會產生疏遠感','需要偶爾聯絡來維持溫度','還不錯，可以接受比較長的空白','非常高，再久沒說話，重聯絡時也完全不尷尬'],
+    en:'How tolerant is this friendship of going without contact for a while?', enOpts:['Low — silence quickly leads to distance','Needs occasional contact to stay warm','Fairly tolerant — comfortable with longer gaps','Very high — no matter how long, reconnecting feels effortless'] },
   // R 互惠 Reciprocity
   { dim:'R', text:'在分享個人困擾、喜悅或私事這方面，這段友誼中雙方的投入程度是否均衡？', opts:['明顯不均衡，一方分享多另一方幾乎不開口','有些不均衡','大致均衡','非常均衡，雙方都很主動分享'],
     en:'When it comes to sharing personal struggles, joys, or private matters, how balanced is both sides\' investment?', enOpts:['Clearly unbalanced — one shares a lot, the other rarely opens up','Somewhat unbalanced','Roughly balanced','Very balanced — both actively share'] },
@@ -1229,6 +1229,8 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
   const [since,     setSince]     = useState(editProfile?.since     || '');
   const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
   const [birthday,  setBirthday]  = useState(editProfile?.birthday  || { month:'', day:'' });
+  const [pros,      setPros]      = useState(editProfile?.pros      || '');
+  const [cons,      setCons]      = useState(editProfile?.cons      || '');
   const [err, setErr]             = useState('');
   const [cropSrc, setCropSrc]     = useState(null);
   const fileRef = useRef(null);
@@ -1282,7 +1284,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
     onSave({
       id: editProfile?.id || genId(),
       name: name.trim(), photo, color, groupId: resolvedGroupId || '',
-      since, keyEvents, birthday,
+      since, keyEvents, birthday, pros: pros.trim(), cons: cons.trim(),
       createdAt: editProfile?.createdAt || new Date().toISOString(),
       _newGroup: newCustomGroup,
     });
@@ -1440,6 +1442,22 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
               <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
             </div>
           </div>
+        </div>
+
+        {/* Pros & Cons */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('優點','Strengths')}</label>
+          <textarea className="fq-input" rows={3}
+            placeholder={t('這個人讓你欣賞的特質、讓友誼值得維繫的優點…', "Qualities you admire, reasons this friendship is worth keeping…")}
+            value={pros} onChange={e => setPros(e.target.value)}
+            style={{ resize:'vertical', lineHeight:1.6 }} />
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('缺點 / 挑戰','Weaknesses / Challenges')}</label>
+          <textarea className="fq-input" rows={3}
+            placeholder={t('相處上的摩擦點、讓你感到困擾或需要包容的地方…', "Friction points, things that are hard to accept or require patience…")}
+            value={cons} onChange={e => setCons(e.target.value)}
+            style={{ resize:'vertical', lineHeight:1.6 }} />
         </div>
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
@@ -1896,6 +1914,28 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
               ))}
             </div>
           )}
+          {/* Pros & Cons */}
+          {(profile.pros || profile.cons) && (
+            <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
+              {profile.pros && (
+                <div style={{ marginBottom: profile.cons ? 10 : 0 }}>
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:5 }}>
+                    {t('優點','Strengths')}
+                  </div>
+                  <div style={{ fontSize:13, color:'var(--text)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{profile.pros}</div>
+                </div>
+              )}
+              {profile.cons && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:5 }}>
+                    {t('缺點 / 挑戰','Weaknesses / Challenges')}
+                  </div>
+                  <div style={{ fontSize:13, color:'var(--text)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{profile.cons}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* legacy notes support */}
           {profile.notes && !profile.keyEvents && (
             <div style={{ marginTop:14, padding:'10px 12px', background:'var(--bg2)', borderRadius:7, fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
