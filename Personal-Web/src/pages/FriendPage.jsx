@@ -1397,7 +1397,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
             {keyEvents.length === 0 && (
               <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>{t('尚無事件，新增里程碑、回憶或消息吧。','No events yet. Add milestones, memories, or news.')}</div>
             )}
-            {keyEvents.map((ev, idx) => (
+            {[...keyEvents].sort((a,b) => (b.year||0) - (a.year||0)).map((ev, idx) => (
               <div key={ev.id} className="fq-key-event-row">
                 <span className="fq-key-event-num">#{idx + 1}</span>
                 {ev.year && <span className="fq-key-event-year">{ev.year}</span>}
@@ -1911,7 +1911,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
               </div>
               <div className="fq-card fq-key-event-timeline" style={{ marginBottom:20 }}>
                 {[...profile.keyEvents]
-                  .sort((a, b) => (a.year || 0) - (b.year || 0))
+                  .sort((a, b) => (b.year || 0) - (a.year || 0))
                   .map((ev, i) => (
                     <div key={ev.id || i} className="fq-ket-row">
                       <div className="fq-ket-dot" />
