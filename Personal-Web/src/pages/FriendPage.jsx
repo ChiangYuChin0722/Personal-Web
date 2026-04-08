@@ -223,12 +223,15 @@ function LogModal({ profile, onSave, onClose }) {
   const [text, setText] = useState('');
   const [markEvent, setMarkEvent] = useState(false);
   const [eventYear, setEventYear] = useState(String(new Date().getFullYear()));
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
 
   function handleSave() {
     if (!text.trim()) return;
     onSave({
       id: genId(), profileId: profile.id, mood, date,
       text: text.trim(), createdAt: new Date().toISOString(),
+      rating: rating || null,
       keyEvent: markEvent ? { year: eventYear, text: text.trim() } : null,
     });
   }
@@ -248,6 +251,29 @@ function LogModal({ profile, onSave, onClose }) {
                 {m.icon} {lang === 'zh' ? m.zh : m.en}
               </button>
             ))}
+          </div>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('這次互動評分', 'Rate this interaction')} <span style={{ fontWeight:400, color:'var(--muted)', fontSize:11 }}>{t('（選填）','(optional)')}</span></label>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} type="button"
+                onMouseEnter={() => setHoverRating(n)}
+                onMouseLeave={() => setHoverRating(0)}
+                onClick={() => setRating(rating === n ? 0 : n)}
+                style={{ background:'none', border:'none', cursor:'pointer', padding:'2px 4px', fontSize:26, lineHeight:1,
+                  opacity: (hoverRating || rating) >= n ? 1 : 0.25,
+                  transform: (hoverRating || rating) >= n ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'transform 0.1s, opacity 0.1s' }}>
+                ⭐
+              </button>
+            ))}
+            {rating > 0 && (
+              <span style={{ fontSize:12, color:'var(--muted)', marginLeft:4 }}>
+                {['','😔','😐','🙂','😊','🤩'][rating]}
+                {['',' 1/5',' 2/5',' 3/5',' 4/5',' 5/5'][rating]}
+              </span>
+            )}
           </div>
         </div>
         <div className="fq-form-row">
@@ -1625,6 +1651,16 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
   const bestScore = surveyCount === 0 ? null :
     Math.max(...profileSurveys.map(s => s.total));
 
+  // Interaction score: average of last 5 rated logs × 20 (1★=20 … 5★=100)
+  const ratedLogs = journals
+    .filter(j => j.profileId === profile.id && j.rating)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+  const interactionScore = ratedLogs.length === 0 ? null :
+    Math.round(ratedLogs.reduce((acc, j) => acc + j.rating, 0) / ratedLogs.length * 20);
+  const interactionStars = ratedLogs.length === 0 ? null :
+    (ratedLogs.reduce((acc, j) => acc + j.rating, 0) / ratedLogs.length).toFixed(1);
+
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
@@ -1667,6 +1703,18 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
               </div>
               <div style={{ fontSize:11, marginTop:6, padding:'3px 10px', borderRadius:5, display:'inline-block', background: type.color + '22', color: type.color, fontWeight:600 }}>
                 {type.name}
+              </div>
+            </div>
+          )}
+
+          {interactionScore !== null && (
+            <div style={{ textAlign:'center', marginBottom:16, padding:'10px 0', borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:11, color:'var(--muted)', fontWeight:600, letterSpacing:1, textTransform:'uppercase', marginBottom:4 }}>
+                {t('近期互動分','Recent Interaction')}
+              </div>
+              <div style={{ fontSize:28, fontWeight:800, color:'#F59E0B', lineHeight:1 }}>{interactionScore}</div>
+              <div style={{ fontSize:12, color:'var(--muted)', marginTop:3 }}>
+                ⭐ {interactionStars} &nbsp;·&nbsp; {ratedLogs.length} {t('筆','logs')}
               </div>
             </div>
           )}
