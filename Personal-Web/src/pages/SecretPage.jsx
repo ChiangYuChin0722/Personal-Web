@@ -9,13 +9,13 @@ const CARD_COLORS = ["#2563eb", "#7c3aed", "#dc2626", "#059669", "#d97706", "#08
 const CIRCLED = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩"];
 
 const DEFAULT_CATS = [
-  { id: "exam",     label: "考試",   color: "#ef4444" },
-  { id: "meal",     label: "聚餐",   color: "#f97316" },
-  { id: "work",     label: "工作",   color: "#3b82f6" },
-  { id: "personal", label: "個人",   color: "#a855f7" },
-  { id: "exercise", label: "運動",   color: "#22c55e" },
-  { id: "deadline", label: "截止日", color: "#e11d48" },
-  { id: "other",    label: "其他",   color: "#64748b" },
+  { id: "exam",     label: "Exam",     color: "#ef4444" },
+  { id: "meal",     label: "Dining",   color: "#f97316" },
+  { id: "work",     label: "Work",     color: "#3b82f6" },
+  { id: "personal", label: "Personal", color: "#a855f7" },
+  { id: "exercise", label: "Exercise", color: "#22c55e" },
+  { id: "deadline", label: "Deadline", color: "#e11d48" },
+  { id: "other",    label: "Other",    color: "#64748b" },
 ];
 function catColor(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.color ?? "#64748b"; }
 function catLabel(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.label ?? id; }
@@ -48,13 +48,13 @@ function CategoryPicker({ value, onChange, categories, onAddCategory }) {
         <div className="sp-cat-add-inline">
           <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
           <input value={newLabel} onChange={e => setNewLabel(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addCat()} placeholder="標籤名稱"
+            onKeyDown={e => e.key === "Enter" && addCat()} placeholder="Label name"
             className="sp-cat-label-inp" autoFocus />
           <button onClick={addCat} type="button" className="sp-cat-add-ok">✓</button>
           <button onClick={() => setShowAdd(false)} type="button" className="sp-del">✕</button>
         </div>
       ) : (
-        <button className="sp-cat-chip" style={{ "--cat": "#64748b" }} onClick={() => setShowAdd(true)} type="button">＋ 新增</button>
+        <button className="sp-cat-chip" style={{ "--cat": "#64748b" }} onClick={() => setShowAdd(true)} type="button">+ New</button>
       )}
     </div>
   );
@@ -209,6 +209,36 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
   );
 }
 
+// ── Time Picker (10-min steps) ────────────────────────────────
+function TimePicker({ value, onChange, className }) {
+  const parts = (value || "").split(":");
+  const hVal = parts[0] || "";
+  const mVal = parts[1] ? parts[1].slice(0, 2) : "";
+
+  function update(newH, newM) {
+    if (!newH || !newM) { onChange(""); return; }
+    onChange(`${newH}:${newM}`);
+  }
+
+  return (
+    <div className="sp-time-picker">
+      <select value={hVal} onChange={e => update(e.target.value, mVal)} className={className}>
+        <option value="">HH</option>
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+      <span className="sp-time-colon">:</span>
+      <select value={mVal} onChange={e => update(hVal, e.target.value)} className={className}>
+        <option value="">MM</option>
+        {["00","10","20","30","40","50"].map(m => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ── Event Modal ───────────────────────────────────────────────
 function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }) {
   const [title,       setTitle]       = useState(initial.title       || "");
@@ -251,7 +281,7 @@ function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }
             </div>
             <div className="sp-modal-field">
               <div className="sp-modal-label">Time</div>
-              <input type="time" step="600" value={time} onChange={e => setTime(e.target.value)} className="sp-modal-input" />
+              <TimePicker value={time} onChange={setTime} className="sp-modal-input" />
             </div>
           </div>
           <div className="sp-modal-field">
@@ -266,7 +296,7 @@ function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }
           </div>
           <label className="sp-pin-toggle">
             <input type="checkbox" checked={pinDeadline} onChange={e => setPinDeadline(e.target.checked)} />
-            <span>顯示在 Deadlines 清單</span>
+            <span>Show in Deadlines</span>
           </label>
         </div>
         <div className="sp-modal-footer">
@@ -312,15 +342,10 @@ function dlBadgeLabel(days) {
 }
 
 // ── Deadlines ─────────────────────────────────────────────────
-function DeadlinesSection({ events, onAdd, onEdit, onSoftDelete, categories }) {
+function DeadlinesSection({ events, onAdd, onEdit, onRemove, categories }) {
   const [modal, setModal] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
 
-  const pinned   = events.filter(e => e.pinDeadline !== false);
-  const active   = pinned.filter(e => !e.deleted);
-  const history  = pinned.filter(e => e.deleted);
-  const list     = showHistory ? history : active;
-
+  const list = events.filter(e => !e.deleted && e.pinDeadline !== false);
   const sorted = [...list].sort((a, b) => {
     const da = daysLeft(a.date), db = daysLeft(b.date);
     if (da === null && db === null) return 0;
@@ -330,37 +355,23 @@ function DeadlinesSection({ events, onAdd, onEdit, onSoftDelete, categories }) {
 
   return (
     <div className="sp-deadlines">
-      <div className="sp-section-title sp-dl-title-row">
-        <span>Deadlines</span>
-        {history.length > 0 && (
-          <button className="sp-history-toggle" onClick={() => setShowHistory(h => !h)}>
-            {showHistory ? "← 回到清單" : `🗃 歷史 (${history.length})`}
-          </button>
-        )}
-      </div>
+      <div className="sp-section-title">Deadlines</div>
       <div className="sp-dl-list">
-        {sorted.length === 0 && <div className="sp-dl-empty">{showHistory ? "無歷史紀錄" : "No events yet"}</div>}
+        {sorted.length === 0 && <div className="sp-dl-empty">No events yet</div>}
         {sorted.map(d => {
           const days = daysLeft(d.date);
-          const { bg, color } = showHistory
-            ? { bg: "var(--bg3)", color: "var(--dim)" }
-            : dlBadgeStyle(days);
+          const { bg, color } = dlBadgeStyle(days);
           const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(d.date)
             ? d.date.slice(5).replace("-", "/") : d.date;
           return (
-            <div key={d.id} className={`sp-dl-item${d.deleted ? " sp-dl-deleted" : " sp-dl-item-click"}`}
-              onClick={() => !d.deleted && setModal(d)}>
-              <span className="sp-dl-badge" style={{ background: bg, color }}>
-                {showHistory ? "已刪除" : dlBadgeLabel(days)}
-              </span>
+            <div key={d.id} className="sp-dl-item sp-dl-item-click" onClick={() => setModal(d)}>
+              <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
               <span className="sp-cat-dot" style={{ background: catColor(d.category, categories) }}
                 title={catLabel(d.category, categories)} />
               <span className="sp-dl-name">{d.title}</span>
               {d.time && <span className="sp-dl-time">{d.time.slice(0,5)}</span>}
               <span className="sp-dl-datestr">{displayDate}</span>
-              {!d.deleted && (
-                <button onClick={e => { e.stopPropagation(); onSoftDelete(d.id); }} className="sp-del">✕</button>
-              )}
+              <button onClick={e => { e.stopPropagation(); onRemove(d.id); }} className="sp-del">✕</button>
             </div>
           );
         })}
@@ -813,7 +824,7 @@ function TaskList({ list, isOpen, onToggleOpen, onDelete, onAddItem, onToggleIte
           ))}
           <div className="sp-grocery-add">
             <input value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && add()} placeholder="新增項目..." />
+              onKeyDown={e => e.key === "Enter" && add()} placeholder="Add item..." />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -863,7 +874,7 @@ function TaskListsSection({ taskLists, onUpdate }) {
 
   return (
     <div className="sp-tasklists">
-      <div className="sp-section-title">任務清單</div>
+      <div className="sp-section-title">Task Lists</div>
       {taskLists.map(list => (
         <TaskList key={list.id} list={list} isOpen={isOpen(list.id)}
           onToggleOpen={() => setOpen(o => ({ ...o, [list.id]: !isOpen(list.id) }))}
@@ -875,7 +886,7 @@ function TaskListsSection({ taskLists, onUpdate }) {
       ))}
       <div className="sp-tl-add-list">
         <input value={newName} onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && addList()} placeholder="＋ 新增清單..." className="sp-tl-add-input" />
+          onKeyDown={e => e.key === "Enter" && addList()} placeholder="+ New list..." className="sp-tl-add-input" />
         <button onClick={addList} className="sp-tl-add-btn">+</button>
       </div>
     </div>
@@ -986,7 +997,7 @@ export default function SecretPage() {
   const updateEvents    = v => { setEvents(v);     save("yc2_events", v); };
   const handleAddEvent  = e => updateEvents([...events, e]);
   const handleEditEvent = e => updateEvents(events.map(x => x.id === e.id ? e : x));
-  const handleDelEvent  = id => updateEvents(events.map(e => e.id === id ? { ...e, deleted: true } : e));
+  const handleDelEvent  = id => updateEvents(events.filter(e => e.id !== id));
   const updateMatrix    = v => { setMatrix(v);     save("yc2_matrix", v); };
   const updateTaskLists = v => { setTaskLists(v);  save("yc2_tasklists", v); };
   const handleAddCategory = cat => {
@@ -1059,7 +1070,7 @@ export default function SecretPage() {
         <div className="sp-middle">
           <DeadlinesSection
             events={events} categories={categories}
-            onAdd={handleAddEvent} onEdit={handleEditEvent} onSoftDelete={handleDelEvent}
+            onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />
         </div>
