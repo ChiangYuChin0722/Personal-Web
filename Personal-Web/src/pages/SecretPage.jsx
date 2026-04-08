@@ -2,6 +2,22 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { encrypt, decrypt } from "./secretUtils.js";
 import "./SecretPage.css";
 
+// Handles Chinese IME: blocks Enter during composition (macOS fix)
+function IMEInput({ onEnterKey, onKeyDown, ...props }) {
+  const composing = useRef(false);
+  return (
+    <input
+      {...props}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={() => { setTimeout(() => { composing.current = false; }, 0); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter' && !composing.current) onEnterKey?.(e);
+        onKeyDown?.(e);
+      }}
+    />
+  );
+}
+
 const VALID_USERNAME = "chianghebe";
 const VALID_PASSWORD = "Hebe0722";
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -46,9 +62,9 @@ function CategoryPicker({ value, onChange, categories, onAddCategory }) {
       ))}
       {showAdd ? (
         <div className="sp-cat-add-inline">
-          <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
-          <input value={newLabel} onChange={e => setNewLabel(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.isComposing && addCat()} placeholder="Label name"
+          <IMEInput type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
+          <IMEInput value={newLabel} onChange={e => setNewLabel(e.target.value)}
+            onEnterKey={() => addCat()} placeholder="Label name"
             className="sp-cat-label-inp" autoFocus />
           <button onClick={addCat} type="button" className="sp-cat-add-ok">✓</button>
           <button onClick={() => setShowAdd(false)} type="button" className="sp-del">✕</button>
@@ -163,9 +179,9 @@ function QuickLinks({ links, onAdd, onRemove }) {
               </div>
             )}
           </div>
-          <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
-          <input value={url} onChange={e => setUrl(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.isComposing && addCustom()} placeholder="URL" />
+          <IMEInput value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
+          <IMEInput value={url} onChange={e => setUrl(e.target.value)}
+            onEnterKey={() => addCustom()} placeholder="URL" />
           <button onClick={addCustom} className="ql-add-btn">+</button>
           <button onClick={() => setShowCustom(false)} className="sp-del">✕</button>
         </div>
@@ -200,7 +216,7 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
             </div>
           ))}
           <div className="sp-pill-add-row">
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.isComposing && add()} placeholder={placeholder} />
+            <IMEInput value={input} onChange={e => setInput(e.target.value)} onEnterKey={() => add()} placeholder={placeholder} />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -269,8 +285,8 @@ function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }
           <button onClick={onClose} className="sp-modal-close">✕</button>
         </div>
         <div className="sp-modal-body">
-          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.isComposing && save()}
+          <IMEInput autoFocus value={title} onChange={e => setTitle(e.target.value)}
+            onEnterKey={() => save()}
             placeholder="Event title..." className="sp-modal-main-input" />
           <div className="sp-modal-label">Category</div>
           <CategoryPicker value={category} onChange={setCategory} categories={categories} onAddCategory={onAddCategory} />
@@ -574,8 +590,8 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
             </div>
             <div className="em-modal-field">
               <label>Title</label>
-              <input autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && !e.isComposing && addItem()} placeholder="Task title..." />
+              <IMEInput autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                onEnterKey={() => addItem()} placeholder="Task title..." />
             </div>
             <div className="em-modal-field">
               <label>Deadline</label>
@@ -613,9 +629,9 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
                 <>
                   <div className="em-modal-field">
                     <label>Title</label>
-                    <input autoFocus value={editForm.title}
+                    <IMEInput autoFocus value={editForm.title}
                       onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-                      onKeyDown={e => e.key === "Enter" && !e.isComposing && saveEdit(viewItem.id)} />
+                      onEnterKey={() => saveEdit(viewItem.id)} />
                   </div>
                   <div className="em-modal-field">
                     <label>Deadline</label>
@@ -874,8 +890,8 @@ function TaskList({ list, isOpen, onToggleOpen, onDelete, onAddItem, onToggleIte
               onRemove={() => onRemoveItem(item.id)} />
           ))}
           <div className="sp-grocery-add">
-            <input value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && !e.isComposing && add()} placeholder="Add item..." />
+            <IMEInput value={input} onChange={e => setInput(e.target.value)}
+              onEnterKey={() => add()} placeholder="Add item..." />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -936,8 +952,8 @@ function TaskListsSection({ taskLists, onUpdate }) {
         />
       ))}
       <div className="sp-tl-add-list">
-        <input value={newName} onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !e.isComposing && addList()} placeholder="+ New list..." className="sp-tl-add-input" />
+        <IMEInput value={newName} onChange={e => setNewName(e.target.value)}
+          onEnterKey={() => addList()} placeholder="+ New list..." className="sp-tl-add-input" />
         <button onClick={addList} className="sp-tl-add-btn">+</button>
       </div>
     </div>
@@ -1066,11 +1082,11 @@ export default function SecretPage() {
           <p>This area is restricted. Please sign in.</p>
           <div className="sp-field">
             <label>USERNAME</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Enter username" autoComplete="off" />
+            <IMEInput type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Enter username" autoComplete="off" />
           </div>
           <div className="sp-field">
             <label>PASSWORD</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.isComposing && handleLogin()} placeholder="Enter password" />
+            <IMEInput type="password" value={password} onChange={e => setPassword(e.target.value)} onEnterKey={() => handleLogin()} placeholder="Enter password" />
           </div>
           <button className="sp-login-btn" onClick={handleLogin}>Sign In</button>
           {loginError && <div className="sp-login-error">Incorrect username or password.</div>}

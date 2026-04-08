@@ -1,6 +1,22 @@
 import './FriendPage.css';
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 
+// Handles Chinese IME: blocks Enter during composition (macOS fix)
+function IMEInput({ onEnterKey, onKeyDown, ...props }) {
+  const composing = useRef(false);
+  return (
+    <input
+      {...props}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={() => { setTimeout(() => { composing.current = false; }, 0); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter' && !composing.current) onEnterKey?.(e);
+        onKeyDown?.(e);
+      }}
+    />
+  );
+}
+
 const LangCtx = createContext('zh');
 const GroupsCtx = createContext([]);
 
@@ -1327,8 +1343,8 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
                       style={{ width:18, height:18, borderRadius:'50%', background:c, border: newGroupColor===c ? '2.5px solid var(--text)' : '2.5px solid transparent', cursor:'pointer', padding:0, flexShrink:0 }} />
                   ))}
                 </div>
-                <input value={newGroupLabel} onChange={e => setNewGroupLabel(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.isComposing && addNewGroup()}
+                <IMEInput value={newGroupLabel} onChange={e => setNewGroupLabel(e.target.value)}
+                  onEnterKey={() => addNewGroup()}
                   placeholder={t('自訂分組名稱','Group name')} className="fq-tag-label-inp" autoFocus />
                 <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewGroup}>✓</button>
                 <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowGroupForm(false)}>✕</button>
@@ -1390,12 +1406,12 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
               </div>
             ))}
             <div className="fq-key-event-add">
-              <input className="fq-key-event-year-inp" value={evtYear}
+              <IMEInput className="fq-key-event-year-inp" value={evtYear}
                 onChange={e => setEvtYear(e.target.value)} placeholder={t('年份','Year')} type="number"
                 min="1990" max={THIS_YEAR} />
-              <input className="fq-key-event-text-inp" value={evtText}
+              <IMEInput className="fq-key-event-text-inp" value={evtText}
                 onChange={e => setEvtText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.isComposing && addEvent()}
+                onEnterKey={() => addEvent()}
                 placeholder={t('例：創業','e.g. Started his own company')} />
               <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
             </div>
