@@ -404,6 +404,8 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
   const [localItems, setLocalItems] = useState([]);
   const [addModal, setAddModal]     = useState(null);
   const [viewCard, setViewCard]     = useState(null);
+  const [editMode, setEditMode]     = useState(false);
+  const [editForm, setEditForm]     = useState({ title: "", deadline: "", details: "" });
   const [form, setForm]             = useState({ title: "", deadline: "", details: "" });
 
   // Sync from parent when not dragging
@@ -467,6 +469,23 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
     e.stopPropagation();
     if (dragMoved.current) return;
     setViewCard(id);
+    setEditMode(false);
+  }
+
+  function startEdit(item) {
+    setEditForm({ title: item.title, deadline: item.deadline || "", details: item.details || "" });
+    setEditMode(true);
+  }
+
+  function saveEdit(id) {
+    if (!editForm.title.trim()) return;
+    const next = localItemsRef.current.map(i =>
+      i.id === id ? { ...i, title: editForm.title.trim(), deadline: editForm.deadline, details: editForm.details } : i
+    );
+    localItemsRef.current = next;
+    setLocalItems(next);
+    onUpdate(next);
+    setEditMode(false);
   }
 
   function addItem() {
@@ -576,29 +595,61 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
         </div>
       )}
 
-      {/* View Card */}
+      {/* View / Edit Card */}
       {viewItem && (() => {
         const q = getQuadrantInfo(viewItem.x, viewItem.y);
         return (
-          <div className="em-overlay" onClick={() => setViewCard(null)}>
+          <div className="em-overlay" onClick={() => { setViewCard(null); setEditMode(false); }}>
             <div className="em-modal" onClick={e => e.stopPropagation()}>
               <div className="em-modal-header">
                 <div>
                   <span className="em-modal-quad" style={{ color: q.color }}>{q.label} · {q.sub}</span>
-                  <h3>{viewItem.title}</h3>
+                  {!editMode && <h3>{viewItem.title}</h3>}
                 </div>
-                <button className="em-close" onClick={() => setViewCard(null)}>✕</button>
+                <button className="em-close" onClick={() => { setViewCard(null); setEditMode(false); }}>✕</button>
               </div>
-              {viewItem.deadline && (
-                <div className="em-card-row"><span className="em-card-key">Deadline</span><span>{viewItem.deadline}</span></div>
+
+              {editMode ? (
+                <>
+                  <div className="em-modal-field">
+                    <label>Title</label>
+                    <input autoFocus value={editForm.title}
+                      onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                      onKeyDown={e => e.key === "Enter" && saveEdit(viewItem.id)} />
+                  </div>
+                  <div className="em-modal-field">
+                    <label>Deadline</label>
+                    <input value={editForm.deadline}
+                      onChange={e => setEditForm(p => ({ ...p, deadline: e.target.value }))}
+                      placeholder="e.g. 2025/06/01" />
+                  </div>
+                  <div className="em-modal-field">
+                    <label>Details</label>
+                    <textarea value={editForm.details}
+                      onChange={e => setEditForm(p => ({ ...p, details: e.target.value }))}
+                      rows={3} placeholder="Notes, subtasks..." />
+                  </div>
+                  <div className="em-modal-actions">
+                    <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
+                    <button className="em-btn-cancel" onClick={() => setEditMode(false)}>Cancel</button>
+                    <button className="em-btn-add" onClick={() => saveEdit(viewItem.id)}>Save</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {viewItem.deadline && (
+                    <div className="em-card-row"><span className="em-card-key">Deadline</span><span>{viewItem.deadline}</span></div>
+                  )}
+                  {viewItem.details && (
+                    <div className="em-card-row"><span className="em-card-key">Details</span><span style={{ whiteSpace:"pre-wrap" }}>{viewItem.details}</span></div>
+                  )}
+                  <div className="em-modal-actions">
+                    <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
+                    <button className="em-btn-cancel" onClick={() => { setViewCard(null); setEditMode(false); }}>Close</button>
+                    <button className="em-btn-add" onClick={() => startEdit(viewItem)}>Edit</button>
+                  </div>
+                </>
               )}
-              {viewItem.details && (
-                <div className="em-card-row"><span className="em-card-key">Details</span><span>{viewItem.details}</span></div>
-              )}
-              <div className="em-modal-actions">
-                <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
-                <button className="em-btn-cancel" onClick={() => setViewCard(null)}>Close</button>
-              </div>
             </div>
           </div>
         );
