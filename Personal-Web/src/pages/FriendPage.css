@@ -486,3 +486,52 @@
   .fq-kpi-row { grid-template-columns: 1fr 1fr; }
   .fq-log-panel { padding: 22px 18px 40px; }
 }
+
+/* ─── Profile Tag Picker ─── */
+.fq-tag-picker { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.fq-tag-chip {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer;
+  border: 1.5px solid var(--tc); color: var(--tc); background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.fq-tag-chip.selected { background: var(--tc); color: #fff; }
+.fq-tag-chip:hover { background: var(--tc); color: #fff; }
+.fq-tag-chip-add { border-style: dashed; color: var(--muted); border-color: var(--border); }
+.fq-tag-chip-add:hover { background: var(--bg2); color: var(--text); border-color: var(--muted); }
+.fq-tag-add-form {
+  display: flex; align-items: center; gap: 6px; flex-basis: 100%;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+  padding: 4px 10px;
+}
+.fq-tag-color-swatch { width: 24px; height: 24px; border: none; border-radius: 50%; padding: 0; cursor: pointer; background: none; flex-shrink: 0; }
+.fq-tag-label-inp { flex: 1; background: none; border: none; color: var(--text); font-size: 13px; outline: none; min-width: 80px; }
+
+/* ─── Key Events ─── */
+.fq-key-events { display: flex; flex-direction: column; gap: 4px; }
+.fq-key-event-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; background: var(--bg2); font-size: 13px;
+}
+.fq-key-event-num { font-size: 11px; font-weight: 700; color: var(--accent); min-width: 20px; }
+.fq-key-event-year {
+  font-size: 11px; padding: 1px 6px; border-radius: 6px;
+  background: var(--bg3); color: var(--muted); flex-shrink: 0;
+}
+.fq-key-event-text { flex: 1; color: var(--text); }
+.fq-key-event-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 2px; }
+.fq-key-event-del:hover { color: var(--red); }
+.fq-key-event-add {
+  display: flex; gap: 8px; align-items: center; margin-top: 6px;
+}
+.fq-key-event-year-inp {
+  width: 76px; padding: 7px 10px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 13px; outline: none;
+  -moz-appearance: textfield;
+}
+.fq-key-event-year-inp:focus { border-color: var(--accent); }
+.fq-key-event-year-inp::-webkit-inner-spin-button { display: none; }
+.fq-key-event-text-inp {
+  flex: 1; padding: 7px 12px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 13px; outline: none;
+}
+.fq-key-event-text-inp:focus { border-color: var(--accent); }

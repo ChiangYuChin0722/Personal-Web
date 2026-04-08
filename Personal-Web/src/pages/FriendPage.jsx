@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const COLOR_OPTIONS = ['#60A5FA','#22D3EE','#34D399','#8B5CF6','#F472B6','#FB923C','#FBBF24','#F87171'];
+const COLOR_PRESETS = ['#60A5FA','#22D3EE','#34D399','#8B5CF6','#F472B6','#FB923C','#FBBF24','#F87171'];
+const THIS_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: THIS_YEAR - 1989 }, (_, i) => THIS_YEAR - i);
 
 const DIM_META = [
   { key: 'F',  label: '頻率', en: 'Frequency',   color: '#60A5FA' },
@@ -144,6 +146,10 @@ function loadJournals() {
   try { return JSON.parse(localStorage.getItem('fq_journals') || '[]'); } catch { return []; }
 }
 function saveJournals(j) { localStorage.setItem('fq_journals', JSON.stringify(j)); }
+function loadColorTags() {
+  try { return JSON.parse(localStorage.getItem('fq_color_tags') || '[]'); } catch { return []; }
+}
+function saveColorTags(t) { localStorage.setItem('fq_color_tags', JSON.stringify(t)); }
 
 
 // ─── Avatar component ─────────────────────────────────────────────────────────
@@ -568,9 +574,10 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                   <Avatar profile={p} size={40} />
                   <div>
                     <div className="fq-friend-name">{p.name}</div>
-                    <div className="fq-friend-meta">
-                      {p.since ? `Since ${fmtDate(p.since)}` : 'Date unknown'}
-                      {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? ` · ${jc} logs` : ''; })()}
+                    <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                      {p.colorTag && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background: p.color+'22', color: p.color, fontWeight:700 }}>{p.colorTag}</span>}
+                      <span>{p.since ? `Since ${p.since}` : 'Year unknown'}</span>
+                      {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} logs</span> : null; })()}
                     </div>
                   </div>
                   {latest ? (
@@ -618,37 +625,66 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
 
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
-function CreateView({ editProfile, onSave, onCancel, onDelete }) {
+function CreateView({ editProfile, onSave, onCancel, onDelete, colorTags, onAddColorTag }) {
   const isEdit = !!editProfile;
-  const [name, setName] = useState(editProfile?.name || '');
-  const [photo, setPhoto] = useState(editProfile?.photo || null);
-  const [color, setColor] = useState(editProfile?.color || '#60A5FA');
-  const [since, setSince] = useState(editProfile?.since || '');
-  const [notes, setNotes] = useState(editProfile?.notes || '');
-  const [err, setErr] = useState('');
+  const [name,      setName]      = useState(editProfile?.name      || '');
+  const [photo,     setPhoto]     = useState(editProfile?.photo     || null);
+  const [color,     setColor]     = useState(editProfile?.color     || '#60A5FA');
+  const [colorTag,  setColorTag]  = useState(editProfile?.colorTag  || '');
+  const [since,     setSince]     = useState(editProfile?.since     || '');
+  const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
+  const [err, setErr]             = useState('');
   const fileRef = useRef(null);
+
+  // new tag form
+  const [showTagForm,  setShowTagForm]  = useState(false);
+  const [newTagLabel,  setNewTagLabel]  = useState('');
+  const [newTagColor,  setNewTagColor]  = useState('#60A5FA');
+
+  // new key event form
+  const [evtYear, setEvtYear] = useState('');
+  const [evtText, setEvtText] = useState('');
 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setErr('照片太大，請選擇 2MB 以下的圖片'); return; }
+    if (file.size > 2 * 1024 * 1024) { setErr('Photo too large (max 2 MB)'); return; }
     const reader = new FileReader();
     reader.onload = ev => setPhoto(ev.target.result);
     reader.readAsDataURL(file);
   }
 
+  function selectTag(tag) {
+    setColor(tag.color);
+    setColorTag(tag.label);
+  }
+
+  function addNewTag() {
+    if (!newTagLabel.trim()) return;
+    const tag = { id: genId(), label: newTagLabel.trim(), color: newTagColor };
+    onAddColorTag(tag);
+    selectTag(tag);
+    setShowTagForm(false); setNewTagLabel(''); setNewTagColor('#60A5FA');
+  }
+
+  function addEvent() {
+    if (!evtText.trim()) return;
+    setKeyEvents(prev => [...prev, { id: genId(), year: evtYear, text: evtText.trim() }]);
+    setEvtYear(''); setEvtText('');
+  }
+
+  function removeEvent(id) {
+    setKeyEvents(prev => prev.filter(e => e.id !== id));
+  }
+
   function handleSave() {
-    if (!name.trim()) { setErr('請輸入姓名'); return; }
-    const profile = {
+    if (!name.trim()) { setErr('Name is required'); return; }
+    onSave({
       id: editProfile?.id || genId(),
-      name: name.trim(),
-      photo,
-      color,
-      since,
-      notes,
+      name: name.trim(), photo, color, colorTag,
+      since, keyEvents,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
-    };
-    onSave(profile);
+    });
   }
 
   const previewProfile = { name, photo, color };
@@ -665,71 +701,107 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
           <Avatar profile={previewProfile} size={56} />
           <div>
             <div style={{ fontSize:16, fontWeight:700 }}>{name || '(Name)'}</div>
-            <div style={{ fontSize:12, color:'var(--muted)' }}>{since ? `Since ${fmtDate(since)}` : 'Friend since...'}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
+              {colorTag && <span style={{ fontSize:11, padding:'2px 8px', borderRadius:10, background: color+'22', color, fontWeight:700, border:`1px solid ${color}` }}>{colorTag}</span>}
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{since ? `Since ${since}` : 'Year unknown'}</span>
+            </div>
           </div>
         </div>
 
+        {/* Name */}
         <div className="fq-form-row">
           <label className="fq-label">Name *</label>
-          <input
-            className="fq-input"
-            placeholder="朋友的名字或暱稱"
-            value={name}
-            onChange={e => { setName(e.target.value); setErr(''); }}
-          />
+          <input className="fq-input" placeholder="Friend's name or nickname"
+            value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
           {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:6 }}>{err}</div>}
         </div>
 
+        {/* Photo */}
         <div className="fq-form-row">
-          <label className="fq-label">照片</label>
+          <label className="fq-label">Photo</label>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
             <div className="fq-photo-upload" onClick={() => fileRef.current?.click()} style={{ background: color + '22', borderColor: photo ? color : undefined }}>
               {photo
                 ? <img src={photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                : <span className="fq-photo-upload-hint">點擊<br/>上傳</span>
+                : <span className="fq-photo-upload-hint">Click<br/>Upload</span>
               }
             </div>
             <div>
               <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
-              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>上傳朋友照片（PNG/JPG，最大 2MB）</div>
-              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>移除照片</button>}
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>PNG / JPG, max 2 MB</div>
+              {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>Remove photo</button>}
             </div>
           </div>
         </div>
 
+        {/* Profile Tag (color + label) */}
         <div className="fq-form-row">
-          <label className="fq-label">Profile Color</label>
-          <div className="fq-color-row">
-            {COLOR_OPTIONS.map(c => (
-              <button
-                key={c}
-                className={`fq-color-opt${color === c ? ' selected' : ''}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-                type="button"
-              />
+          <label className="fq-label">Profile Tag</label>
+          <div className="fq-tag-picker">
+            {colorTags.map(tag => (
+              <button key={tag.id} type="button"
+                className={`fq-tag-chip${color === tag.color && colorTag === tag.label ? ' selected' : ''}`}
+                style={{ '--tc': tag.color }}
+                onClick={() => selectTag(tag)}>
+                {tag.label}
+              </button>
             ))}
+            {showTagForm ? (
+              <div className="fq-tag-add-form">
+                <input type="color" value={newTagColor} onChange={e => setNewTagColor(e.target.value)} className="fq-tag-color-swatch" />
+                <input value={newTagLabel} onChange={e => setNewTagLabel(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addNewTag()}
+                  placeholder="Tag name" className="fq-tag-label-inp" autoFocus />
+                <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewTag}>✓</button>
+                <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowTagForm(false)}>✕</button>
+              </div>
+            ) : (
+              <button type="button" className="fq-tag-chip fq-tag-chip-add" onClick={() => setShowTagForm(true)}>＋ New Tag</button>
+            )}
           </div>
+          {colorTag && (
+            <div style={{ marginTop:6, fontSize:12, color:'var(--muted)' }}>
+              Selected: <span style={{ color, fontWeight:700 }}>{colorTag}</span>
+              <button type="button" onClick={() => { setColorTag(''); }} style={{ marginLeft:8, fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer' }}>clear</button>
+            </div>
+          )}
         </div>
 
+        {/* Friends Since (year only) */}
         <div className="fq-form-row">
           <label className="fq-label">Friends Since</label>
-          <input
-            className="fq-input"
-            type="date"
-            value={since}
-            onChange={e => setSince(e.target.value)}
-          />
+          <select className="fq-input" value={since} onChange={e => setSince(e.target.value)}>
+            <option value="">— Select year —</option>
+            {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
         </div>
 
+        {/* Key Events */}
         <div className="fq-form-row">
-          <label className="fq-label">Notes</label>
-          <textarea
-            className="fq-textarea"
-            placeholder="備注、認識經過、關係描述..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-          />
+          <label className="fq-label">Key Events</label>
+          <div className="fq-key-events">
+            {keyEvents.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>No events yet — add milestones, memories, or news.</div>
+            )}
+            {keyEvents.map((ev, idx) => (
+              <div key={ev.id} className="fq-key-event-row">
+                <span className="fq-key-event-num">#{idx + 1}</span>
+                {ev.year && <span className="fq-key-event-year">{ev.year}</span>}
+                <span className="fq-key-event-text">{ev.text}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => removeEvent(ev.id)}>✕</button>
+              </div>
+            ))}
+            <div className="fq-key-event-add">
+              <input className="fq-key-event-year-inp" value={evtYear}
+                onChange={e => setEvtYear(e.target.value)} placeholder="Year" type="number"
+                min="1990" max={THIS_YEAR} />
+              <input className="fq-key-event-text-inp" value={evtText}
+                onChange={e => setEvtText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addEvent()}
+                placeholder="e.g. Started his own company" />
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
+            </div>
+          </div>
         </div>
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
@@ -1074,7 +1146,7 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
           <Avatar profile={profile} size={68} style={{ margin:'0 auto 14px', display:'flex' }} />
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
-            {profile.since ? `Friends since ${fmtDate(profile.since)}` : 'Date not recorded'}
+            {profile.since ? `Friends since ${profile.since}` : 'Year not recorded'}
           </div>
 
           {latest && (
@@ -1105,7 +1177,20 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
             ))}
           </div>
 
-          {profile.notes && (
+          {profile.keyEvents && profile.keyEvents.length > 0 && (
+            <div style={{ marginTop:14 }}>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>Key Events</div>
+              {profile.keyEvents.map((ev, i) => (
+                <div key={ev.id || i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
+                  {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+                  <span style={{ color:'var(--text)', lineHeight:1.5 }}>{ev.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* legacy notes support */}
+          {profile.notes && !profile.keyEvents && (
             <div style={{ marginTop:14, padding:'10px 12px', background:'var(--bg2)', borderRadius:7, fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
               {profile.notes}
             </div>
@@ -1258,9 +1343,10 @@ function DetailView({ profile, surveys, journals, onEdit, onStartSurvey, onBack,
 
 export default function FriendPage() {
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('yc_auth'));
-  const [profiles, setProfiles] = useState(loadProfiles);
-  const [surveys, setSurveys] = useState(loadSurveys);
-  const [journals, setJournals] = useState(loadJournals);
+  const [profiles,   setProfiles]   = useState(loadProfiles);
+  const [surveys,    setSurveys]    = useState(loadSurveys);
+  const [journals,   setJournals]   = useState(loadJournals);
+  const [colorTags,  setColorTags]  = useState(loadColorTags);
   const [view, setView] = useState('dashboard'); // dashboard | create | survey | results | detail
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
@@ -1271,6 +1357,9 @@ export default function FriendPage() {
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => { saveSurveys(surveys); }, [surveys]);
   useEffect(() => { saveJournals(journals); }, [journals]);
+  useEffect(() => { saveColorTags(colorTags); }, [colorTags]);
+
+  function handleAddColorTag(tag) { setColorTags(prev => [...prev, tag]); }
 
   function handleLogSave(entry) { setJournals(prev => [entry, ...prev]); setLogTarget(null); }
 
@@ -1361,6 +1450,8 @@ export default function FriendPage() {
             else { goToDashboard(); }
           }}
           onDelete={handleDeleteProfile}
+          colorTags={colorTags}
+          onAddColorTag={handleAddColorTag}
         />
       )}
 
