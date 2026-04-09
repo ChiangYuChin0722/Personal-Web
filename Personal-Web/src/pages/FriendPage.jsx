@@ -933,7 +933,9 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           )}
           {/* Pending input list */}
           {(() => {
-            const pending = profiles.filter(p => !p.noSurvey && !getLatestSurvey(p.id));
+            const pending = profiles.filter(p =>
+              !p.photo && !p.since && !p.groupId && !(p.keyEvents?.length)
+            );
             if (!pending.length) return null;
             return (
               <div className="fq-card">
@@ -952,12 +954,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                     >
                       <Avatar profile={p} size={24} />
                       <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
-                      <button
-                        onClick={e => { e.stopPropagation(); onStartSurvey(p); }}
-                        style={{ fontSize:10, padding:'2px 7px', borderRadius:5, border:'1px solid var(--accent)', background:'transparent', color:'var(--accent)', cursor:'pointer', flexShrink:0 }}
-                      >
-                        {t('測驗','Survey')}
-                      </button>
+                      <span style={{ fontSize:10, color:'var(--muted)', flexShrink:0 }}>{t('僅有名字','name only')}</span>
                     </div>
                   ))}
                 </div>
