@@ -1471,7 +1471,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
       since, keyEvents, birthday, pros: prosList, cons: consList, noSurvey: noSurvey || false,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
       _newGroup: newCustomGroup,
-      _quickScore: (!isEdit && !noSurvey && qs !== null && !isNaN(qs)) ? qs : null,
+      _quickScore: (!noSurvey && qs !== null && !isNaN(qs)) ? qs : null,
     });
   }
 
@@ -1702,7 +1702,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
           </div>
         </div>
 
-        {!isEdit && !noSurvey && (
+        {!noSurvey && (
           <div className="fq-form-row">
             <label className="fq-label">{t('直接給分（選填）','Quick Score (optional)')}</label>
             <div>
@@ -1730,7 +1730,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
                 })()}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:5 }}>
-                {t('留空則等到完成測驗後才有分數。填入後系統會自動推算各維度並判斷類型。','Leave blank to score via survey later. If filled, dimensions are auto-derived equally.')}
+                {t('填入後系統會自動推算各維度並新增一筆測驗紀錄。','If filled, dimensions are auto-derived and a new survey entry will be added.')}
               </div>
             </div>
           </div>
