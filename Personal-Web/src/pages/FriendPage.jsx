@@ -133,26 +133,34 @@ function calcScores(answers) {
   return scores;
 }
 
-function getFriendshipType(scores) {
+const ALL_FRIENDSHIP_TYPES = [
+  { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' },
+  { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' },
+  { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' },
+  { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' },
+  { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#F87171', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' },
+  { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' },
+  { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' },
+  { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' },
+  { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' },
+];
+
+function getFriendshipType(scores, typeOverride) {
+  if (typeOverride) {
+    const found = ALL_FRIENDSHIP_TYPES.find(t => t.key === typeOverride);
+    if (found) return found;
+  }
   const { F, R, S, T, St, E } = scores;
   const tot = scores.total;
-  if (tot >= 70 && T >= 70 && E >= 65 && St >= 65)
-    return { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' };
-  if (tot >= 58 && T >= 60 && St >= 60 && R >= 58)
-    return { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' };
-  if (F >= 68 && E >= 60 && T < 55)
-    return { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' };
-  if (F < 45 && T >= 62 && St >= 62)
-    return { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' };
-  if (E < 38)
-    return { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#F87171', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' };
-  if (R < 42)
-    return { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' };
-  if (St < 42 || T < 40)
-    return { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' };
-  if (tot >= 45)
-    return { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' };
-  return   { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' };
+  if (tot >= 70 && T >= 70 && E >= 65 && St >= 65) return ALL_FRIENDSHIP_TYPES[0];
+  if (tot >= 58 && T >= 60 && St >= 60 && R >= 58) return ALL_FRIENDSHIP_TYPES[1];
+  if (F >= 68 && E >= 60 && T < 55)               return ALL_FRIENDSHIP_TYPES[2];
+  if (F < 45 && T >= 62 && St >= 62)              return ALL_FRIENDSHIP_TYPES[3];
+  if (E < 38)                                      return ALL_FRIENDSHIP_TYPES[4];
+  if (R < 42)                                      return ALL_FRIENDSHIP_TYPES[5];
+  if (St < 42 || T < 40)                           return ALL_FRIENDSHIP_TYPES[6];
+  if (tot >= 45)                                   return ALL_FRIENDSHIP_TYPES[7];
+  return ALL_FRIENDSHIP_TYPES[8];
 }
 
 function getScoreTier(total) {
@@ -787,7 +795,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   profiles.forEach(p => {
     const s = getLatestSurvey(p.id);
     if (!s) return;
-    const t = getFriendshipType(s.scores).key;
+    const t = getFriendshipType(s.scores, s.typeOverride).key;
     typeCounts[t] = (typeCounts[t] || 0) + 1;
   });
 
@@ -1136,7 +1144,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
             function FriendCard({ p }) {
               const latest = getLatestSurvey(p.id);
               const tier = latest ? getScoreTier(latest.total) : null;
-              const type = latest ? getFriendshipType(latest.scores) : null;
+              const type = latest ? getFriendshipType(latest.scores, latest.typeOverride) : null;
               const group = getGroupById(p.groupId, customGroups);
               const bdays = birthdayCountdown(p.birthday);
               const inCompare = compareIds.includes(p.id);
@@ -1848,12 +1856,12 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
 // ─── Results View ──────────────────────────────────────────────────────────────
 
-function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail }) {
+function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail, onUpdateSurvey }) {
   const lang = useContext(LangCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const { scores } = survey;
   const tier = getScoreTier(scores.total);
-  const type = getFriendshipType(scores);
+  const type = getFriendshipType(scores, survey.typeOverride);
   const suggestions = getSuggestions(scores);
   // Previous survey for delta
   const prevSurvey = (surveys || [])
@@ -1961,6 +1969,50 @@ function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail 
         </div>
       </div>
 
+      {/* Type Override Picker */}
+      {onUpdateSurvey && (
+        <div className="fq-card" style={{ marginTop: 24 }}>
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:12 }}>
+            {t('手動調整友誼類型','Override Friendship Type')}
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {ALL_FRIENDSHIP_TYPES.map(tp => {
+              const isSelected = (survey.typeOverride || type.key) === tp.key;
+              const isAuto = !survey.typeOverride && tp.key === type.key;
+              return (
+                <button
+                  key={tp.key}
+                  onClick={() => {
+                    const newOverride = survey.typeOverride === tp.key ? null : tp.key;
+                    onUpdateSurvey({ ...survey, typeOverride: newOverride });
+                  }}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    border: `2px solid ${isSelected ? tp.color : 'transparent'}`,
+                    background: isSelected ? tp.color + '22' : 'var(--surface2)',
+                    color: isSelected ? tp.color : 'var(--text)',
+                    fontSize: 12,
+                    fontWeight: isSelected ? 700 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  title={lang === 'zh' ? tp.name : tp.en}
+                >
+                  {tp.key} · {lang === 'zh' ? tp.name : tp.en}
+                  {isAuto && <span style={{ fontSize:10, marginLeft:4, opacity:0.6 }}>auto</span>}
+                </button>
+              );
+            })}
+          </div>
+          {survey.typeOverride && (
+            <div style={{ marginTop:8, fontSize:11, color:'var(--muted)' }}>
+              {t('已手動設定。點擊同一個類型可取消覆蓋。','Manually set. Click the same type again to revert to auto.')}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="fq-row" style={{ marginTop:24, gap:10 }}>
         <button className="fq-btn fq-btn-primary" onClick={onViewDetail}>
@@ -2020,7 +2072,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
 
   const latest = profileSurveys[0] || null;
   const tier = latest ? getScoreTier(latest.total) : null;
-  const type = latest ? getFriendshipType(latest.scores) : null;
+  const type = latest ? getFriendshipType(latest.scores, latest.typeOverride) : null;
 
   const surveyCount = profileSurveys.length;
   const avgScore = surveyCount === 0 ? null :
@@ -2298,7 +2350,7 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             <div className="fq-survey-history-list">
               {profileSurveys.map((s, idx) => {
                 const sTier = getScoreTier(s.total);
-                const sType = getFriendshipType(s.scores);
+                const sType = getFriendshipType(s.scores, s.typeOverride);
                 return (
                   <div key={s.id} className="fq-survey-history-row">
                     <span style={{ fontSize:11, color:'var(--muted)', minWidth:24 }}>
@@ -2491,6 +2543,11 @@ export default function FriendPage() {
     setView('results');
   }
 
+  function handleUpdateSurvey(updatedSurvey) {
+    setSurveys(prev => prev.map(s => s.id === updatedSurvey.id ? updatedSurvey : s));
+    setLastSurvey(updatedSurvey);
+  }
+
   function handleEditProfile(profile) {
     setEditingProfile(profile);
     setView('create');
@@ -2567,6 +2624,7 @@ export default function FriendPage() {
           onDone={goToDashboard}
           onRetake={() => setView('survey')}
           onViewDetail={() => setView('detail')}
+          onUpdateSurvey={handleUpdateSurvey}
         />
       )}
 
