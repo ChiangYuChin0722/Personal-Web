@@ -933,9 +933,15 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           )}
           {/* Pending input list */}
           {(() => {
-            const pending = profiles.filter(p =>
-              !p.photo || !p.groupId
-            );
+            const pending = profiles.filter(p => {
+              const noGroup = !p.groupId;
+              const noRecords = !getLatestSurvey(p.id)
+                && !journals.some(j => j.profileId === p.id)
+                && !(p.keyEvents?.length)
+                && !(p.pros?.length)
+                && !(p.cons?.length);
+              return noGroup || noRecords;
+            });
             if (!pending.length) return null;
             return (
               <div className="fq-card">
@@ -955,8 +961,8 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                       <Avatar profile={p} size={24} />
                       <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
                       <span style={{ fontSize:10, color:'var(--muted)', flexShrink:0, display:'flex', gap:3 }}>
-                        {!p.photo   && <span title={t('缺照片','no photo')}>📷</span>}
                         {!p.groupId && <span title={t('缺分組','no group')}>🏷</span>}
+                        {!getLatestSurvey(p.id) && !journals.some(j=>j.profileId===p.id) && !(p.keyEvents?.length) && !(p.pros?.length) && !(p.cons?.length) && <span title={t('無任何紀錄','no records')}>📭</span>}
                       </span>
                     </div>
                   ))}
