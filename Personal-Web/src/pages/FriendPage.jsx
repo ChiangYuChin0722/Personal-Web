@@ -180,6 +180,95 @@ function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+// ─── Shared-event helpers ──────────────────────────────────────────────────────
+
+function getEvtKey(ev) {
+  return ev.sharedId || `${ev.year || ''}|${ev.text.trim().toLowerCase()}`;
+}
+
+function findEventMembers(ev, profiles) {
+  const key = getEvtKey(ev);
+  return profiles.filter(p => (p.keyEvents || []).some(e => getEvtKey(e) === key));
+}
+
+function collectEventSuggestions(query, profiles, excludeId) {
+  if (!query || query.length < 1) return [];
+  const q = query.toLowerCase();
+  const seen = new Set();
+  const results = [];
+  profiles.forEach(p => {
+    if (p.id === excludeId) return;
+    (p.keyEvents || []).forEach(ev => {
+      const key = getEvtKey(ev);
+      if (!seen.has(key) && ev.text.toLowerCase().includes(q)) {
+        seen.add(key);
+        results.push({ ...ev, sharedId: key });
+      }
+    });
+  });
+  return results.slice(0, 8);
+}
+
+// ─── EventSuggest dropdown ─────────────────────────────────────────────────────
+
+function EventSuggest({ text, allProfiles, excludeId, onSelect }) {
+  const suggestions = collectEventSuggestions(text, allProfiles || [], excludeId);
+  if (!suggestions.length) return null;
+  return (
+    <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:50,
+      background:'var(--bg1)', border:'1px solid var(--accent)', borderRadius:8,
+      boxShadow:'0 4px 20px rgba(0,0,0,0.3)', maxHeight:200, overflowY:'auto', marginTop:2 }}>
+      {suggestions.map((ev, i) => (
+        <div key={i} onMouseDown={e => { e.preventDefault(); onSelect(ev); }}
+          style={{ padding:'8px 12px', cursor:'pointer', fontSize:13, display:'flex', gap:8, alignItems:'center',
+            borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:4,
+            background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+          <span style={{ color:'var(--text)' }}>{ev.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── EventMembersModal ─────────────────────────────────────────────────────────
+
+function EventMembersModal({ ev, allProfiles, onClose, onSelectProfile }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const members = findEventMembers(ev, allProfiles);
+  return (
+    <div className="fq-log-overlay" onClick={onClose}>
+      <div className="fq-log-panel" style={{ maxWidth:360 }} onClick={e => e.stopPropagation()}>
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title" style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {ev.year && <span style={{ fontSize:11, padding:'2px 7px', borderRadius:5, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+            <span>{ev.text}</span>
+          </div>
+          <button className="fq-log-close" onClick={onClose}>✕</button>
+        </div>
+        <div style={{ fontSize:12, color:'var(--muted)', marginBottom:8, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
+          {t(`${members.length} 個人有這個事件`, `${members.length} friend${members.length !== 1 ? 's' : ''} share this event`)}
+        </div>
+        {members.map(p => (
+          <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0',
+            cursor:'pointer', borderBottom:'1px solid var(--border)' }}
+            onClick={() => { onClose(); onSelectProfile(p); }}>
+            <Avatar profile={p} size={36} />
+            <div>
+              <div style={{ fontWeight:700, fontSize:14 }}>{p.name}</div>
+              {p.since && <div style={{ fontSize:11, color:'var(--muted)' }}>{t('認識於','Since')} {p.since}</div>}
+            </div>
+            <span style={{ marginLeft:'auto', fontSize:11, color:'var(--accent)' }}>→</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function fmtDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -1251,24 +1340,26 @@ function PhotoCropModal({ src, onApply, onCancel }) {
 
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
-function CreateView({ editProfile, onSave, onCancel, onDelete }) {
+function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
   const lang = useContext(LangCtx);
   const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const isEdit = !!editProfile;
-  const [name,      setName]      = useState(editProfile?.name      || '');
-  const [photo,     setPhoto]     = useState(editProfile?.photo     || null);
-  const [groupId,   setGroupId]   = useState(editProfile?.groupId   || '');
-  const [since,     setSince]     = useState(editProfile?.since     || '');
-  const [keyEvents, setKeyEvents] = useState(editProfile?.keyEvents || []);
-  const [birthday,  setBirthday]  = useState(editProfile?.birthday  || { month:'', day:'' });
-  const [prosList,  setProsList]  = useState(Array.isArray(editProfile?.pros) ? editProfile.pros : []);
-  const [consList,  setConsList]  = useState(Array.isArray(editProfile?.cons) ? editProfile.cons : []);
-  const [prosInput, setProsInput] = useState('');
-  const [consInput, setConsInput] = useState('');
-  const [noSurvey,  setNoSurvey]  = useState(editProfile?.noSurvey ?? false);
-  const [err, setErr]             = useState('');
-  const [cropSrc, setCropSrc]     = useState(null);
+  const [name,        setName]        = useState(editProfile?.name      || '');
+  const [photo,       setPhoto]       = useState(editProfile?.photo     || null);
+  const [groupId,     setGroupId]     = useState(editProfile?.groupId   || '');
+  const [since,       setSince]       = useState(editProfile?.since     || '');
+  const [keyEvents,   setKeyEvents]   = useState(editProfile?.keyEvents || []);
+  const [birthday,    setBirthday]    = useState(editProfile?.birthday  || { month:'', day:'' });
+  const [prosList,    setProsList]    = useState(Array.isArray(editProfile?.pros) ? editProfile.pros : []);
+  const [consList,    setConsList]    = useState(Array.isArray(editProfile?.cons) ? editProfile.cons : []);
+  const [prosInput,   setProsInput]   = useState('');
+  const [consInput,   setConsInput]   = useState('');
+  const [noSurvey,    setNoSurvey]    = useState(editProfile?.noSurvey ?? false);
+  const [err,         setErr]         = useState('');
+  const [cropSrc,     setCropSrc]     = useState(null);
+  const [evtSharedId, setEvtSharedId] = useState('');
+  const [showEvtSug,  setShowEvtSug]  = useState(false);
   const fileRef = useRef(null);
 
   // new custom group form
@@ -1300,8 +1391,9 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 
   function addEvent() {
     if (!evtText.trim()) return;
-    setKeyEvents(prev => [...prev, { id: genId(), year: evtYear, text: evtText.trim() }]);
-    setEvtYear(''); setEvtText('');
+    const sid = evtSharedId || genId();
+    setKeyEvents(prev => [...prev, { id: genId(), sharedId: sid, year: evtYear, text: evtText.trim() }]);
+    setEvtYear(''); setEvtText(''); setEvtSharedId(''); setShowEvtSug(false);
   }
 
   function removeEvent(id) {
@@ -1471,10 +1563,17 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
               <IMEInput className="fq-key-event-year-inp" value={evtYear}
                 onChange={e => setEvtYear(e.target.value)} placeholder={t('年份','Year')} type="number"
                 min="1990" max={THIS_YEAR} />
-              <IMEInput className="fq-key-event-text-inp" value={evtText}
-                onChange={e => setEvtText(e.target.value)}
-                onEnterKey={() => addEvent()}
-                placeholder={t('例：創業','e.g. Started his own company')} />
+              <div style={{ position:'relative', flex:1, minWidth:0 }}>
+                <IMEInput className="fq-key-event-text-inp" value={evtText}
+                  onChange={e => { setEvtText(e.target.value); setEvtSharedId(''); setShowEvtSug(true); }}
+                  onFocus={() => setShowEvtSug(true)}
+                  onBlur={() => setTimeout(() => setShowEvtSug(false), 150)}
+                  onEnterKey={() => addEvent()}
+                  placeholder={t('例：創業','e.g. Started his own company')}
+                  style={{ width:'100%' }} />
+                {showEvtSug && <EventSuggest text={evtText} allProfiles={allProfiles} excludeId={editProfile?.id}
+                  onSelect={ev => { setEvtYear(ev.year || evtYear); setEvtText(ev.text); setEvtSharedId(getEvtKey(ev)); setShowEvtSug(false); }} />}
+              </div>
               <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
             </div>
           </div>
@@ -1881,21 +1980,25 @@ function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail 
 
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
-function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate, onProfileUpdate }) {
+function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate, onProfileUpdate, allProfiles, onSelectFriend }) {
   const lang = useContext(LangCtx);
   const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
   const [photoLightbox, setPhotoLightbox] = useState(false);
-  const [evtYear, setEvtYear] = useState('');
-  const [evtText, setEvtText] = useState('');
+  const [evtYear,     setEvtYear]     = useState('');
+  const [evtText,     setEvtText]     = useState('');
+  const [evtSharedId, setEvtSharedId] = useState('');
+  const [showEvtSug,  setShowEvtSug]  = useState(false);
+  const [evtMembersEv, setEvtMembersEv] = useState(null);
   const [prosInput, setProsInput] = useState('');
   const [consInput, setConsInput] = useState('');
 
   function addEvent() {
     if (!evtText.trim()) return;
-    const updated = { ...profile, keyEvents: [...(profile.keyEvents || []), { id: genId(), year: evtYear, text: evtText.trim() }] };
+    const sid = evtSharedId || genId();
+    const updated = { ...profile, keyEvents: [...(profile.keyEvents || []), { id: genId(), sharedId: sid, year: evtYear, text: evtText.trim() }] };
     onProfileUpdate(updated);
-    setEvtYear(''); setEvtText('');
+    setEvtYear(''); setEvtText(''); setEvtSharedId(''); setShowEvtSug(false);
   }
   function addPro() {
     if (!prosInput.trim()) return;
@@ -2018,21 +2121,42 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
             {(profile.keyEvents || []).length === 0 && (
               <div style={{ fontSize:12, color:'var(--dim)', marginBottom:8 }}>{t('尚無事件','No events yet')}</div>
             )}
-            {[...(profile.keyEvents || [])].sort((a,b)=>(b.year||0)-(a.year||0)).map((ev, i) => (
-              <div key={ev.id || i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
-                {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
-                <span style={{ color:'var(--text)', lineHeight:1.5 }}>{ev.text}</span>
-              </div>
-            ))}
+            {[...(profile.keyEvents || [])].sort((a,b)=>(b.year||0)-(a.year||0)).map((ev, i) => {
+              const members = allProfiles ? findEventMembers(ev, allProfiles) : [];
+              const othersCount = members.filter(p => p.id !== profile.id).length;
+              return (
+                <div key={ev.id || i}
+                  style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13,
+                    cursor: othersCount > 0 ? 'pointer' : 'default',
+                    padding:'3px 4px', borderRadius:6, transition:'background 0.15s' }}
+                  onClick={() => othersCount > 0 && setEvtMembersEv(ev)}
+                  onMouseEnter={e => { if (othersCount > 0) e.currentTarget.style.background = 'var(--bg3)'; }}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
+                  {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+                  <span style={{ color:'var(--text)', lineHeight:1.5, flex:1 }}>{ev.text}</span>
+                  {othersCount > 0 && (
+                    <span style={{ fontSize:10, padding:'1px 5px', borderRadius:8, background:'var(--accent)22',
+                      color:'var(--accent)', fontWeight:700, flexShrink:0 }}>👥 {othersCount}</span>
+                  )}
+                </div>
+              );
+            })}
             <div style={{ display:'flex', gap:4, marginTop:6 }}>
               <IMEInput value={evtYear} onChange={e => setEvtYear(e.target.value)}
                 placeholder={t('年份','Year')} type="number" min="1990" max={THIS_YEAR}
                 style={{ width:64, padding:'4px 6px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', flexShrink:0 }} />
-              <IMEInput value={evtText} onChange={e => setEvtText(e.target.value)}
-                onEnterKey={addEvent}
-                placeholder={t('新增事件…','Add event…')}
-                style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+              <div style={{ position:'relative', flex:1, minWidth:0 }}>
+                <IMEInput value={evtText}
+                  onChange={e => { setEvtText(e.target.value); setEvtSharedId(''); setShowEvtSug(true); }}
+                  onFocus={() => setShowEvtSug(true)}
+                  onBlur={() => setTimeout(() => setShowEvtSug(false), 150)}
+                  onEnterKey={addEvent}
+                  placeholder={t('新增事件…','Add event…')}
+                  style={{ width:'100%', padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} />
+                {showEvtSug && <EventSuggest text={evtText} allProfiles={allProfiles} excludeId={profile.id}
+                  onSelect={ev => { setEvtYear(ev.year || evtYear); setEvtText(ev.text); setEvtSharedId(getEvtKey(ev)); setShowEvtSug(false); }} />}
+              </div>
               <button onClick={addEvent} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--muted)', cursor:'pointer', flexShrink:0 }}>＋</button>
             </div>
           </div>
@@ -2249,6 +2373,11 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
         </div>
       </div>
     </div>
+    {evtMembersEv && allProfiles && (
+      <EventMembersModal ev={evtMembersEv} allProfiles={allProfiles}
+        onClose={() => setEvtMembersEv(null)}
+        onSelectProfile={p => { setEvtMembersEv(null); onSelectFriend?.(p); }} />
+    )}
     {photoLightbox && profile.photo && (
       <div onClick={() => setPhotoLightbox(false)} style={{
         position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:999,
@@ -2416,6 +2545,7 @@ export default function FriendPage() {
             else { goToDashboard(); }
           }}
           onDelete={handleDeleteProfile}
+          allProfiles={profiles}
         />
       )}
 
@@ -2458,6 +2588,8 @@ export default function FriendPage() {
           onBack={goToDashboard}
           onLogUpdate={p => setLogTarget(p)}
           onProfileUpdate={handleProfileUpdate}
+          allProfiles={profiles}
+          onSelectFriend={handleSelectFriend}
         />
       )}
       {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
