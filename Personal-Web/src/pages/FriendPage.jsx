@@ -134,15 +134,15 @@ function calcScores(answers) {
 }
 
 const ALL_FRIENDSHIP_TYPES = [
-  { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' },
-  { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' },
-  { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' },
-  { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' },
-  { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#F87171', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' },
-  { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' },
-  { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' },
-  { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' },
-  { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' },
+  { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#2DD4BF', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' },
+  { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#4ADE80', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' },
+  { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#60A5FA', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' },
+  { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#A78BFA', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' },
+  { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#A08CC8', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' },
+  { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#7AAEC4', desc:'付出不對等，長期下來會造成疲憊感。' },
+  { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#7AC4A8', desc:'關係出現裂縫，需要主動溝通修復才能重建。' },
+  { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#8FA3B1', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' },
+  { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#6B7F8C', desc:'友誼正在淡化，需要決定是否值得主動投入。' },
 ];
 
 function getFriendshipType(scores, typeOverride) {
@@ -164,12 +164,12 @@ function getFriendshipType(scores, typeOverride) {
 }
 
 function getScoreTier(total) {
-  if (total >= 81) return { tier:'S', color:'#22D3EE' };
-  if (total >= 67) return { tier:'A', color:'#34D399' };
+  if (total >= 81) return { tier:'S', color:'#2DD4BF' };
+  if (total >= 67) return { tier:'A', color:'#4ADE80' };
   if (total >= 52) return { tier:'B', color:'#60A5FA' };
-  if (total >= 36) return { tier:'C', color:'#FBBF24' };
-  if (total >= 20) return { tier:'D', color:'#FB923C' };
-  return { tier:'F', color:'#F87171' };
+  if (total >= 36) return { tier:'C', color:'#A78BFA' };
+  if (total >= 20) return { tier:'D', color:'#7AAEC4' };
+  return { tier:'F', color:'#8FA3B1' };
 }
 
 function getSuggestions(scores) {
@@ -186,6 +186,40 @@ function getSuggestions(scores) {
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+// ─── Analytics helpers ────────────────────────────────────────────────────────
+
+// Ordinary least-squares linear regression on [{x, y}] points.
+// Returns { slope, intercept, se (residual std-dev), predict(x) } or null.
+function linearRegression(points) {
+  const n = points.length;
+  if (n < 2) return null;
+  const sx  = points.reduce((a, p) => a + p.x, 0);
+  const sy  = points.reduce((a, p) => a + p.y, 0);
+  const sxy = points.reduce((a, p) => a + p.x * p.y, 0);
+  const sxx = points.reduce((a, p) => a + p.x * p.x, 0);
+  const denom = n * sxx - sx * sx;
+  if (Math.abs(denom) < 1e-9) return null;
+  const slope     = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  const se = Math.sqrt(
+    points.reduce((a, p) => a + Math.pow(p.y - (slope * p.x + intercept), 2), 0)
+    / Math.max(1, n - 2)
+  );
+  return { slope, intercept, se, predict: x => slope * x + intercept };
+}
+
+// Build combined regression input for a friend (surveys + rated journals).
+// x = days since epoch (absolute, so multi-friend comparison is consistent).
+function buildRegressionPoints(surveys, journals, profileId) {
+  const s = surveys
+    .filter(sv => sv.profileId === profileId && sv.total != null)
+    .map(sv => ({ x: new Date(sv.createdAt).getTime() / 86400000, y: sv.total }));
+  const j = journals
+    .filter(jn => jn.profileId === profileId && jn.rating)
+    .map(jn => ({ x: new Date(jn.date || jn.createdAt).getTime() / 86400000, y: jn.rating * 18 }));
+  return [...s, ...j].sort((a, b) => a.x - b.x);
 }
 
 // ─── Shared-event helpers ──────────────────────────────────────────────────────
@@ -288,7 +322,15 @@ function fmtDate(iso) {
 function loadProfiles() {
   try { return JSON.parse(localStorage.getItem('fq_profiles') || '[]'); } catch { return []; }
 }
-function saveProfiles(p) { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
+function saveProfiles(p) {
+  try { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
+  catch (e) {
+    // localStorage quota exceeded — strip photos and retry
+    const stripped = p.map(pr => ({ ...pr, photo: null }));
+    try { localStorage.setItem('fq_profiles', JSON.stringify(stripped)); } catch {}
+    console.warn('localStorage full — photos not saved', e);
+  }
+}
 function loadSurveys() {
   try { return JSON.parse(localStorage.getItem('fq_surveys') || '[]'); } catch { return []; }
 }
@@ -612,6 +654,178 @@ function LineChart({ surveys }) {
 }
 
 
+// ─── Analytics Trend Chart ────────────────────────────────────────────────────
+
+function AnalyticsTrendChart({ surveys, journals, profileId }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const [hoveredPt, setHoveredPt] = useState(null);
+
+  const profileSurveys = surveys
+    .filter(s => s.profileId === profileId && s.total != null)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const profileJournals = journals
+    .filter(j => j.profileId === profileId && j.rating)
+    .sort((a, b) => new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt));
+
+  const allDates = [
+    ...profileSurveys.map(s => new Date(s.createdAt).getTime()),
+    ...profileJournals.map(j => new Date(j.date || j.createdAt).getTime()),
+  ];
+  if (allDates.length < 2) return (
+    <div style={{ fontSize:12, color:'var(--muted)', padding:'20px 0', textAlign:'center' }}>
+      {t('至少需要 2 筆資料（測驗或日誌評分）才能顯示分析圖表','Need at least 2 data points (surveys or rated journals) to show analytics')}
+    </div>
+  );
+
+  const minDate = Math.min(...allDates);
+  const nowTs   = Date.now();
+  const future  = nowTs + 30 * 86400000;
+
+  const dayOf = ts => (ts - minDate) / 86400000;
+  const nowDay    = dayOf(nowTs);
+  const futureDay = dayOf(future);
+  const totalDays = futureDay + 10;
+
+  const surveyPts  = profileSurveys.map(s  => ({ x: dayOf(new Date(s.createdAt).getTime()),  y: s.total,     label: String(s.total), date: fmtDate(s.createdAt), type: 'survey' }));
+  const journalPts = profileJournals.map(j => ({ x: dayOf(new Date(j.date||j.createdAt).getTime()), y: j.rating*18, label: '★'+j.rating, date: fmtDate(j.date||j.createdAt), type: 'journal' }));
+  const allPts     = [...surveyPts, ...journalPts].sort((a, b) => a.x - b.x);
+
+  const reg = linearRegression(allPts);
+  const slopePerMonth = reg ? reg.slope * 30 : 0;
+  const futurePred    = reg ? Math.max(0, Math.min(90, reg.predict(futureDay))) : null;
+  const futureCI      = reg ? Math.min(reg.se * 1.645, 30) : 0;
+  const slopeColor    = slopePerMonth > 2 ? '#4ADE80' : slopePerMonth < -2 ? '#F87171' : '#94A3B8';
+  const slopeSign     = slopePerMonth >= 0 ? '+' : '';
+
+  const W=600, H=200, PL=40, PR=36, PT=20, PB=32;
+  const iW = W-PL-PR, iH = H-PT-PB;
+  const xOf = x => PL + Math.min(1, x / totalDays) * iW;
+  const yOf = v => PT + iH - (Math.max(0, Math.min(90, v)) / 90) * iH;
+
+  return (
+    <div>
+      {/* Summary strip */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10, flexWrap:'wrap', fontSize:12 }}>
+        <span style={{ color:'var(--muted)' }}>{t('趨勢斜率','Slope')}:</span>
+        <span style={{ fontWeight:700, color: slopeColor }}>{slopeSign}{slopePerMonth.toFixed(1)}{t('/月','/mo')}</span>
+        {futurePred !== null && <>
+          <span style={{ color:'var(--dim)' }}>·</span>
+          <span style={{ color:'var(--muted)' }}>{t('30天預測','30d forecast')}:</span>
+          <span style={{ fontWeight:700, color:'#A78BFA' }}>
+            {Math.round(futurePred)}
+            <span style={{ fontSize:10, fontWeight:400, color:'var(--muted)' }}> ±{Math.round(futureCI)}</span>
+          </span>
+        </>}
+        <span style={{ color:'var(--dim)' }}>·</span>
+        <span style={{ color:'var(--muted)' }}>{t('資料點','Data pts')}: {allPts.length}</span>
+      </div>
+
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:'block', overflow:'visible' }}>
+        {/* Grid */}
+        {[0,30,60,90].map(v => (
+          <g key={v}>
+            <line x1={PL} y1={yOf(v)} x2={W-PR} y2={yOf(v)} stroke="var(--grid-line)" strokeWidth="1" strokeDasharray={v===0?'none':'3,4'} />
+            <text x={PL-5} y={yOf(v)} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#475569">{v}</text>
+          </g>
+        ))}
+
+        {/* "Now" divider */}
+        {nowDay > 0 && nowDay < totalDays && (
+          <line x1={xOf(nowDay)} y1={PT} x2={xOf(nowDay)} y2={PT+iH} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="3,3"/>
+        )}
+        {nowDay > 0 && nowDay < totalDays && (
+          <text x={xOf(nowDay)} y={PT+iH+14} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.3)">{t('今','now')}</text>
+        )}
+
+        {/* Regression line */}
+        {reg && (() => {
+          const x0=0, x1=totalDays;
+          const y0=reg.predict(x0), y1=reg.predict(x1);
+          return <line x1={xOf(x0)} y1={yOf(y0)} x2={xOf(x1)} y2={yOf(y1)}
+            stroke={slopeColor} strokeWidth="1.5" strokeDasharray="5,3" opacity="0.55"/>;
+        })()}
+
+        {/* CI band at future point */}
+        {futurePred !== null && futureCI > 0 && (() => {
+          const cx = xOf(futureDay);
+          return <rect x={cx-8} y={yOf(futurePred+futureCI)} width={16}
+            height={Math.max(2, yOf(Math.max(0,futurePred-futureCI))-yOf(futurePred+futureCI))}
+            fill="#A78BFA" opacity="0.18" rx="2"/>;
+        })()}
+
+        {/* Future prediction point */}
+        {futurePred !== null && (() => {
+          const cx=xOf(futureDay), cy=yOf(futurePred);
+          return <g>
+            <circle cx={cx} cy={cy} r={6} fill="#A78BFA" stroke="var(--bg)" strokeWidth="2" opacity="0.9"/>
+            <text x={cx} y={cy-11} textAnchor="middle" fontSize="10" fontWeight="700" fill="#A78BFA">{Math.round(futurePred)}</text>
+            <text x={cx} y={PT+iH+22} textAnchor="middle" fontSize="8" fill="#A78BFA">+30d</text>
+          </g>;
+        })()}
+
+        {/* Journal dots */}
+        {journalPts.map((p, i) => {
+          const hk = `j${i}`;
+          return (
+            <g key={hk} onMouseEnter={() => setHoveredPt(hk)} onMouseLeave={() => setHoveredPt(null)} style={{ cursor:'pointer' }}>
+              <circle cx={xOf(p.x)} cy={yOf(p.y)} r={hoveredPt===hk ? 6 : 4} fill="#F59E0B" stroke="var(--bg)" strokeWidth="1.5" opacity="0.8"/>
+              {hoveredPt===hk && (
+                <g>
+                  <rect x={xOf(p.x)-32} y={yOf(p.y)-30} width="64" height="22" rx="4" fill="#0f0f12" stroke="rgba(255,255,255,0.1)"/>
+                  <text x={xOf(p.x)} y={yOf(p.y)-19} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill="#F59E0B">{p.label} · {p.date}</text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Survey connecting line */}
+        {surveyPts.length > 1 && (
+          <polyline points={surveyPts.map(p=>`${xOf(p.x)},${yOf(p.y)}`).join(' ')}
+            fill="none" stroke="#22D3EE" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+        )}
+
+        {/* Survey dots */}
+        {surveyPts.map((p, i) => {
+          const hk = `s${i}`;
+          return (
+            <g key={hk} onMouseEnter={() => setHoveredPt(hk)} onMouseLeave={() => setHoveredPt(null)} style={{ cursor:'pointer' }}>
+              <circle cx={xOf(p.x)} cy={yOf(p.y)} r={hoveredPt===hk ? 8 : 5}
+                fill={hoveredPt===hk ? '#22D3EE' : '#60A5FA'} stroke="var(--bg)" strokeWidth="2"/>
+              {hoveredPt===hk && (
+                <g>
+                  <rect x={xOf(p.x)-30} y={yOf(p.y)-30} width="60" height="22" rx="4" fill="#0f0f12" stroke="rgba(255,255,255,0.1)"/>
+                  <text x={xOf(p.x)} y={yOf(p.y)-19} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill="#E8EEF9">{p.label} · {p.date}</text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div style={{ display:'flex', gap:14, fontSize:10, color:'var(--muted)', marginTop:4, flexWrap:'wrap' }}>
+        {[
+          { color:'#60A5FA', label: t('測驗','Survey') },
+          { color:'#F59E0B', label: t('日誌評分 (×18)','Journal ×18') },
+          { color:'#A78BFA', label: t('30天預測','30d forecast') },
+          { color: slopeColor, label: t('趨勢線','Trend'), dash: true },
+        ].map(({ color, label, dash }) => (
+          <span key={label} style={{ display:'flex', alignItems:'center', gap:4 }}>
+            {dash
+              ? <span style={{ width:14, height:2, background: color, opacity:0.6, display:'inline-block', borderRadius:1 }}/>
+              : <span style={{ width:8, height:8, borderRadius:'50%', background: color, display:'inline-block' }}/>
+            }
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 // ─── Topbar ────────────────────────────────────────────────────────────────────
 
 function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, onToggleDark }) {
@@ -800,24 +1014,24 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   });
 
   const FRIENDSHIP_TYPES = [
-    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
-    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#34D399', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
-    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#93C5FD', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
-    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
-    { key:'ED',  zh:'情感消耗型', en:'Energy Drain',    color:'#F87171', zhDesc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。',     enDesc:'This relationship feels draining. Worth evaluating your investment.' },
-    { key:'AOS', zh:'單向付出型', en:'One-Sided',       color:'#FB923C', zhDesc:'付出不對等，長期下來會造成疲憊感。',                   enDesc:'Unbalanced giving. May lead to burnout over time.' },
-    { key:'FNR', zh:'脆弱待修型', en:'Fragile',         color:'#FBBF24', zhDesc:'關係出現裂縫，需要主動溝通修復才能重建。',             enDesc:'Cracks in the relationship. Proactive communication needed.' },
-    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
-    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#475569', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
+    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#2DD4BF', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
+    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#4ADE80', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
+    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#60A5FA', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
+    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#A78BFA', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
+    { key:'ED',  zh:'情感消耗型', en:'Energy Drain',    color:'#A08CC8', zhDesc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。',     enDesc:'This relationship feels draining. Worth evaluating your investment.' },
+    { key:'AOS', zh:'單向付出型', en:'One-Sided',       color:'#7AAEC4', zhDesc:'付出不對等，長期下來會造成疲憊感。',                   enDesc:'Unbalanced giving. May lead to burnout over time.' },
+    { key:'FNR', zh:'脆弱待修型', en:'Fragile',         color:'#7AC4A8', zhDesc:'關係出現裂縫，需要主動溝通修復才能重建。',             enDesc:'Cracks in the relationship. Proactive communication needed.' },
+    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#8FA3B1', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
+    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#6B7F8C', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
   ];
 
   const TIERS = [
-    { tier:'S', min:81, color:'#22D3EE', label:'Exceptional' },
-    { tier:'A', min:67, color:'#34D399', label:'Strong' },
+    { tier:'S', min:81, color:'#2DD4BF', label:'Exceptional' },
+    { tier:'A', min:67, color:'#4ADE80', label:'Strong' },
     { tier:'B', min:52, color:'#60A5FA', label:'Good' },
-    { tier:'C', min:36, color:'#FBBF24', label:'Moderate' },
-    { tier:'D', min:20, color:'#FB923C', label:'Weak' },
-    { tier:'F', min:0,  color:'#F87171', label:'Critical' },
+    { tier:'C', min:36, color:'#A78BFA', label:'Moderate' },
+    { tier:'D', min:20, color:'#7AAEC4', label:'Weak' },
+    { tier:'F', min:0,  color:'#8FA3B1', label:'Critical' },
   ];
 
   return (
@@ -836,7 +1050,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               { label: t('最佳朋友', 'Top Friend'),   value: highestProfile ? highestProfile.name : '—', sub: null, color: null, small: !!highestProfile },
               { label: t('測驗次數', 'Surveys'),       value: totalSurveys, sub: null,       color: null },
               { label: t('日誌條目', 'Log Entries'),   value: totalLogs,  sub: null,          color: null },
-              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於40', 'Score < 40'), color: needAttention > 0 ? '#F87171' : null },
             ].map(({ label, value, sub, color, small }) => (
               <div key={label} className="fq-kpi-list-item">
                 <span className="fq-kpi-list-label">{label}</span>
@@ -932,6 +1145,95 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               <div style={{ fontSize:10, color:'var(--dim)', marginTop:2 }}>{t('各月平均 FQ','Monthly avg FQ')}</div>
             </div>
           )}
+          {/* Pending input list */}
+          {(() => {
+            const pending = profiles.filter(p => {
+              const noGroup = !p.groupId;
+              const noRecords = !getLatestSurvey(p.id)
+                && !journals.some(j => j.profileId === p.id)
+                && !(p.keyEvents?.length)
+                && !(p.pros?.length)
+                && !(p.cons?.length);
+              return noGroup || noRecords;
+            });
+            if (!pending.length) return null;
+            return (
+              <div className="fq-card">
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                  📋 {t('等待輸入資料','Pending Data')}
+                  <span style={{ marginLeft:6, padding:'1px 6px', borderRadius:8, background:'var(--bg3)', color:'var(--muted)', fontWeight:600, fontSize:10 }}>{pending.length}</span>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                  {pending.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => onSelectFriend(p)}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', borderRadius:7, cursor:'pointer', background:'var(--bg2)', border:'1px solid var(--border)' }}
+                      onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+                      onMouseLeave={e => e.currentTarget.style.background='var(--bg2)'}
+                    >
+                      <Avatar profile={p} size={24} />
+                      <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                      <span style={{ fontSize:10, color:'var(--muted)', flexShrink:0, display:'flex', gap:3 }}>
+                        {!p.groupId && <span title={t('缺分組','no group')}>🏷</span>}
+                        {!getLatestSurvey(p.id) && !journals.some(j=>j.profileId===p.id) && !(p.keyEvents?.length) && !(p.pros?.length) && !(p.cons?.length) && <span title={t('無任何紀錄','no records')}>📭</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Friendship Health Index */}
+          {(() => {
+            const healthData = profiles.map(p => {
+              const pts = buildRegressionPoints(surveys, journals, p.id);
+              if (pts.length < 2) return null;
+              const reg = linearRegression(pts);
+              if (!reg) return null;
+              return { profile: p, slope: reg.slope * 30 };
+            }).filter(Boolean);
+            if (healthData.length === 0) return null;
+            const rising  = healthData.filter(d => d.slope > 2).sort((a,b) => b.slope - a.slope);
+            const falling = healthData.filter(d => d.slope < -2).sort((a,b) => a.slope - b.slope);
+            const stable  = healthData.filter(d => d.slope >= -2 && d.slope <= 2);
+            return (
+              <div className="fq-card">
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                  📈 {t('友誼健康指數','Friendship Health Index')}
+                </div>
+                {[
+                  { list: rising,  label: t('上升中','Rising'),  color:'#4ADE80', icon:'↑' },
+                  { list: stable,  label: t('穩定','Stable'),    color:'#94A3B8', icon:'→' },
+                  { list: falling, label: t('下滑中','Falling'), color:'#F87171', icon:'↓' },
+                ].map(({ list, label, color, icon }) => list.length > 0 && (
+                  <div key={label} style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color, letterSpacing:'0.06em', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
+                      <span>{icon}</span><span>{label}</span><span style={{ fontWeight:400, color:'var(--muted)' }}>({list.length})</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+                      {list.slice(0,4).map(d => (
+                        <div key={d.profile.id}
+                          onClick={() => onSelectFriend(d.profile)}
+                          style={{ display:'flex', alignItems:'center', gap:7, padding:'4px 7px', borderRadius:6, cursor:'pointer', background: color+'0f', border:`1px solid ${color}22` }}
+                          onMouseEnter={e => e.currentTarget.style.background = color+'22'}
+                          onMouseLeave={e => e.currentTarget.style.background = color+'0f'}
+                        >
+                          <Avatar profile={d.profile} size={20} />
+                          <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.profile.name}</span>
+                          <span style={{ fontSize:10, fontWeight:700, color, flexShrink:0 }}>
+                            {d.slope >= 0 ? '+' : ''}{d.slope.toFixed(1)}{t('/月','/mo')}
+                          </span>
+                        </div>
+                      ))}
+                      {list.length > 4 && <div style={{ fontSize:10, color:'var(--dim)', paddingLeft:4 }}>+{list.length-4} {t('更多','more')}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Right panel ── */}
@@ -1280,17 +1582,15 @@ function PhotoCropModal({ src, onApply, onCancel }) {
   function handleApply() {
     const img = imgRef.current;
     const canvas = canvasRef.current;
-    const OUT = 400;
+    const OUT = 200;
     canvas.width = OUT; canvas.height = OUT;
     const ctx = canvas.getContext('2d');
     const W = img.naturalWidth, H = img.naturalHeight;
-    // image top-left in preview container coords
     const ix = PREVIEW / 2 + offset.x - (W * scale) / 2;
     const iy = PREVIEW / 2 + offset.y - (H * scale) / 2;
-    // map preview → output
     const r = OUT / PREVIEW;
     ctx.drawImage(img, ix * r, iy * r, W * scale * r, H * scale * r);
-    onApply(canvas.toDataURL('image/jpeg', 0.92));
+    onApply(canvas.toDataURL('image/jpeg', 0.75));
   }
 
   return (
@@ -1366,6 +1666,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
   const [prosInput,   setProsInput]   = useState('');
   const [consInput,   setConsInput]   = useState('');
   const [noSurvey,    setNoSurvey]    = useState(editProfile?.noSurvey ?? false);
+  const [quickScore,  setQuickScore]  = useState('');  // direct score input (skip survey)
   const [err,         setErr]         = useState('');
   const [cropSrc,     setCropSrc]     = useState(null);
   const [evtSharedId, setEvtSharedId] = useState('');
@@ -1419,12 +1720,14 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
     }
     const group = getGroupById(resolvedGroupId, customGroups);
     const color = group ? group.color : '#60A5FA';
+    const qs = quickScore !== '' ? Math.max(0, Math.min(90, parseInt(quickScore, 10))) : null;
     onSave({
       id: editProfile?.id || genId(),
       name: name.trim(), photo, color, groupId: resolvedGroupId || '',
       since, keyEvents, birthday, pros: prosList, cons: consList, noSurvey: noSurvey || false,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
       _newGroup: newCustomGroup,
+      _quickScore: (!noSurvey && qs !== null && !isNaN(qs)) ? qs : null,
     });
   }
 
@@ -1654,6 +1957,40 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
             </span>
           </div>
         </div>
+
+        {!noSurvey && (
+          <div className="fq-form-row">
+            <label className="fq-label">{t('直接給分（選填）','Quick Score (optional)')}</label>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <input
+                  type="number" min="0" max="90"
+                  className="fq-input"
+                  style={{ width:100 }}
+                  placeholder={t('0 – 90','0 – 90')}
+                  value={quickScore}
+                  onChange={e => setQuickScore(e.target.value)}
+                />
+                {quickScore !== '' && !isNaN(parseInt(quickScore)) && (() => {
+                  const s = Math.max(0, Math.min(90, parseInt(quickScore)));
+                  const d = Math.min(100, Math.round(s / 0.9));
+                  const scores = { F:d, R:d, S:d, T:d, St:d, E:d, total: s };
+                  const type = getFriendshipType(scores);
+                  const tier = getScoreTier(s);
+                  return (
+                    <span style={{ fontSize:12, display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color: tier.color, fontWeight:700 }}>Tier {tier.tier}</span>
+                      <span style={{ padding:'2px 8px', borderRadius:4, background: type.color+'22', color: type.color, fontWeight:700 }}>{type.key} {lang==='zh'?type.name:type.en}</span>
+                    </span>
+                  );
+                })()}
+              </div>
+              <div style={{ fontSize:11, color:'var(--muted)', marginTop:5 }}>
+                {t('填入後系統會自動推算各維度並新增一筆測驗紀錄。','If filled, dimensions are auto-derived and a new survey entry will be added.')}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave}>
@@ -2390,6 +2727,33 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
           )}
           </>)}
 
+          {/* ── Analytics ── */}
+          {(() => {
+            const hasData = (
+              surveys.filter(s => s.profileId === profile.id && s.total != null).length +
+              journals.filter(j => j.profileId === profile.id && j.rating).length
+            ) >= 2;
+            if (!hasData) return null;
+            return (
+              <>
+                <div className="fq-section-hdr" style={{ marginBottom:14, marginTop:4 }}>
+                  <h2>{t('數據分析','Data Analytics')}</h2>
+                  <div className="fq-line" />
+                  <span style={{ fontSize:11, padding:'2px 8px', borderRadius:5, background:'#A78BFA22', color:'#A78BFA', fontWeight:600 }}>
+                    {t('趨勢預測','Trend Forecast')}
+                  </span>
+                </div>
+                <div className="fq-card" style={{ marginBottom:20 }}>
+                  <AnalyticsTrendChart
+                    surveys={surveys}
+                    journals={journals}
+                    profileId={profile.id}
+                  />
+                </div>
+              </>
+            );
+          })()}
+
           {/* Journal / Log entries */}
           {(() => {
             const profileJournals = (journals || [])
@@ -2574,11 +2938,27 @@ export default function FriendPage() {
     if (profile._newGroup) {
       setCustomGroups(prev => [...prev, profile._newGroup]);
     }
-    const { _newGroup, ...cleanProfile } = profile;
+    const { _newGroup, _quickScore, ...cleanProfile } = profile;
     if (editingProfile) {
       setProfiles(prev => prev.map(p => p.id === cleanProfile.id ? cleanProfile : p));
     } else {
       setProfiles(prev => [...prev, cleanProfile]);
+    }
+    if (_quickScore !== null && _quickScore !== undefined) {
+      const d = Math.min(100, Math.round(_quickScore / 0.9));
+      const scores = { F:d, R:d, S:d, T:d, St:d, E:d, total: _quickScore };
+      const type = getFriendshipType(scores);
+      const syntheticSurvey = {
+        id: genId(),
+        profileId: cleanProfile.id,
+        answers: Array(24).fill(null),
+        scores,
+        total: _quickScore,
+        type: type.key,
+        createdAt: new Date().toISOString(),
+        _synthetic: true,
+      };
+      setSurveys(prev => [...prev, syntheticSurvey]);
     }
     setSelectedProfile(cleanProfile);
     setEditingProfile(null);
