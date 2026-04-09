@@ -225,6 +225,7 @@
 .fq-score-badge {
   margin-left: auto; font-size: 22px; font-weight: 800;
   color: var(--accent-light); line-height: 1; flex-shrink: 0;
+  align-self: flex-start;
 }
 .fq-score-badge.tier-S { color: var(--fq-cyan); }
 .fq-score-badge.tier-A { color: var(--green); }
@@ -239,9 +240,10 @@
 .fq-dim-pip-fill { height: 100%; border-radius: 2px; background: var(--accent); }
 
 .fq-type-tag {
-  position: absolute; top: 12px; right: 12px;
-  font-size: 10px; padding: 2px 7px; border-radius: 4px;
+  position: absolute; top: 10px; right: 10px;
+  font-size: 10px; padding: 4px 9px; border-radius: 4px;
   font-weight: 600; letter-spacing: 0.04em;
+  z-index: 2;
 }
 
 /* ─── Buttons ─── */
