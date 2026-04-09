@@ -167,9 +167,9 @@ function getScoreTier(total) {
   if (total >= 81) return { tier:'S', color:'#22D3EE' };
   if (total >= 67) return { tier:'A', color:'#34D399' };
   if (total >= 52) return { tier:'B', color:'#60A5FA' };
-  if (total >= 36) return { tier:'C', color:'#FBBF24' };
-  if (total >= 20) return { tier:'D', color:'#FB923C' };
-  return { tier:'F', color:'#F87171' };
+  if (total >= 36) return { tier:'C', color:'#B8A860' };
+  if (total >= 20) return { tier:'D', color:'#A898B8' };
+  return { tier:'F', color:'#B88898' };
 }
 
 function getSuggestions(scores) {
@@ -815,9 +815,9 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
     { tier:'S', min:81, color:'#22D3EE', label:'Exceptional' },
     { tier:'A', min:67, color:'#34D399', label:'Strong' },
     { tier:'B', min:52, color:'#60A5FA', label:'Good' },
-    { tier:'C', min:36, color:'#FBBF24', label:'Moderate' },
-    { tier:'D', min:20, color:'#FB923C', label:'Weak' },
-    { tier:'F', min:0,  color:'#F87171', label:'Critical' },
+    { tier:'C', min:36, color:'#B8A860', label:'Moderate' },
+    { tier:'D', min:20, color:'#A898B8', label:'Weak' },
+    { tier:'F', min:0,  color:'#B88898', label:'Critical' },
   ];
 
   return (
