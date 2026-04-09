@@ -230,9 +230,9 @@
 .fq-score-badge.tier-S { color: var(--fq-cyan); }
 .fq-score-badge.tier-A { color: var(--green); }
 .fq-score-badge.tier-B { color: var(--accent-light); }
-.fq-score-badge.tier-C { color: #7AC4A8; }
+.fq-score-badge.tier-C { color: #A78BFA; }
 .fq-score-badge.tier-D { color: #7AAEC4; }
-.fq-score-badge.tier-F { color: #A08CC8; }
+.fq-score-badge.tier-F { color: #8FA3B1; }
 
 .fq-dim-mini { display: flex; gap: 5px; flex-wrap: wrap; }
 .fq-dim-pip { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--dim); }

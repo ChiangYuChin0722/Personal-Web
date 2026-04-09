@@ -134,15 +134,15 @@ function calcScores(answers) {
 }
 
 const ALL_FRIENDSHIP_TYPES = [
-  { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' },
-  { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' },
-  { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' },
-  { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' },
+  { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#2DD4BF', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' },
+  { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#4ADE80', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' },
+  { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#60A5FA', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' },
+  { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#A78BFA', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' },
   { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#A08CC8', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' },
   { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#7AAEC4', desc:'付出不對等，長期下來會造成疲憊感。' },
   { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#7AC4A8', desc:'關係出現裂縫，需要主動溝通修復才能重建。' },
-  { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' },
-  { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' },
+  { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#8FA3B1', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' },
+  { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#6B7F8C', desc:'友誼正在淡化，需要決定是否值得主動投入。' },
 ];
 
 function getFriendshipType(scores, typeOverride) {
@@ -164,12 +164,12 @@ function getFriendshipType(scores, typeOverride) {
 }
 
 function getScoreTier(total) {
-  if (total >= 81) return { tier:'S', color:'#22D3EE' };
-  if (total >= 67) return { tier:'A', color:'#34D399' };
+  if (total >= 81) return { tier:'S', color:'#2DD4BF' };
+  if (total >= 67) return { tier:'A', color:'#4ADE80' };
   if (total >= 52) return { tier:'B', color:'#60A5FA' };
-  if (total >= 36) return { tier:'C', color:'#7AC4A8' };
+  if (total >= 36) return { tier:'C', color:'#A78BFA' };
   if (total >= 20) return { tier:'D', color:'#7AAEC4' };
-  return { tier:'F', color:'#A08CC8' };
+  return { tier:'F', color:'#8FA3B1' };
 }
 
 function getSuggestions(scores) {
@@ -800,24 +800,24 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   });
 
   const FRIENDSHIP_TYPES = [
-    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
-    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#34D399', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
-    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#93C5FD', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
-    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
+    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#2DD4BF', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
+    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#4ADE80', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
+    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#60A5FA', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
+    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#A78BFA', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
     { key:'ED',  zh:'情感消耗型', en:'Energy Drain',    color:'#A08CC8', zhDesc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。',     enDesc:'This relationship feels draining. Worth evaluating your investment.' },
     { key:'AOS', zh:'單向付出型', en:'One-Sided',       color:'#7AAEC4', zhDesc:'付出不對等，長期下來會造成疲憊感。',                   enDesc:'Unbalanced giving. May lead to burnout over time.' },
     { key:'FNR', zh:'脆弱待修型', en:'Fragile',         color:'#7AC4A8', zhDesc:'關係出現裂縫，需要主動溝通修復才能重建。',             enDesc:'Cracks in the relationship. Proactive communication needed.' },
-    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
-    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#475569', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
+    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#8FA3B1', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
+    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#6B7F8C', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
   ];
 
   const TIERS = [
-    { tier:'S', min:81, color:'#22D3EE', label:'Exceptional' },
-    { tier:'A', min:67, color:'#34D399', label:'Strong' },
+    { tier:'S', min:81, color:'#2DD4BF', label:'Exceptional' },
+    { tier:'A', min:67, color:'#4ADE80', label:'Strong' },
     { tier:'B', min:52, color:'#60A5FA', label:'Good' },
-    { tier:'C', min:36, color:'#7AC4A8', label:'Moderate' },
+    { tier:'C', min:36, color:'#A78BFA', label:'Moderate' },
     { tier:'D', min:20, color:'#7AAEC4', label:'Weak' },
-    { tier:'F', min:0,  color:'#A08CC8', label:'Critical' },
+    { tier:'F', min:0,  color:'#8FA3B1', label:'Critical' },
   ];
 
   return (
