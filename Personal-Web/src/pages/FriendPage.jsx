@@ -1,107 +1,272 @@
 import './FriendPage.css';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+
+// Handles Chinese IME: blocks Enter during composition (macOS fix)
+function IMEInput({ onEnterKey, onKeyDown, ...props }) {
+  const composing = useRef(false);
+  return (
+    <input
+      {...props}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={() => { setTimeout(() => { composing.current = false; }, 0); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter' && !composing.current) onEnterKey?.(e);
+        onKeyDown?.(e);
+      }}
+    />
+  );
+}
+
+const LangCtx = createContext('zh');
+const GroupsCtx = createContext([]);
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EMOJI_OPTIONS = ['😊','👻','🐱','🐶','🦊','🐼','🌟','🎯','⚡','🔥','🎭','💎','🚀','🌙','🎵'];
-const COLOR_OPTIONS = ['#60A5FA','#22D3EE','#34D399','#8B5CF6','#F472B6','#FB923C','#FBBF24','#F87171'];
+const RAINBOW_COLORS = ['#EF4444','#F97316','#EAB308','#22C55E','#3B82F6','#6366F1','#A855F7'];
+
+const DEFAULT_GROUPS = [
+  { id:'hs',     zh:'高中',   en:'High School', color:'#60A5FA' },
+  { id:'uni',    zh:'大學',   en:'University',  color:'#34D399' },
+  { id:'work',   zh:'工作',   en:'Work',        color:'#F97316' },
+  { id:'fam',    zh:'家人',   en:'Family',      color:'#F472B6' },
+  { id:'online', zh:'網友',   en:'Online',      color:'#A855F7' },
+  { id:'other',  zh:'其他',   en:'Other',       color:'#94A3B8' },
+];
+const THIS_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: THIS_YEAR - 1989 }, (_, i) => THIS_YEAR - i);
 
 const DIM_META = [
-  { key: 'F',  label: '頻率', en: 'Frequency', color: '#60A5FA' },
-  { key: 'B',  label: '平衡', en: 'Balance',   color: '#22D3EE' },
-  { key: 'S',  label: '支持', en: 'Support',   color: '#34D399' },
-  { key: 'T',  label: '信任', en: 'Trust',     color: '#8B5CF6' },
-  { key: 'St', label: '穩定', en: 'Stability', color: '#FBBF24' },
+  { key: 'F',  label: '頻率', en: 'Frequency',   color: '#60A5FA' },
+  { key: 'R',  label: '互惠', en: 'Reciprocity', color: '#22D3EE' },
+  { key: 'S',  label: '支持', en: 'Support',     color: '#34D399' },
+  { key: 'T',  label: '信任', en: 'Trust',       color: '#8B5CF6' },
+  { key: 'St', label: '穩定', en: 'Stability',   color: '#FBBF24' },
+  { key: 'E',  label: '能量', en: 'Energy',      color: '#F472B6' },
+];
+
+const MOODS = [
+  { key:'great',   icon:'🌟', zh:'感覺很好', en:'Feeling great' },
+  { key:'good',    icon:'😊', zh:'還不錯',   en:'Pretty good'   },
+  { key:'neutral', icon:'😐', zh:'普通',     en:'Neutral'       },
+  { key:'drained', icon:'😔', zh:'有點累',   en:'Drained'       },
+  { key:'tense',   icon:'⚡', zh:'有些摩擦', en:'Tension'       },
 ];
 
 const QUESTIONS = [
-  // F
-  { dim:'F', text:'我們平均多久主動聯絡一次？', opts:['幾乎不聯絡','每月聯絡','每週聯絡','幾乎每天'] },
-  { dim:'F', text:'最近一個月，我們實際見面幾次？', opts:['0次','1–2次','3–5次','6次以上'] },
-  { dim:'F', text:'在重要節日或特殊場合，對方會主動聯繫我嗎？', opts:['從不','偶爾','通常會','一定會'] },
-  { dim:'F', text:'我們的聯絡頻率和半年前相比？', opts:['大幅減少','略有減少','差不多','增加了'] },
-  // B
-  { dim:'B', text:'在我們的對話中，誰更常主動開始話題？', opts:['幾乎都是我','大多是我','差不多','對方更多'] },
-  { dim:'B', text:'分享個人困擾和喜悅時，是否雙向？', opts:['幾乎單向','偶爾雙向','大多雙向','非常平衡'] },
-  { dim:'B', text:'對方是否也會主動關心我的狀況？', opts:['從不','很少','有時','經常'] },
-  { dim:'B', text:'我們付出的時間和精力是否對等？', opts:['明顯不對等','稍微不對等','大致對等','完全對等'] },
-  // S
-  { dim:'S', text:'當我遇到困難時，對方會主動提供幫助嗎？', opts:['從不','很少','有時','一定會'] },
-  { dim:'S', text:'對方了解我目前生活中重要的事嗎？', opts:['完全不了解','知道一些','了解大部分','非常了解'] },
-  { dim:'S', text:'我在情緒低落時，會想到找對方嗎？', opts:['不會','很少','有時','第一個想到'] },
-  { dim:'S', text:'對方曾在我最需要的時候出現嗎？', opts:['從未','偶爾','通常會','一直都在'] },
-  // T
-  { dim:'T', text:'我可以對對方說不好聽的真心話嗎？', opts:['完全不行','有限度','大多可以','完全可以'] },
-  { dim:'T', text:'對方說的話和承諾，我有多信任？', opts:['不太信','將信將疑','大致相信','完全信任'] },
-  { dim:'T', text:'我願意把私密的事告訴對方嗎？', opts:['不願意','只說表面','說一部分','完全願意'] },
-  { dim:'T', text:'如果我們有矛盾，可以直接溝通解決嗎？', opts:['不行','很困難','大多可以','完全沒問題'] },
-  // St
-  { dim:'St', text:'我們的友誼在過去一年有沒有出現過明顯裂痕？', opts:['嚴重裂痕','有些摩擦','小誤會','非常穩定'] },
-  { dim:'St', text:'即使一段時間沒聯絡，再見面時還是自在嗎？', opts:['非常尷尬','有點生疏','稍微需要暖身','完全自然'] },
-  { dim:'St', text:'我預計五年後我們還是好朋友嗎？', opts:['不太可能','不確定','應該會','一定會'] },
-  { dim:'St', text:'整體來說，這段友誼讓我感到？', opts:['很累/消耗','普通','還不錯','非常滋養'] },
+  // F 頻率 Frequency
+  { dim:'F', text:'不計群組訊息，這段友誼目前的一對一聯絡頻率，你覺得是否足夠？', opts:['遠遠不夠，幾乎沒有私下互動','有點不足，偶爾希望多聯繫','差不多剛好，符合這段友誼的節奏','完全夠，甚至超過需要的頻率'],
+    en:'Excluding group chats, is the current one-on-one contact frequency in this friendship sufficient?', enOpts:['Far from enough — almost no private interaction','Slightly lacking — occasionally wish for more','About right — fits the rhythm of this friendship','More than enough — even exceeds what is needed'] },
+  { dim:'F', text:'過去三個月，這段友誼中主動發起對話或約出來的比例是？', opts:['完全由一方單獨維持','大多是同一方在主動','大概各半','雙方主動程度相當'],
+    en:'Over the past three months, who has been more likely to initiate conversations or make plans?', enOpts:['Entirely one-sided','Mostly one side','Roughly equal','Both sides equally'] },
+  { dim:'F', text:'你主觀上感受到，這個人有多在意這段友誼的存在？', opts:['幾乎感受不到他在意','偶爾有一點感受到','蠻能感受到他重視這段友誼','非常強烈，你在他生命裡明顯是重要的存在'],
+    en:'How much do you feel this person values this friendship?', enOpts:['Almost no sense that they care','Occasionally feel it a little','Can clearly feel they value this friendship','Very strongly — you are obviously important in their life'] },
+  { dim:'F', text:'這段友誼對「沉默一段時間不聯絡」的包容度如何？', opts:['包容度低，沉默就會產生疏遠感','需要偶爾聯絡來維持溫度','還不錯，可以接受比較長的空白','非常高，再久沒說話，重聯絡時也完全不尷尬'],
+    en:'How tolerant is this friendship of going without contact for a while?', enOpts:['Low — silence quickly leads to distance','Needs occasional contact to stay warm','Fairly tolerant — comfortable with longer gaps','Very high — no matter how long, reconnecting feels effortless'] },
+  // R 互惠 Reciprocity
+  { dim:'R', text:'在分享個人困擾、喜悅或私事這方面，這段友誼中雙方的投入程度是否均衡？', opts:['明顯不均衡，一方分享多另一方幾乎不開口','有些不均衡','大致均衡','非常均衡，雙方都很主動分享'],
+    en:'When it comes to sharing personal struggles, joys, or private matters, how balanced is both sides\' investment?', enOpts:['Clearly unbalanced — one shares a lot, the other rarely opens up','Somewhat unbalanced','Roughly balanced','Very balanced — both actively share'] },
+  { dim:'R', text:'這個人對另一方目前生活中最重要的事，了解程度有多深？', opts:['幾乎不知道近況','只知道一些表面的事','了解大部分重要的事','非常清楚，對現在的狀態完全掌握'],
+    en:'How well does this person know what matters most in the other person\'s current life?', enOpts:["Almost unaware of what's going on",'Only knows surface-level things','Knows most of what matters','Very aware — fully understands the current situation'] },
+  { dim:'R', text:'當一方對這段友誼付出時間和心力，另一方的回應通常是？', opts:['幾乎沒有任何回應','偶爾有回應但少有對等付出','通常有類似程度的回應','完全對等，一致地相互付出'],
+    en:'When one person invests time and care into this friendship, how does the other typically respond?', enOpts:['Almost no response','Occasionally responds but rarely reciprocates equally','Usually responds in kind','Fully and consistently reciprocal'] },
+  { dim:'R', text:'在真正需要幫助時，開口請這個人協助是否自然？', opts:['很難開口，寧可不說','有些不自在','還算自然，大部分情況能開口','完全自然，不需要任何猶豫'],
+    en:'When help is genuinely needed, how natural is it to ask this person?', enOpts:["Hard to ask — would rather stay silent",'A bit uncomfortable','Fairly natural in most situations','Completely natural — no hesitation at all'] },
+  // S 支持 Support
+  { dim:'S', text:'當你真正處於低潮或需要幫助時，這個人通常的反應是？', opts:['缺席或幾乎不知情','知道但沒有給什麼實質支持','能夠給予真正的關心和幫助','是你最可以依靠的支柱之一'],
+    en:'When you are genuinely going through a hard time or need help, how does this person typically respond?', enOpts:['Absent or barely aware','Knew but gave no real support','Provides genuine care and help','Is one of the most dependable pillars you have'] },
+  { dim:'S', text:'面對重大人生決定時，這個人是否是想聽取意見的對象？', opts:['完全不在考慮範圍內','應該不會','也許會，可能會考慮','絕對是，會是第一個想找的人'],
+    en:'When facing a major life decision, is this person someone whose opinion would be sought?', enOpts:['Not considered at all','Probably not','Maybe — worth considering','Absolutely — would be the first person to turn to'] },
+  { dim:'S', text:'這個人給予的支持，是否符合對方真正的需要？', opts:['常常不對，不太懂對方需要什麼','有時候對有時候不對','通常蠻準確的','幾乎總是非常精準，深度理解'],
+    en:'How well does the support this person gives match what is actually needed?', enOpts:["Often off — doesn't understand what's needed",'Sometimes right, sometimes not','Usually quite accurate','Almost always precise — deeply understanding'] },
+  { dim:'S', text:'這個人是否曾在對方沒有開口的情況下，主動察覺狀態不好並關心？', opts:['從來沒有過','偶爾有一兩次','有幾次讓人很感動','這幾乎是他的常態，很自然'],
+    en:'Has this person ever noticed something was wrong and reached out without being asked?', enOpts:['Never','Once or twice','A few times — genuinely touching','This is almost always how they are'] },
+  // T 信任 Trust
+  { dim:'T', text:'在這個人面前，是否曾說過顯得脆弱、不完美或尷尬的事？', opts:['從來沒有，那一面一直藏著','說過一點點','說過蠻多的','幾乎什麼都說過，包括最低落的時刻'],
+    en:'Has anything been shared with this person that reveals vulnerability, imperfection, or embarrassment?', enOpts:['Never — that side has always been hidden','A little bit','Quite a lot','Almost everything — including the lowest moments'] },
+  { dim:'T', text:'如果你做了讓你感到羞愧或不想對外說的事，你願意讓這個人知道嗎？', opts:['不願意，寧可瞞著他','需要猶豫很久才可能開口','大概願意，雖然不輕鬆','完全願意，他是第一個想找的人'],
+    en:'If you did something you felt ashamed of or wanted to keep private, would you be willing to let this person know?', enOpts:['No — would rather hide it','Would hesitate for a long time before saying anything','Probably yes, though it would not be easy','Completely — they would be the first person to turn to'] },
+  { dim:'T', text:'對這個人說的話和做出的承諾，信任程度有多高？', opts:['常常會有所質疑','有一些保留','大致上相信','完全信任，毫無保留'],
+    en:'How much trust is placed in what this person says and promises?', enOpts:['Often questioned','Some reservations','Generally trusted','Completely trusted — no reservations at all'] },
+  { dim:'T', text:'在這段友誼中，直接表達不滿或說出真心話的自在程度是？', opts:['非常不自在，有話也不敢說','需要鼓很大的勇氣才做得到','大多數情況下能夠說出口','非常自在，任何想法都可以直接表達'],
+    en:'How comfortable is it to express dissatisfaction or speak your mind in this friendship?', enOpts:['Very uncomfortable — even when there is something to say, it stays unsaid','Requires a lot of courage to do','Can usually speak up in most situations','Very comfortable — any thought can be expressed directly'] },
+  // St 穩定 Stability
+  { dim:'St', text:'這段友誼整體上的穩定程度如何？', opts:['有過嚴重危機，目前尚未完全修復','曾有過明顯摩擦，影響了親近程度','偶有小誤會，但都順利化解了','非常穩定，感情從未動搖'],
+    en:'How stable has this friendship been overall?', enOpts:['There was a serious crisis that has not been fully resolved','There were notable conflicts that affected closeness','Minor misunderstandings here and there, all resolved','Very stable — the bond has never wavered'] },
+  { dim:'St', text:'在一段時間沒有聯絡之後，兩人重新接觸時的自然程度是？', opts:['很尷尬，需要很長時間才能找回感覺','有一點生疏，要花點力氣','需要一點暖身，但很快就回來了','立刻就很自然，完全沒有斷層感'],
+    en:'After a period of no contact, how natural is it when the two reconnect?', enOpts:['Awkward — takes a long time to feel comfortable','A bit distant — requires effort','Needs a little warm-up but quickly returns','Immediately natural — no sense of a gap at all'] },
+  { dim:'St', text:'這段友誼面對重大人生變化（換工作、搬家、交新對象等）的韌性如何？', opts:['任何大改變都可能讓這段友誼變淡','人生的改變已讓彼此連結變弱了','大致上維持住了，只是見面少了','不管發生什麼都還是很穩固'],
+    en:'How resilient is this friendship against major life changes (new job, moving, new relationship, etc.)?', enOpts:['Any big change could fade this friendship','Life changes have already weakened the bond','Mostly maintained — just fewer meetups','Stays strong no matter what'] },
+  { dim:'St', text:'五年後，這段友誼是否仍會是生命中重要的存在？', opts:['很不可能','不太確定','應該會','幾乎可以確定'],
+    en:'Will this friendship still be an important part of life five years from now?', enOpts:['Very unlikely','Not sure','Probably yes','Almost certain'] },
+  // E 情感能量 Energy
+  { dim:'E', text:'想到要主動聯絡這個人時，第一個直覺感受是什麼？', opts:['有壓力、有負擔，甚至想逃避','有一點猶豫或抗拒','沒什麼特別的感覺','期待，真的很想聊'],
+    en:'When thinking about reaching out to this person, what is the first instinctive feeling?', enOpts:['Pressure, burden, or even avoidance','A little hesitation or reluctance','Nothing particular — just neutral','Excited — genuinely looking forward to it'] },
+  { dim:'E', text:'和這個人進行一次深度交流或見面之後，通常會有什麼感覺？', opts:['很疲憊，需要時間獨自恢復','有一點消耗','還好，沒什麼特別','充電了，心情更好'],
+    en:'After a deep conversation or meetup with this person, how does it usually feel?', enOpts:['Exhausted — need alone time to recover','Somewhat drained','Fine — nothing special','Recharged — in a better mood'] },
+  { dim:'E', text:'在這個人面前，是否可以做自己，不需要表演或管理形象？', opts:['不太行，會有壓力要呈現某種樣子','有時候會注意怎麼表現','大多數情況可以','完全可以，從來不需要偽裝'],
+    en:'Is it possible to be oneself around this person, without performing or managing an image?', enOpts:['Not really — there is pressure to present a certain self','Sometimes feel the need to manage how things come across','In most situations, yes','Completely — never need to pretend'] },
+  { dim:'E', text:'整體而言，這段友誼帶來的感受是什麼？', opts:['主要是壓力、義務感或情緒消耗','沒什麼特別，正負面都不強','讓生活更豐富、感覺更好','是非常珍視的滋養，心存感激'],
+    en:'Overall, what does this friendship bring to life?', enOpts:['Mostly stress, obligation, or emotional drain','Nothing particular — neither strongly positive nor negative','Makes life richer and feels better','A deeply valued source of nourishment — genuinely grateful'] },
 ];
 
 
 // ─── Score helpers ─────────────────────────────────────────────────────────────
 
 function calcScores(answers) {
-  const dims = ['F','B','S','T','St'];
+  const DIMS = [
+    { key:'F',  from:0,  weight:0.15 },
+    { key:'R',  from:4,  weight:0.18 },
+    { key:'S',  from:8,  weight:0.20 },
+    { key:'T',  from:12, weight:0.20 },
+    { key:'St', from:16, weight:0.15 },
+    { key:'E',  from:20, weight:0.12 },
+  ];
   const scores = {};
-  dims.forEach((d, i) => {
-    const slice = answers.slice(i * 4, i * 4 + 4);
+  DIMS.forEach(d => {
+    const slice = answers.slice(d.from, d.from + 4);
     const sum = slice.reduce((a, b) => a + b, 0);
-    scores[d] = Math.round(((sum - 4) / 16) * 100);
+    // range: min sum=4, max sum=16 → range=12; scale to 0-100 per dim
+    scores[d.key] = Math.round(((sum - 4) / 12) * 100);
   });
-  scores.total = Math.round(
-    0.20 * scores.F +
-    0.20 * scores.B +
-    0.25 * scores.S +
-    0.20 * scores.T +
-    0.15 * scores.St
-  );
+  // total capped at 90 (× 0.9 so a perfect run → 90, not 100)
+  scores.total = Math.round(DIMS.reduce((acc, d) => acc + d.weight * scores[d.key], 0) * 0.9);
   return scores;
 }
 
 function getFriendshipType(scores) {
-  const { F, B, S, T, St } = scores;
-  if (scores.total >= 75 && T >= 70 && St >= 70)
-    return { key:'SHQ', name:'穩固高品質', en:'Stable & High Quality', color:'#22D3EE', desc:'信任深厚、情感穩定，是少數真正可以依賴的友誼。' };
-  if (F >= 70 && B < 50)
-    return { key:'ASL', name:'主動表層型', en:'Active but Surface Level', color:'#60A5FA', desc:'聯絡頻繁但缺乏深度，需要加強雙向理解。' };
-  if (B < 45 || (S < 50 && T < 50))
-    return { key:'AOS', name:'不對等單向型', en:'Asymmetric / One-Sided', color:'#FB923C', desc:'付出不對等，長期可能造成疲憊感。' };
-  if (F < 50 && T >= 65 && St >= 65)
-    return { key:'QDB', name:'安靜深連型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多但情感真實，聯絡少不代表感情淡。' };
-  if (St < 45 || T < 45)
-    return { key:'FNR', name:'脆弱待修型', en:'Fragile / Needs Repair', color:'#F87171', desc:'關係出現裂縫，需要主動修復才能維持。' };
-  if (scores.total >= 55)
-    return { key:'SLD', name:'穩定輕度型', en:'Stable Lightweight', color:'#34D399', desc:'關係平穩但不算特別深入，適合輕鬆相處。' };
-  return { key:'FAD', name:'淡化中型', en:'Fading', color:'#94A3B8', desc:'友誼正在自然淡化，需要決定是否投入更多。' };
+  const { F, R, S, T, St, E } = scores;
+  const tot = scores.total;
+  if (tot >= 70 && T >= 70 && E >= 65 && St >= 65)
+    return { key:'SS',  name:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', desc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。' };
+  if (tot >= 58 && T >= 60 && St >= 60 && R >= 58)
+    return { key:'SHQ', name:'穩固核心型', en:'Stable Core',     color:'#34D399', desc:'品質穩固、信任深厚，是你可以長期依賴的朋友。' };
+  if (F >= 68 && E >= 60 && T < 55)
+    return { key:'ASL', name:'活躍表層型', en:'Active Surface',  color:'#93C5FD', desc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。' };
+  if (F < 45 && T >= 62 && St >= 62)
+    return { key:'QDB', name:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', desc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。' };
+  if (E < 38)
+    return { key:'ED',  name:'情感消耗型', en:'Energy Drain',    color:'#F87171', desc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。' };
+  if (R < 42)
+    return { key:'AOS', name:'單向付出型', en:'One-Sided',       color:'#FB923C', desc:'付出不對等，長期下來會造成疲憊感。' };
+  if (St < 42 || T < 40)
+    return { key:'FNR', name:'脆弱待修型', en:'Fragile',         color:'#FBBF24', desc:'關係出現裂縫，需要主動溝通修復才能重建。' };
+  if (tot >= 45)
+    return { key:'SLD', name:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', desc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。' };
+  return   { key:'FAD', name:'自然淡化型', en:'Fading',          color:'#475569', desc:'友誼正在淡化，需要決定是否值得主動投入。' };
 }
 
 function getScoreTier(total) {
-  if (total >= 85) return { tier:'S', color:'#22D3EE' };
-  if (total >= 70) return { tier:'A', color:'#34D399' };
-  if (total >= 55) return { tier:'B', color:'#60A5FA' };
-  if (total >= 40) return { tier:'C', color:'#FBBF24' };
-  if (total >= 25) return { tier:'D', color:'#FB923C' };
+  if (total >= 81) return { tier:'S', color:'#22D3EE' };
+  if (total >= 67) return { tier:'A', color:'#34D399' };
+  if (total >= 52) return { tier:'B', color:'#60A5FA' };
+  if (total >= 36) return { tier:'C', color:'#FBBF24' };
+  if (total >= 20) return { tier:'D', color:'#FB923C' };
   return { tier:'F', color:'#F87171' };
 }
 
 function getSuggestions(scores) {
   const tips = [];
-  if (scores.F < 50) tips.push({ icon:'📅', text:'建議增加主動聯絡的頻率，定期check-in能有效維繫感情。' });
-  if (scores.B < 50) tips.push({ icon:'⚖️', text:'注意互動的平衡性，試著讓對方也有機會分享和傾訴。' });
-  if (scores.S < 50) tips.push({ icon:'🤝', text:'在對方遇到困難時多給予支持，這是深化友誼的關鍵。' });
-  if (scores.T < 50) tips.push({ icon:'🔐', text:'試著分享更多真實的想法，建立信任需要雙方的勇氣。' });
-  if (scores.St < 50) tips.push({ icon:'🛠️', text:'若有未解決的摩擦，主動開口溝通比沉默更有效。' });
-  if (tips.length === 0) tips.push({ icon:'✨', text:'這段友誼狀態良好！持續用心維護，它會越來越珍貴。' });
+  if (scores.F < 50) tips.push({ icon:'📅', zh:'建議增加主動聯絡的頻率，定期 check-in 能有效維繫感情。', en:'Try reaching out more often — regular check-ins help sustain the bond.' });
+  if (scores.R < 50) tips.push({ icon:'⚖️', zh:'注意互動的平衡性，試著讓對方也有機會主動分享和傾訴。', en:'Balance the exchange — give the other person space to share too.' });
+  if (scores.S < 50) tips.push({ icon:'🤝', zh:'在對方遇到困難時多給予支持，這是深化友誼的關鍵。', en:'Show up for them when it matters — support deepens friendship.' });
+  if (scores.T < 50) tips.push({ icon:'🔐', zh:'試著分享更多真實的想法和脆弱，建立信任需要雙方的勇氣。', en:'Share more authentically — trust is built through mutual vulnerability.' });
+  if (scores.St < 50) tips.push({ icon:'🛠️', zh:'若有未解決的摩擦，主動開口溝通比沉默更有效。', en:'Address unresolved friction directly — talking beats silence.' });
+  if (scores.E < 50) tips.push({ icon:'⚡', zh:'注意這段關係帶給你的能量狀態，健康的友誼應該讓你感到充電。', en:'Pay attention to how this relationship makes you feel — it should energize you.' });
+  if (tips.length === 0) tips.push({ icon:'✨', zh:'這段友誼狀態良好！持續用心維護，它會越來越珍貴。', en:'This friendship is in great shape! Keep nurturing it.' });
   return tips;
 }
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+// ─── Shared-event helpers ──────────────────────────────────────────────────────
+
+function getEvtKey(ev) {
+  return ev.sharedId || `${ev.year || ''}|${ev.text.trim().toLowerCase()}`;
+}
+
+function findEventMembers(ev, profiles) {
+  const key = getEvtKey(ev);
+  return profiles.filter(p => (p.keyEvents || []).some(e => getEvtKey(e) === key));
+}
+
+function collectEventSuggestions(query, profiles, excludeId) {
+  if (!query || query.length < 1) return [];
+  const q = query.toLowerCase();
+  const seen = new Set();
+  const results = [];
+  profiles.forEach(p => {
+    if (p.id === excludeId) return;
+    (p.keyEvents || []).forEach(ev => {
+      const key = getEvtKey(ev);
+      if (!seen.has(key) && ev.text.toLowerCase().includes(q)) {
+        seen.add(key);
+        results.push({ ...ev, sharedId: key });
+      }
+    });
+  });
+  return results.slice(0, 8);
+}
+
+// ─── EventSuggest dropdown ─────────────────────────────────────────────────────
+
+function EventSuggest({ text, allProfiles, excludeId, onSelect }) {
+  const suggestions = collectEventSuggestions(text, allProfiles || [], excludeId);
+  if (!suggestions.length) return null;
+  return (
+    <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:50,
+      background:'var(--bg1)', border:'1px solid var(--accent)', borderRadius:8,
+      boxShadow:'0 4px 20px rgba(0,0,0,0.3)', maxHeight:200, overflowY:'auto', marginTop:2 }}>
+      {suggestions.map((ev, i) => (
+        <div key={i} onMouseDown={e => { e.preventDefault(); onSelect(ev); }}
+          style={{ padding:'8px 12px', cursor:'pointer', fontSize:13, display:'flex', gap:8, alignItems:'center',
+            borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:4,
+            background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+          <span style={{ color:'var(--text)' }}>{ev.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── EventMembersModal ─────────────────────────────────────────────────────────
+
+function EventMembersModal({ ev, allProfiles, onClose, onSelectProfile }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const members = findEventMembers(ev, allProfiles);
+  return (
+    <div className="fq-log-overlay" onClick={onClose}>
+      <div className="fq-log-panel" style={{ maxWidth:360 }} onClick={e => e.stopPropagation()}>
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title" style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {ev.year && <span style={{ fontSize:11, padding:'2px 7px', borderRadius:5, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+            <span>{ev.text}</span>
+          </div>
+          <button className="fq-log-close" onClick={onClose}>✕</button>
+        </div>
+        <div style={{ fontSize:12, color:'var(--muted)', marginBottom:8, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
+          {t(`${members.length} 個人有這個事件`, `${members.length} friend${members.length !== 1 ? 's' : ''} share this event`)}
+        </div>
+        {members.map(p => (
+          <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0',
+            cursor:'pointer', borderBottom:'1px solid var(--border)' }}
+            onClick={() => { onClose(); onSelectProfile(p); }}>
+            <Avatar profile={p} size={36} />
+            <div>
+              <div style={{ fontWeight:700, fontSize:14 }}>{p.name}</div>
+              {p.since && <div style={{ fontSize:11, color:'var(--muted)' }}>{t('認識於','Since')} {p.since}</div>}
+            </div>
+            <span style={{ marginLeft:'auto', fontSize:11, color:'var(--accent)' }}>→</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function fmtDate(iso) {
@@ -120,6 +285,171 @@ function loadSurveys() {
   try { return JSON.parse(localStorage.getItem('fq_surveys') || '[]'); } catch { return []; }
 }
 function saveSurveys(s) { localStorage.setItem('fq_surveys', JSON.stringify(s)); }
+function loadJournals() {
+  try { return JSON.parse(localStorage.getItem('fq_journals') || '[]'); } catch { return []; }
+}
+function saveJournals(j) { localStorage.setItem('fq_journals', JSON.stringify(j)); }
+function loadCustomGroups() {
+  try { return JSON.parse(localStorage.getItem('fq_groups') || '[]'); } catch { return []; }
+}
+function saveCustomGroups(g) { localStorage.setItem('fq_groups', JSON.stringify(g)); }
+
+
+// ─── Group & Birthday helpers ─────────────────────────────────────────────────
+
+function getGroupById(id, customGroups = []) {
+  if (!id) return null;
+  return [...DEFAULT_GROUPS, ...customGroups].find(g => g.id === id) || null;
+}
+function getProfileColor(profile, customGroups = []) {
+  const g = getGroupById(profile.groupId, customGroups);
+  return g ? g.color : (profile.color || '#60A5FA');
+}
+function birthdayCountdown(birthday) {
+  if (!birthday?.month || !birthday?.day) return null;
+  const today = new Date();
+  const m = parseInt(birthday.month), d = parseInt(birthday.day);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next <= today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.ceil((next - today) / 86400000);
+}
+function birthdayStr(birthday) {
+  if (!birthday?.month || !birthday?.day) return null;
+  return `${String(birthday.month).padStart(2,'0')}/${String(birthday.day).padStart(2,'0')}`;
+}
+
+// ─── Avatar component ─────────────────────────────────────────────────────────
+
+function Avatar({ profile, size = 40, style: extra = {} }) {
+  const customGroups = useContext(GroupsCtx);
+  const color = getProfileColor(profile, customGroups);
+  return (
+    <div
+      className="fq-avatar"
+      style={{
+        width: size, height: size, fontSize: size * 0.42,
+        background: color + '22', border: `1px solid ${color}`,
+        overflow: 'hidden', flexShrink: 0, ...extra,
+      }}
+    >
+      {profile.photo
+        ? <img src={profile.photo} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        : <span style={{ fontWeight:800, color }}>{(profile.name||'?').charAt(0).toUpperCase()}</span>
+      }
+    </div>
+  );
+}
+
+
+// ─── Log Modal ────────────────────────────────────────────────────────────────
+
+function LogModal({ profile, onSave, onClose }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const today = new Date().toISOString().split('T')[0];
+  const [mood, setMood] = useState('good');
+  const [date, setDate] = useState(today);
+  const [text, setText] = useState('');
+  const [markEvent, setMarkEvent] = useState(false);
+  const [eventYear, setEventYear] = useState(String(new Date().getFullYear()));
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  function handleSave() {
+    if (!text.trim()) return;
+    onSave({
+      id: genId(), profileId: profile.id, mood, date,
+      text: text.trim(), createdAt: new Date().toISOString(),
+      rating: rating || null,
+      keyEvent: markEvent ? { year: eventYear, text: text.trim() } : null,
+    });
+  }
+
+  return (
+    <div className="fq-log-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="fq-log-panel">
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title">{t('記錄互動', 'Log Update')} — {profile.name}</div>
+          <button className="fq-log-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('今天跟他的感覺', 'How do you feel about them today?')}</label>
+          <div className="fq-mood-row">
+            {MOODS.map(m => (
+              <button key={m.key} type="button" className={`fq-mood-btn${mood===m.key?' selected':''}`} onClick={() => setMood(m.key)}>
+                {m.icon} {lang === 'zh' ? m.zh : m.en}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('這次互動評分', 'Rate this interaction')} <span style={{ fontWeight:400, color:'var(--muted)', fontSize:11 }}>{t('（選填）','(optional)')}</span></label>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} type="button"
+                onMouseEnter={() => setHoverRating(n)}
+                onMouseLeave={() => setHoverRating(0)}
+                onClick={() => setRating(rating === n ? 0 : n)}
+                style={{ background:'none', border:'none', cursor:'pointer', padding:'2px 4px', fontSize:26, lineHeight:1,
+                  opacity: (hoverRating || rating) >= n ? 1 : 0.25,
+                  transform: (hoverRating || rating) >= n ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'transform 0.1s, opacity 0.1s' }}>
+                ⭐
+              </button>
+            ))}
+            {rating > 0 && (
+              <span style={{ fontSize:12, color:'var(--muted)', marginLeft:4 }}>
+                {['','😔','😐','🙂','😊','🤩'][rating]}
+                {['',' 1/5',' 2/5',' 3/5',' 4/5',' 5/5'][rating]}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('日期', 'Date')}</label>
+          <input className="fq-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+        <div className="fq-form-row">
+          <label className="fq-label">{t('近況 / 感受', 'Notes / Feelings')}</label>
+          <textarea
+            className="fq-textarea"
+            placeholder={t('記錄最近的互動、對方的近況、你的感覺...', 'Record your recent interaction, updates, feelings...')}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={4}
+            autoFocus
+          />
+        </div>
+
+        {/* Mark as Key Event toggle */}
+        <div className="fq-form-row">
+          <button
+            type="button"
+            className={`fq-key-event-toggle${markEvent ? ' active' : ''}`}
+            onClick={() => setMarkEvent(v => !v)}
+          >
+            📌 {t('同時記為重要事件', 'Also mark as Key Event')}
+          </button>
+          {markEvent && (
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:8 }}>
+              <label className="fq-label" style={{ margin:0, whiteSpace:'nowrap' }}>{t('年份', 'Year')}</label>
+              <select className="fq-input" style={{ width:110 }} value={eventYear} onChange={e => setEventYear(e.target.value)}>
+                {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <div className="fq-row" style={{ gap:10 }}>
+          <button className="fq-btn fq-btn-primary" onClick={handleSave} disabled={!text.trim()} style={{ opacity: text.trim()?1:0.5 }}>
+            ✓ {t('儲存紀錄', 'Save Log')}
+          </button>
+          <button className="fq-btn fq-btn-ghost" onClick={onClose}>{t('取消', 'Cancel')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 // ─── Radar Chart SVG ───────────────────────────────────────────────────────────
@@ -158,14 +488,14 @@ function RadarChart({ scores, size = 240 }) {
           key={gi}
           points={makePolygon(f)}
           fill="none"
-          stroke="#263248"
+          stroke="var(--grid-line)"
           strokeWidth={f === 1.0 ? 1.5 : 1}
         />
       ))}
       {/* spokes */}
       {angles.map((a, i) => {
         const outer = polarToXY(a, maxR, cx, cy);
-        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="#263248" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="var(--grid-line)" strokeWidth="1" />;
       })}
       {/* data fill */}
       <polygon
@@ -177,7 +507,7 @@ function RadarChart({ scores, size = 240 }) {
       />
       {/* data dots */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="#0B1020" strokeWidth="2" />
+        <circle key={i} cx={p.x} cy={p.y} r={4} fill={dims[i].color} stroke="var(--bg)" strokeWidth="2" />
       ))}
       {/* labels */}
       {dims.map((d, i) => {
@@ -231,7 +561,7 @@ function LineChart({ surveys }) {
         {/* grid lines */}
         {[0, 25, 50, 75, 100].map(v => (
           <g key={v}>
-            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="#263248" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
+            <line x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)} stroke="var(--grid-line)" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? 'none' : '3,4'} />
             <text x={PL - 6} y={yOf(v)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#94A3B8">{v}</text>
           </g>
         ))}
@@ -253,10 +583,10 @@ function LineChart({ surveys }) {
             onMouseLeave={() => setHoveredIdx(null)}
             style={{ cursor:'pointer' }}
           >
-            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="#0B1020" strokeWidth="2" />
+            <circle cx={xOf(i)} cy={yOf(s.total)} r={hoveredIdx === i ? 7 : 5} fill={hoveredIdx === i ? '#22D3EE' : '#60A5FA'} stroke="var(--bg)" strokeWidth="2" />
             {hoveredIdx === i && (
               <g>
-                <rect x={xOf(i) - 28} y={yOf(s.total) - 30} width="56" height="22" rx="4" fill="#182235" stroke="#263248" />
+                <rect x={xOf(i) - 28} y={yOf(s.total) - 30} width="56" height="22" rx="4" fill="#0f0f12" stroke="rgba(255,255,255,0.1)" />
                 <text x={xOf(i)} y={yOf(s.total) - 19} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill="#E8EEF9">{s.total}</text>
               </g>
             )}
@@ -276,7 +606,8 @@ function LineChart({ surveys }) {
 
 // ─── Topbar ────────────────────────────────────────────────────────────────────
 
-function Topbar({ view, onDashboard, onAddFriend }) {
+function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, onToggleDark }) {
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   return (
     <div className="fq-topbar">
       <div className="fq-topbar-logo">
@@ -292,13 +623,19 @@ function Topbar({ view, onDashboard, onAddFriend }) {
       <div style={{ flex:1 }} />
       {view !== 'dashboard' && (
         <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onDashboard}>
-          ← Dashboard
+          ← {t('儀表板', 'Dashboard')}
         </button>
       )}
       <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onAddFriend}>
-        + Add Friend
+        + {t('新增朋友', 'Add Friend')}
       </button>
-      <a href="/secret" className="fq-topbar-back" style={{ marginLeft: 0 }}>
+      <button className="fq-lang-btn" onClick={onToggleLang} title="Toggle language">
+        {lang === 'zh' ? 'EN' : '中'}
+      </button>
+      <button className="fq-icon-btn" onClick={onToggleDark} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+        {darkMode ? '☀️' : '🌙'}
+      </button>
+      <a href="/dashboard" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
       </a>
     </div>
@@ -307,15 +644,18 @@ function Topbar({ view, onDashboard, onAddFriend }) {
 
 
 // ─── Auth View ─────────────────────────────────────────────────────────────────
+const FQ_USER = "chianghebe";
+const FQ_PASS = "Hebe0722";
 
 function AuthView({ onAuth }) {
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState('');
+  const [user, setUser] = useState('');
+  const [pw,   setPw]   = useState('');
+  const [err,  setErr]  = useState('');
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!pw.trim()) { setErr('請輸入密碼'); return; }
-    sessionStorage.setItem('yc_auth', pw);
+    if (user !== FQ_USER || pw !== FQ_PASS) { setErr('Incorrect username or password.'); return; }
+    sessionStorage.setItem('yc_auth', 'fq_ok');
     onAuth();
   }
 
@@ -324,19 +664,28 @@ function AuthView({ onAuth }) {
       <div className="fq-auth-box">
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
         <div className="fq-auth-title">FQ SYSTEM</div>
-        <div className="fq-auth-sub">Friendship Quantification v2.1<br />請輸入密碼以繼續</div>
+        <div className="fq-auth-sub">Friendship Quantification v2.1</div>
         <form onSubmit={handleSubmit}>
           <input
             className="fq-auth-input"
+            type="text"
+            placeholder="Username"
+            value={user}
+            onChange={e => { setUser(e.target.value); setErr(''); }}
+            autoFocus
+            autoComplete="off"
+            style={{ marginBottom: 8 }}
+          />
+          <input
+            className="fq-auth-input"
             type="password"
-            placeholder="••••••••"
+            placeholder="Password"
             value={pw}
             onChange={e => { setPw(e.target.value); setErr(''); }}
-            autoFocus
           />
           {err && <div className="fq-auth-err">{err}</div>}
-          <button type="submit" className="fq-btn fq-btn-primary" style={{ width:'100%', justifyContent:'center' }}>
-            AUTHENTICATE
+          <button type="submit" className="fq-btn fq-btn-primary" style={{ width:'100%', justifyContent:'center', marginTop: 4 }}>
+            SIGN IN
           </button>
         </form>
       </div>
@@ -347,167 +696,643 @@ function AuthView({ onAuth }) {
 
 // ─── Dashboard View ────────────────────────────────────────────────────────────
 
-function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onStartSurvey }) {
+function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
+  const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const [showGuide, setShowGuide] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterGroup, setFilterGroup] = useState('');
+  const [filterTier, setFilterTier] = useState('');
+  const [sortBy, setSortBy] = useState('score');
+  const [compareIds, setCompareIds] = useState([]);
+
   // KPI calculations
-  const total = profiles.length;
-  const avgScore = total === 0 ? null : (() => {
-    const scored = profiles.map(p => {
-      const ps = surveys.filter(s => s.profileId === p.id);
-      if (ps.length === 0) return null;
-      return ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].total;
-    }).filter(v => v !== null);
-    if (scored.length === 0) return null;
-    return Math.round(scored.reduce((a,b) => a+b,0) / scored.length);
-  })();
-
-  const highestProfile = (() => {
-    let best = null, bestScore = -1;
-    profiles.forEach(p => {
-      const ps = surveys.filter(s => s.profileId === p.id);
-      if (ps.length === 0) return;
-      const latest = ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      if (latest.total > bestScore) { bestScore = latest.total; best = p; }
-    });
-    return best;
-  })();
-
-  const mostRecentSurvey = surveys.length === 0 ? null :
-    surveys.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-  const mostRecentProfile = mostRecentSurvey
-    ? profiles.find(p => p.id === mostRecentSurvey.profileId)
-    : null;
-
-  // Latest score per profile
   function getLatestSurvey(profileId) {
     const ps = surveys.filter(s => s.profileId === profileId);
     if (!ps.length) return null;
     return ps.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
   }
 
+  const total = profiles.length;
+  const latestScores = profiles.map(p => getLatestSurvey(p.id)?.total).filter(v => v != null);
+  const avgScore = latestScores.length > 0 ? Math.round(latestScores.reduce((a,b)=>a+b,0)/latestScores.length) : null;
+  const needAttention = profiles.filter(p => { const s = getLatestSurvey(p.id); return s && s.total < 40; }).length;
+  const totalSurveys = surveys.length;
+  const totalLogs = journals.length;
+
+  let highestProfile = null, highestScore = -1;
+  profiles.forEach(p => {
+    const s = getLatestSurvey(p.id);
+    if (s && s.total > highestScore) { highestScore = s.total; highestProfile = p; }
+  });
+
+  const sortedRecent = [...surveys].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const mostRecentSurvey = sortedRecent[0] || null;
+  const mostRecentProfile = mostRecentSurvey ? profiles.find(p => p.id === mostRecentSurvey.profileId) : null;
+
+  // Filtered + sorted profiles
+  const filteredProfiles = profiles
+    .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => !filterGroup || p.groupId === filterGroup)
+    .filter(p => {
+      if (!filterTier) return true;
+      const s = getLatestSurvey(p.id);
+      return s && getScoreTier(s.total).tier === filterTier;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'score') {
+        const sa = getLatestSurvey(a.id)?.total ?? -1;
+        const sb = getLatestSurvey(b.id)?.total ?? -1;
+        return sb - sa;
+      }
+      if (sortBy === 'recent') {
+        const sa = getLatestSurvey(a.id)?.createdAt ?? '';
+        const sb = getLatestSurvey(b.id)?.createdAt ?? '';
+        return sb.localeCompare(sa);
+      }
+      if (sortBy === 'birthday') {
+        const da = birthdayCountdown(a.birthday) ?? 999;
+        const db = birthdayCountdown(b.birthday) ?? 999;
+        return da - db;
+      }
+      return 0;
+    });
+
+  // Overall trend: average score per survey date
+  const trendData = (() => {
+    if (surveys.length < 2) return [];
+    const sorted = [...surveys].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+    // group by month
+    const byMonth = {};
+    sorted.forEach(s => {
+      const key = s.createdAt.slice(0,7);
+      if (!byMonth[key]) byMonth[key] = [];
+      byMonth[key].push(s.total);
+    });
+    return Object.entries(byMonth).map(([month, scores]) => ({
+      label: month,
+      avg: Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),
+    }));
+  })();
+
+  // Compare panels
+  function toggleCompare(pid) {
+    setCompareIds(prev => prev.includes(pid) ? prev.filter(x=>x!==pid) : prev.length < 2 ? [...prev,pid] : [prev[1], pid]);
+  }
+
+  // Type distribution
+  const typeCounts = {};
+  profiles.forEach(p => {
+    const s = getLatestSurvey(p.id);
+    if (!s) return;
+    const t = getFriendshipType(s.scores).key;
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+
+  const FRIENDSHIP_TYPES = [
+    { key:'SS',  zh:'靈魂夥伴',   en:'Soul Partner',    color:'#22D3EE', zhDesc:'深度信任、高能量、長期穩定 — 這是最稀有的友誼類型。',   enDesc:'Deep trust, high energy, long-term stable. The rarest type.' },
+    { key:'SHQ', zh:'穩固核心型', en:'Stable Core',     color:'#34D399', zhDesc:'品質穩固、信任深厚，是你可以長期依賴的朋友。',         enDesc:'Solid quality and deep trust. A long-term reliable friend.' },
+    { key:'ASL', zh:'活躍表層型', en:'Active Surface',  color:'#93C5FD', zhDesc:'聯絡頻繁但深度有限，值得投資更多真誠的交流。',         enDesc:'Frequent contact but limited depth. Worth investing in deeper exchange.' },
+    { key:'QDB', zh:'深度潛伏型', en:'Quiet Deep Bond', color:'#8B5CF6', zhDesc:'見面不多，但每次聯絡都有深度。聯絡少不代表感情淡。',   enDesc:"Infrequent contact but always meaningful. Absence doesn't mean fading." },
+    { key:'ED',  zh:'情感消耗型', en:'Energy Drain',    color:'#F87171', zhDesc:'這段關係讓你感到消耗，值得認真評估是否繼續投入。',     enDesc:'This relationship feels draining. Worth evaluating your investment.' },
+    { key:'AOS', zh:'單向付出型', en:'One-Sided',       color:'#FB923C', zhDesc:'付出不對等，長期下來會造成疲憊感。',                   enDesc:'Unbalanced giving. May lead to burnout over time.' },
+    { key:'FNR', zh:'脆弱待修型', en:'Fragile',         color:'#FBBF24', zhDesc:'關係出現裂縫，需要主動溝通修復才能重建。',             enDesc:'Cracks in the relationship. Proactive communication needed.' },
+    { key:'SLD', zh:'穩定輕度型', en:'Stable Lite',     color:'#94A3B8', zhDesc:'關係平穩但不算深入，適合輕鬆相處，不必強求深度。',     enDesc:'Steady but not deep. Good for casual connection.' },
+    { key:'FAD', zh:'自然淡化型', en:'Fading',          color:'#475569', zhDesc:'友誼正在淡化，需要決定是否值得主動投入。',             enDesc:"Friendship is fading. Decide if it's worth reinvesting." },
+  ];
+
+  const TIERS = [
+    { tier:'S', min:81, color:'#22D3EE', label:'Exceptional' },
+    { tier:'A', min:67, color:'#34D399', label:'Strong' },
+    { tier:'B', min:52, color:'#60A5FA', label:'Good' },
+    { tier:'C', min:36, color:'#FBBF24', label:'Moderate' },
+    { tier:'D', min:20, color:'#FB923C', label:'Weak' },
+    { tier:'F', min:0,  color:'#F87171', label:'Critical' },
+  ];
+
   return (
     <div className="fq-body">
-      {/* KPI Row */}
-      <div className="fq-kpi-row">
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Total Friends</div>
-          <div className="fq-kpi-value">{total}</div>
-          <div className="fq-kpi-sub">registered profiles</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Avg FQ Score</div>
-          <div className="fq-kpi-value" style={{ color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--fq-muted)' }}>
-            {avgScore !== null ? avgScore : '—'}
-          </div>
-          <div className="fq-kpi-sub">across all friends</div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Highest Scorer</div>
-          <div className="fq-kpi-value" style={{ fontSize: highestProfile ? 22 : 30, paddingTop: highestProfile ? 4 : 0 }}>
-            {highestProfile ? (
-              <span>{highestProfile.emoji} {highestProfile.name}</span>
-            ) : '—'}
-          </div>
-          <div className="fq-kpi-sub">
-            {highestProfile ? (() => {
-              const s = getLatestSurvey(highestProfile.id);
-              return s ? `Score: ${s.total}` : 'no survey';
-            })() : 'no data yet'}
-          </div>
-        </div>
-        <div className="fq-kpi">
-          <div className="fq-kpi-label">Most Recent Survey</div>
-          <div className="fq-kpi-value" style={{ fontSize: 22, paddingTop: 4 }}>
-            {mostRecentProfile ? `${mostRecentProfile.emoji} ${mostRecentProfile.name}` : '—'}
-          </div>
-          <div className="fq-kpi-sub">
-            {mostRecentSurvey ? fmtDate(mostRecentSurvey.createdAt) : 'none yet'}
-          </div>
-        </div>
-      </div>
+      <div className="fq-dash-two-col">
 
-      {/* Friend Grid */}
-      <div className="fq-section-hdr">
-        <h2>Friend Profiles</h2>
-        <div className="fq-line" />
-        <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={onCreateFriend}>
-          + New Friend
-        </button>
-      </div>
+        {/* ── Left panel ── */}
+        <div className="fq-dash-left">
 
-      {profiles.length === 0 ? (
-        <div className="fq-empty">
-          <div className="fq-empty-icon">📡</div>
-          <div className="fq-empty-title">No profiles yet</div>
-          <div className="fq-empty-sub">Add your first friend to start quantifying your relationships.</div>
-          <button className="fq-btn fq-btn-primary" onClick={onCreateFriend}>+ Create First Profile</button>
-        </div>
-      ) : (
-        <div className="fq-friend-grid">
-          {profiles.map(p => {
-            const latest = getLatestSurvey(p.id);
-            const tier = latest ? getScoreTier(latest.total) : null;
-            const type = latest ? getFriendshipType(latest.scores) : null;
+          {/* KPI list */}
+          <div className="fq-kpi-list">
+            {[
+              { label: t('朋友數', 'Friends'),       value: total,      sub: null,          color: null },
+              { label: t('平均分數', 'Avg FQ'),       value: avgScore ?? '—', sub: null,    color: avgScore !== null ? getScoreTier(avgScore).color : 'var(--muted)' },
+              { label: t('最高分', 'Top Score'),      value: highestScore > -1 ? highestScore : '—', sub: null, color: highestScore > -1 ? getScoreTier(highestScore).color : null },
+              { label: t('最佳朋友', 'Top Friend'),   value: highestProfile ? highestProfile.name : '—', sub: null, color: null, small: !!highestProfile },
+              { label: t('測驗次數', 'Surveys'),       value: totalSurveys, sub: null,       color: null },
+              { label: t('日誌條目', 'Log Entries'),   value: totalLogs,  sub: null,          color: null },
+              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於40', 'Score < 40'), color: needAttention > 0 ? '#F87171' : null },
+            ].map(({ label, value, sub, color, small }) => (
+              <div key={label} className="fq-kpi-list-item">
+                <span className="fq-kpi-list-label">{label}</span>
+                <span className="fq-kpi-list-value" style={{ color: color || 'var(--text)', fontSize: small ? 14 : 18 }}>
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Type distribution */}
+          {profiles.length > 0 && Object.keys(typeCounts).length > 0 && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                {t('友誼類型分布', 'Type Distribution')}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {FRIENDSHIP_TYPES.filter(ft => typeCounts[ft.key]).map(ft => (
+                  <div key={ft.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 8px', borderRadius:7, background: ft.color+'14', border:`1px solid ${ft.color}33` }}>
+                    <span style={{ fontSize:12, fontWeight:700, color: ft.color }}>{lang === 'zh' ? ft.zh : ft.en}</span>
+                    <span style={{ fontSize:13, fontWeight:800, color: ft.color }}>{typeCounts[ft.key]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick actions */}
+          {mostRecentProfile && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:6 }}>
+                {t('最近測驗', 'Last surveyed')}
+              </div>
+              <div style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>
+                <span style={{ color:'var(--text)', fontWeight:600 }}>{mostRecentProfile.name}</span>
+                <br /><span style={{ fontSize:11 }}>{fmtDate(mostRecentSurvey.createdAt)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Birthday reminders */}
+          {(() => {
+            const upcoming = profiles
+              .map(p => ({ p, days: birthdayCountdown(p.birthday) }))
+              .filter(x => x.days !== null && x.days <= 30)
+              .sort((a,b) => a.days - b.days);
+            if (!upcoming.length) return null;
             return (
-              <div
-                key={p.id}
-                className="fq-friend-card"
-                onClick={() => onSelectFriend(p)}
-              >
-                {type && (
-                  <div
-                    className="fq-type-tag"
-                    style={{ background: type.color + '22', color: type.color }}
-                  >
-                    {type.key}
-                  </div>
-                )}
-                <div className="fq-friend-card-top">
-                  <div className="fq-avatar" style={{ background: p.color + '33', borderColor: p.color }}>
-                    {p.emoji}
-                  </div>
-                  <div>
-                    <div className="fq-friend-name">{p.name}</div>
-                    <div className="fq-friend-meta">
-                      {p.since ? `Since ${fmtDate(p.since)}` : 'Date unknown'}
-                    </div>
-                  </div>
-                  {latest ? (
-                    <div className={`fq-score-badge tier-${tier.tier}`}>
-                      {latest.total}
-                    </div>
-                  ) : (
-                    <div className="fq-score-badge" style={{ color:'var(--fq-muted)', fontSize:14 }}>
-                      N/A
-                    </div>
-                  )}
+              <div className="fq-card">
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                  🎂 {t('即將生日','Upcoming Birthdays')}
                 </div>
-                {latest && (
-                  <div className="fq-dim-mini">
-                    {DIM_META.map(d => (
-                      <div key={d.key} className="fq-dim-pip">
-                        <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
-                        <div className="fq-dim-pip-bar">
-                          <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
-                        </div>
-                        <span>{latest.scores[d.key]}</span>
-                      </div>
-                    ))}
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  {upcoming.map(({ p, days }) => (
+                    <div key={p.id} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
+                      <span style={{ fontWeight:600 }}>{p.name}</span>
+                      <span style={{ color: days <= 7 ? '#F87171' : 'var(--muted)' }}>
+                        {days === 0 ? t('今天！','Today!') : `${days}${t('天後','d')}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Overall trend mini chart */}
+          {trendData.length >= 2 && (
+            <div className="fq-card">
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>
+                {t('整體趨勢','Overall Trend')}
+              </div>
+              <svg width="100%" viewBox="0 0 220 70" style={{ display:'block', overflow:'visible' }}>
+                {(() => {
+                  const W=220,H=55,PL=8,PR=8,PT=6,PB=4;
+                  const vals = trendData.map(d=>d.avg);
+                  const minV = Math.min(...vals), maxV = Math.max(...vals);
+                  const range = maxV - minV || 1;
+                  const n = vals.length;
+                  const x = i => PL + (i/(n-1))*(W-PL-PR);
+                  const y = v => PT + (1 - (v-minV)/range)*(H-PT-PB);
+                  const pts = vals.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+                  return (
+                    <>
+                      <polyline points={pts} fill="none" stroke="#22D3EE" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+                      <polygon points={`${x(0)},${H} ${pts} ${x(n-1)},${H}`} fill="rgba(34,211,238,0.08)"/>
+                      {vals.map((v,i) => <circle key={i} cx={x(i)} cy={y(v)} r={3} fill="#22D3EE"/>)}
+                      <text x={x(n-1)} y={y(vals[n-1])-6} fontSize="10" fill="#22D3EE" textAnchor="middle">{vals[n-1]}</text>
+                    </>
+                  );
+                })()}
+              </svg>
+              <div style={{ fontSize:10, color:'var(--dim)', marginTop:2 }}>{t('各月平均 FQ','Monthly avg FQ')}</div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right panel ── */}
+        <div className="fq-dash-right">
+
+          {/* Scoring Guide (collapsible) */}
+          <div className="fq-card" style={{ marginBottom: 20 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }} onClick={() => setShowGuide(g => !g)}>
+              <div style={{ fontSize:13, fontWeight:700 }}>📖 {t('評分說明', 'Scoring Guide & Reference')}</div>
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{showGuide ? '▲' : '▼'}</span>
+            </div>
+            {showGuide && (
+              <div style={{ marginTop:16 }}>
+                {/* Formula */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>{t('計算公式', 'Score Formula')}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
+                  {DIM_META.map(d => (
+                    <div key={d.key} style={{ padding:'4px 10px', borderRadius:8, background: d.color+'18', border:`1px solid ${d.color}33`, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: d.color }}>{d.key}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:4 }}>{lang === 'zh' ? d.label : d.en}</span>
+                      <span style={{ color:'var(--dim)', marginLeft:4 }}>×{({'F':15,'R':18,'S':20,'T':20,'St':15,'E':12})[d.key]}%</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize:12, color:'var(--muted)', marginBottom:14, fontFamily:'monospace', background:'var(--bg2)', padding:'8px 12px', borderRadius:8 }}>
+                  FQ = (F×15% + R×18% + S×20% + T×20% + St×15% + E×12%) × 0.9
+                  <br />{t('每維度：((4題總和 − 4) ÷ 12) × 100；總分 ×0.9 → 最高 90 分', 'Per dim: ((sum−4)÷12)×100; total ×0.9 → max 90')}
+                </div>
+
+                {/* Tiers */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('分數等級', 'Score Tiers')}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+                  {TIERS.map(tier => (
+                    <div key={tier.tier} style={{ padding:'4px 10px', borderRadius:8, background: tier.color+'18', border:`1px solid ${tier.color}44`, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: tier.color }}>Tier {tier.tier}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:6 }}>{tier.min}+</span>
+                      <span style={{ color:'var(--dim)', marginLeft:6 }}>{tier.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Friendship Types */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('友誼類型', 'Friendship Types')}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:14 }}>
+                  {FRIENDSHIP_TYPES.map(ft => (
+                    <div key={ft.key} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'7px 10px', borderRadius:8, background:'var(--bg2)' }}>
+                      <span style={{ fontWeight:800, color: ft.color, minWidth:36, fontSize:12 }}>{ft.key}</span>
+                      <span style={{ fontWeight:700, color: ft.color, minWidth:96, fontSize:12 }}>{lang === 'zh' ? ft.zh : ft.en}</span>
+                      <span style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{lang === 'zh' ? ft.zhDesc : ft.enDesc}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dimensions */}
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('六個維度', 'The 6 Dimensions')}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                  {DIM_META.map(d => (
+                    <div key={d.key} style={{ display:'flex', gap:10, fontSize:12 }}>
+                      <span style={{ fontWeight:800, color: d.color, minWidth:28 }}>{d.key}</span>
+                      <span style={{ fontWeight:700, color: d.color, minWidth:70 }}>{lang === 'zh' ? d.label : d.en}</span>
+                      <span style={{ color:'var(--muted)' }}>{{
+                        'F': t('聯絡頻率與誰主動推動。','How often you connect, and who drives it.'),
+                        'R': t('互動是否平衡、雙方是否都在投入。','Whether the relationship is balanced and mutually invested.'),
+                        'S': t('真正需要時對方是否在場。','Whether they show up when it actually matters.'),
+                        'T': t('信任、脆弱與心理安全感的深度。','Depth of trust, vulnerability, and psychological safety.'),
+                        'St': t('面對時間與生活變化的友誼韌性。','Resilience of the friendship through time and life changes.'),
+                        'E': t('這段關係給你帶來能量還是消耗你。','The emotional energy this relationship gives or takes from you.'),
+                      }[d.key]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Search + Filter bar */}
+          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
+            <input
+              className="fq-input"
+              style={{ flex:'1 1 140px', minWidth:120, padding:'7px 12px', fontSize:13 }}
+              placeholder={t('搜尋朋友…','Search friends…')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <select className="fq-input" style={{ width:120, padding:'7px 10px', fontSize:12 }} value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+              <option value="">{t('所有分組','All Groups')}</option>
+              {[...DEFAULT_GROUPS, ...customGroups].map(g => <option key={g.id} value={g.id}>{lang==='zh'?g.zh:g.en}</option>)}
+            </select>
+            <select className="fq-input" style={{ width:100, padding:'7px 10px', fontSize:12 }} value={filterTier} onChange={e => setFilterTier(e.target.value)}>
+              <option value="">{t('所有等級','All Tiers')}</option>
+              {['S','A','B','C','D','F'].map(tier => <option key={tier} value={tier}>Tier {tier}</option>)}
+            </select>
+            <select className="fq-input" style={{ width:110, padding:'7px 10px', fontSize:12 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="score">{t('依分數','By Score')}</option>
+              <option value="name">{t('依名字','By Name')}</option>
+              <option value="recent">{t('最近測驗','Last Survey')}</option>
+              <option value="birthday">{t('依生日','By Birthday')}</option>
+            </select>
+            <button
+              className={`fq-btn fq-btn-sm${compareIds.length > 0 ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
+              onClick={() => setCompareIds([])}
+              title={t('清除比較選擇','Clear compare')}
+              style={{ whiteSpace:'nowrap' }}
+            >
+              ⊕ {t('比較','Compare')} {compareIds.length > 0 ? `(${compareIds.length}/2)` : ''}
+            </button>
+          </div>
+
+          {/* Compare Panel */}
+          {compareIds.length === 2 && (() => {
+            const [pa, pb] = compareIds.map(id => profiles.find(p=>p.id===id)).filter(Boolean);
+            if (!pa || !pb) return null;
+            const sa = getLatestSurvey(pa.id), sb = getLatestSurvey(pb.id);
+            return (
+              <div className="fq-card" style={{ marginBottom:16, background:'var(--bg2)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                  <div style={{ fontSize:13, fontWeight:700 }}>⊕ {t('比較','Comparison')}: {pa.name} vs {pb.name}</div>
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setCompareIds([])}>✕</button>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:8, alignItems:'start' }}>
+                  {/* Left friend */}
+                  <div style={{ textAlign:'center' }}>
+                    <Avatar profile={pa} size={44} style={{ margin:'0 auto 6px' }} />
+                    <div style={{ fontWeight:700, fontSize:14 }}>{pa.name}</div>
+                    {sa ? <div style={{ fontSize:22, fontWeight:900, color: getScoreTier(sa.total).color }}>{sa.total}</div> : <div style={{ color:'var(--muted)', fontSize:13 }}>N/A</div>}
                   </div>
-                )}
-                {!latest && (
-                  <button
-                    className="fq-btn fq-btn-ghost fq-btn-sm"
-                    style={{ marginTop: 8 }}
-                    onClick={e => { e.stopPropagation(); onStartSurvey(p); }}
-                  >
-                    Start Survey →
-                  </button>
+                  {/* Radar overlay */}
+                  <div style={{ display:'flex', flexDirection:'column', gap:10, alignItems:'center' }}>
+                    {sa && sb && (
+                      <svg width="180" height="180" viewBox="0 0 180 180" style={{ overflow:'visible' }}>
+                        {(() => {
+                          const cx=90, cy=90, maxR=62;
+                          const angles = DIM_META.map((_,i)=>(i*360)/6);
+                          const pol = (angleDeg, r) => {
+                            const rad = ((angleDeg-90)*Math.PI)/180;
+                            return {x: cx+r*Math.cos(rad), y: cy+r*Math.sin(rad)};
+                          };
+                          const grid = [0.25,0.5,0.75,1.0].map(f=>angles.map(a=>{ const p=pol(a,maxR*f); return `${p.x},${p.y}`; }).join(' '));
+                          const mkPts = scores => DIM_META.map((d,i) => { const p=pol(angles[i], maxR*Math.max((scores[d.key]||0)/100,0.02)); return `${p.x},${p.y}`; }).join(' ');
+                          return (
+                            <>
+                              {grid.map((pts,i)=><polygon key={i} points={pts} fill="none" stroke="var(--grid-line)" strokeWidth="1"/>)}
+                              {angles.map((a,i)=>{ const p=pol(a,maxR); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--grid-line)" strokeWidth="1"/>; })}
+                              <polygon points={mkPts(sa.scores)} fill="rgba(34,211,238,0.15)" stroke="#22D3EE" strokeWidth="2"/>
+                              <polygon points={mkPts(sb.scores)} fill="rgba(139,92,246,0.15)" stroke="#8B5CF6" strokeWidth="2"/>
+                              {DIM_META.map((d,i)=>{ const lp=pol(angles[i],maxR+16); return <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={d.color}>{d.key}</text>; })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    )}
+                    <div style={{ display:'flex', gap:12, fontSize:11 }}>
+                      <span style={{ color:'#22D3EE' }}>■ {pa.name}</span>
+                      <span style={{ color:'#8B5CF6' }}>■ {pb.name}</span>
+                    </div>
+                  </div>
+                  {/* Right friend */}
+                  <div style={{ textAlign:'center' }}>
+                    <Avatar profile={pb} size={44} style={{ margin:'0 auto 6px' }} />
+                    <div style={{ fontWeight:700, fontSize:14 }}>{pb.name}</div>
+                    {sb ? <div style={{ fontSize:22, fontWeight:900, color: getScoreTier(sb.total).color }}>{sb.total}</div> : <div style={{ color:'var(--muted)', fontSize:13 }}>N/A</div>}
+                  </div>
+                </div>
+                {/* Dim comparison table */}
+                {sa && sb && (
+                  <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:4 }}>
+                    {DIM_META.map(d => {
+                      const va = sa.scores[d.key], vb = sb.scores[d.key];
+                      const max = Math.max(va, vb);
+                      return (
+                        <div key={d.key} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12 }}>
+                          <span style={{ color:d.color, fontWeight:700, minWidth:28 }}>{d.key}</span>
+                          <span style={{ minWidth:28, textAlign:'right', fontWeight: va>=vb?700:400, color: va>=vb?'#22D3EE':'var(--muted)' }}>{va}</span>
+                          <div style={{ flex:1, height:6, background:'var(--bg3)', borderRadius:3, overflow:'hidden', position:'relative' }}>
+                            <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${(va/90)*100}%`, background:'#22D3EE', borderRadius:3, opacity:0.7 }}/>
+                            <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${(vb/90)*100}%`, background:'#8B5CF6', borderRadius:3, opacity:0.5 }}/>
+                          </div>
+                          <span style={{ minWidth:28, fontWeight: vb>=va?700:400, color: vb>=va?'#8B5CF6':'var(--muted)' }}>{vb}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             );
-          })}
+          })()}
+
+          {/* Friend Grid */}
+          <div className="fq-section-hdr">
+            <h2>{t('朋友列表', 'Friend Profiles')} {filteredProfiles.length < profiles.length ? `(${filteredProfiles.length}/${profiles.length})` : `(${profiles.length})`}</h2>
+            <div className="fq-line" />
+          </div>
+
+          {profiles.length === 0 ? (
+            <div className="fq-empty">
+              <div className="fq-empty-icon">📡</div>
+              <div className="fq-empty-title">{t('尚無朋友資料', 'No profiles yet')}</div>
+              <div className="fq-empty-sub">{t('新增第一個朋友，開始量化你的友誼。', 'Add your first friend to start quantifying your relationships.')}</div>
+              <button className="fq-btn fq-btn-primary" onClick={onCreateFriend}>+ {t('建立第一個', 'Create First Profile')}</button>
+            </div>
+          ) : filteredProfiles.length === 0 ? (
+            <div className="fq-empty" style={{ padding:'32px 20px' }}>
+              <div className="fq-empty-title">{t('找不到符合條件的朋友', 'No matches found')}</div>
+              <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => { setSearch(''); setFilterGroup(''); setFilterTier(''); }}>{t('清除篩選','Clear filters')}</button>
+            </div>
+          ) : (() => {
+            const surveyProfiles = filteredProfiles.filter(p => !p.noSurvey);
+            const noSurveyProfiles = filteredProfiles.filter(p => p.noSurvey);
+
+            function FriendCard({ p }) {
+              const latest = getLatestSurvey(p.id);
+              const tier = latest ? getScoreTier(latest.total) : null;
+              const type = latest ? getFriendshipType(latest.scores) : null;
+              const group = getGroupById(p.groupId, customGroups);
+              const bdays = birthdayCountdown(p.birthday);
+              const inCompare = compareIds.includes(p.id);
+              return (
+                <div key={p.id} className={`fq-friend-card${inCompare ? ' fq-compare-selected' : ''}`} onClick={() => onSelectFriend(p)}>
+                  {type && (
+                    <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
+                      {type.key}
+                    </div>
+                  )}
+                  {p.noSurvey && (
+                    <div className="fq-type-tag" style={{ background:'var(--bg3)', color:'var(--muted)' }}>
+                      {t('記錄','Record')}
+                    </div>
+                  )}
+                  <div className="fq-friend-card-top">
+                    <Avatar profile={p} size={40} />
+                    <div>
+                      <div className="fq-friend-name">{p.name}</div>
+                      <div className="fq-friend-meta" style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                        {group && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:8, background:group.color+'22', color:group.color, fontWeight:700 }}>{lang==='zh'?group.zh:group.en}</span>}
+                        <span>{p.since ? `${t('認識於','Since')} ${p.since}` : t('年份不詳','Year unknown')}</span>
+                        {bdays !== null && bdays <= 30 && <span style={{ color: bdays<=7?'#F87171':'var(--muted)', fontWeight:600, fontSize:11 }}>🎂 {bdays===0?t('今天！','Today!'):bdays+t('天','d')}</span>}
+                        {(() => { const jc = journals.filter(j => j.profileId === p.id).length; return jc > 0 ? <span>· {jc} {t('則日誌','logs')}</span> : null; })()}
+                      </div>
+                    </div>
+                    {!p.noSurvey && (latest ? (
+                      <div className={`fq-score-badge tier-${tier.tier}`}>{latest.total}</div>
+                    ) : (
+                      <div className="fq-score-badge" style={{ color:'var(--muted)', fontSize:14 }}>N/A</div>
+                    ))}
+                  </div>
+                  {latest && !p.noSurvey && (
+                    <div className="fq-dim-mini">
+                      {DIM_META.map(d => (
+                        <div key={d.key} className="fq-dim-pip">
+                          <span style={{ color: d.color, fontWeight:700 }}>{d.key}</span>
+                          <div className="fq-dim-pip-bar">
+                            <div className="fq-dim-pip-fill" style={{ width: `${latest.scores[d.key]}%`, background: d.color }} />
+                          </div>
+                          <span>{latest.scores[d.key]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                    {!latest && !p.noSurvey && (
+                      <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onStartSurvey(p); }}>
+                        {t('開始測驗', 'Start Survey')} →
+                      </button>
+                    )}
+                    <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={e => { e.stopPropagation(); onLogUpdate(p); }}>
+                      + {t('日誌', 'Log')}
+                    </button>
+                    <button
+                      className={`fq-btn fq-btn-sm${inCompare ? ' fq-btn-primary' : ' fq-btn-ghost'}`}
+                      onClick={e => { e.stopPropagation(); toggleCompare(p.id); }}
+                      style={{ marginLeft:'auto', padding:'4px 8px', fontSize:11 }}
+                    >
+                      ⊕
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {surveyProfiles.length > 0 && (
+                  <div className="fq-friend-grid">
+                    {surveyProfiles.map(p => <FriendCard key={p.id} p={p} />)}
+                  </div>
+                )}
+                {noSurveyProfiles.length > 0 && (
+                  <>
+                    <div className="fq-section-hdr" style={{ marginTop: surveyProfiles.length > 0 ? 28 : 0, marginBottom:14 }}>
+                      <h2>{t('純記錄（不評分）','Record Only')}</h2>
+                      <div className="fq-line" />
+                      <span style={{ fontSize:12, color:'var(--muted)' }}>{noSurveyProfiles.length} {t('人','profiles')}</span>
+                    </div>
+                    <div className="fq-friend-grid">
+                      {noSurveyProfiles.map(p => <FriendCard key={p.id} p={p} />)}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Photo Crop Modal ──────────────────────────────────────────────────────────
+
+function PhotoCropModal({ src, onApply, onCancel }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const PREVIEW = 260;
+  const [scale, setScale] = useState(1);
+  const [fillScale, setFillScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  // Log-scale slider: fillScale/ZOOM_K at 0%, fillScale at 50%, fillScale*ZOOM_K at 100%
+  const ZOOM_K = 5;
+  function sliderVal() {
+    const mn = fillScale / ZOOM_K, mx = fillScale * ZOOM_K;
+    return Math.log(Math.max(scale, mn) / mn) / Math.log(mx / mn) * 100;
+  }
+  function scaleFromSlider(v) {
+    const mn = fillScale / ZOOM_K, mx = fillScale * ZOOM_K;
+    return mn * Math.pow(mx / mn, v / 100);
+  }
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const imgRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  function startDrag(clientX, clientY) {
+    dragStart.current = { x: clientX - offset.x, y: clientY - offset.y };
+    setDragging(true);
+  }
+  function moveDrag(clientX, clientY) {
+    if (!dragStart.current) return;
+    setOffset({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y });
+  }
+  function endDrag() { dragStart.current = null; setDragging(false); }
+
+  function handleApply() {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    const OUT = 400;
+    canvas.width = OUT; canvas.height = OUT;
+    const ctx = canvas.getContext('2d');
+    const W = img.naturalWidth, H = img.naturalHeight;
+    // image top-left in preview container coords
+    const ix = PREVIEW / 2 + offset.x - (W * scale) / 2;
+    const iy = PREVIEW / 2 + offset.y - (H * scale) / 2;
+    // map preview → output
+    const r = OUT / PREVIEW;
+    ctx.drawImage(img, ix * r, iy * r, W * scale * r, H * scale * r);
+    onApply(canvas.toDataURL('image/jpeg', 0.92));
+  }
+
+  return (
+    <div className="fq-log-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div className="fq-log-panel" style={{ maxWidth: 340 }}>
+        <div className="fq-log-panel-hdr">
+          <div className="fq-log-panel-title">{t('調整照片', 'Adjust Photo')}</div>
+          <button className="fq-log-close" onClick={onCancel}>✕</button>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+          <div style={{
+            width: PREVIEW, height: PREVIEW, borderRadius:'50%', overflow:'hidden',
+            border:'3px solid var(--accent)', position:'relative', background:'var(--bg2)',
+            cursor: dragging ? 'grabbing' : 'grab', userSelect:'none', flexShrink:0
+          }}
+            onMouseDown={e => { e.preventDefault(); startDrag(e.clientX, e.clientY); }}
+            onMouseMove={e => dragging && moveDrag(e.clientX, e.clientY)}
+            onMouseUp={endDrag} onMouseLeave={endDrag}
+            onTouchStart={e => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); }}
+            onTouchMove={e => { e.preventDefault(); const t = e.touches[0]; moveDrag(t.clientX, t.clientY); }}
+            onTouchEnd={endDrag}
+          >
+            <img ref={imgRef} src={src} alt="" draggable={false} style={{
+              position:'absolute', left:'50%', top:'50%', maxWidth:'none',
+              width: imgRef.current ? imgRef.current.naturalWidth * scale : 'auto',
+              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+              pointerEvents:'none'
+            }} onLoad={() => {
+              const img = imgRef.current;
+              const W = img.naturalWidth, H = img.naturalHeight;
+              const fs = Math.max(PREVIEW / W, PREVIEW / H);
+              setFillScale(fs);
+              setScale(fs);
+            }} />
+          </div>
+          <div style={{ width:'100%' }}>
+            <label style={{ fontSize:12, color:'var(--muted)', display:'block', marginBottom:6 }}>
+              {t('縮放', 'Zoom')}
+            </label>
+            <input type="range" min="0" max="100" step="0.5" value={sliderVal()}
+              onChange={e => setScale(scaleFromSlider(parseFloat(e.target.value)))}
+              style={{ width:'100%', accentColor:'var(--accent)' }} />
+          </div>
+          <canvas ref={canvasRef} style={{ display:'none' }} />
+          <div className="fq-row" style={{ gap:10, width:'100%' }}>
+            <button className="fq-btn fq-btn-primary" style={{ flex:1 }} onClick={handleApply}>
+              ✓ {t('套用', 'Apply')}
+            </button>
+            <button className="fq-btn fq-btn-ghost" onClick={onCancel}>{t('取消', 'Cancel')}</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -515,122 +1340,332 @@ function DashboardView({ profiles, surveys, onSelectFriend, onCreateFriend, onSt
 
 // ─── Create/Edit Profile View ──────────────────────────────────────────────────
 
-function CreateView({ editProfile, onSave, onCancel, onDelete }) {
+function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
+  const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const isEdit = !!editProfile;
-  const [name, setName] = useState(editProfile?.name || '');
-  const [emoji, setEmoji] = useState(editProfile?.emoji || '😊');
-  const [color, setColor] = useState(editProfile?.color || '#60A5FA');
-  const [since, setSince] = useState(editProfile?.since || '');
-  const [notes, setNotes] = useState(editProfile?.notes || '');
-  const [err, setErr] = useState('');
+  const [name,        setName]        = useState(editProfile?.name      || '');
+  const [photo,       setPhoto]       = useState(editProfile?.photo     || null);
+  const [groupId,     setGroupId]     = useState(editProfile?.groupId   || '');
+  const [since,       setSince]       = useState(editProfile?.since     || '');
+  const [keyEvents,   setKeyEvents]   = useState(editProfile?.keyEvents || []);
+  const [birthday,    setBirthday]    = useState(editProfile?.birthday  || { month:'', day:'' });
+  const [prosList,    setProsList]    = useState(Array.isArray(editProfile?.pros) ? editProfile.pros : []);
+  const [consList,    setConsList]    = useState(Array.isArray(editProfile?.cons) ? editProfile.cons : []);
+  const [prosInput,   setProsInput]   = useState('');
+  const [consInput,   setConsInput]   = useState('');
+  const [noSurvey,    setNoSurvey]    = useState(editProfile?.noSurvey ?? false);
+  const [err,         setErr]         = useState('');
+  const [cropSrc,     setCropSrc]     = useState(null);
+  const [evtSharedId, setEvtSharedId] = useState('');
+  const [showEvtSug,  setShowEvtSug]  = useState(false);
+  const fileRef = useRef(null);
 
-  function handleSave() {
-    if (!name.trim()) { setErr('請輸入姓名'); return; }
-    const profile = {
-      id: editProfile?.id || genId(),
-      name: name.trim(),
-      emoji,
-      color,
-      since,
-      notes,
-      createdAt: editProfile?.createdAt || new Date().toISOString(),
-    };
-    onSave(profile);
+  // new custom group form
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [newGroupLabel, setNewGroupLabel] = useState('');
+  const [newGroupColor, setNewGroupColor] = useState(RAINBOW_COLORS[4]);
+
+  // new key event form
+  const [evtYear, setEvtYear] = useState('');
+  const [evtText, setEvtText] = useState('');
+
+  function handlePhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setErr(t('照片太大（最大 2 MB）','Photo too large (max 2 MB)')); return; }
+    const reader = new FileReader();
+    reader.onload = ev => { setCropSrc(ev.target.result); e.target.value = ''; };
+    reader.readAsDataURL(file);
   }
 
+  function addNewGroup() {
+    if (!newGroupLabel.trim()) return;
+    // parent will receive via onSave; we store in context via GroupsCtx parent update
+    const g = { id: genId(), zh: newGroupLabel.trim(), en: newGroupLabel.trim(), color: newGroupColor };
+    // bubble up via a callback - we embed it into profile save payload
+    setGroupId('__new__' + JSON.stringify(g));
+    setShowGroupForm(false); setNewGroupLabel(''); setNewGroupColor(RAINBOW_COLORS[4]);
+  }
+
+  function addEvent() {
+    if (!evtText.trim()) return;
+    const sid = evtSharedId || genId();
+    setKeyEvents(prev => [...prev, { id: genId(), sharedId: sid, year: evtYear, text: evtText.trim() }]);
+    setEvtYear(''); setEvtText(''); setEvtSharedId(''); setShowEvtSug(false);
+  }
+
+  function removeEvent(id) {
+    setKeyEvents(prev => prev.filter(e => e.id !== id));
+  }
+
+  function handleSave() {
+    if (!name.trim()) { setErr('Name is required'); return; }
+    let resolvedGroupId = groupId;
+    let newCustomGroup = null;
+    if (groupId.startsWith('__new__')) {
+      try { newCustomGroup = JSON.parse(groupId.replace('__new__','').trim()); resolvedGroupId = newCustomGroup.id; } catch {}
+    }
+    const group = getGroupById(resolvedGroupId, customGroups);
+    const color = group ? group.color : '#60A5FA';
+    onSave({
+      id: editProfile?.id || genId(),
+      name: name.trim(), photo, color, groupId: resolvedGroupId || '',
+      since, keyEvents, birthday, pros: prosList, cons: consList, noSurvey: noSurvey || false,
+      createdAt: editProfile?.createdAt || new Date().toISOString(),
+      _newGroup: newCustomGroup,
+    });
+  }
+
+  const resolvedColor = (() => {
+    if (groupId.startsWith('__new__')) {
+      try { return JSON.parse(groupId.replace('__new__','').trim()).color; } catch {}
+    }
+    return getGroupById(groupId, customGroups)?.color || '#60A5FA';
+  })();
+  const color = resolvedColor;
+  const previewProfile = { name, photo, color: resolvedColor, groupId };
+
   return (
+    <>
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 28 }}>
-        <h2>{isEdit ? 'Edit Profile' : 'New Friend Profile'}</h2>
+        <h2>{isEdit ? t('編輯資料','Edit Profile') : t('新增朋友','New Friend Profile')}</h2>
         <div className="fq-line" />
       </div>
       <div className="fq-form">
         {/* Preview */}
-        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:28, padding:'16px 20px', background:'var(--fq-card)', border:'1px solid var(--fq-border)', borderRadius:10 }}>
-          <div className="fq-avatar" style={{ width:56, height:56, fontSize:26, background: color + '33', borderColor: color }}>
-            {emoji}
-          </div>
+        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:28, padding:'16px 20px', background:'var(--bg1)', border:'1px solid var(--border)', borderRadius:10 }}>
+          <Avatar profile={previewProfile} size={56} />
           <div>
             <div style={{ fontSize:16, fontWeight:700 }}>{name || '(Name)'}</div>
-            <div style={{ fontSize:12, color:'var(--fq-muted)' }}>{since ? `Since ${fmtDate(since)}` : 'Friend since...'}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
+              {groupId && !groupId.startsWith('__new__') && (() => { const g = getGroupById(groupId, customGroups); return g ? <span style={{ fontSize:11, padding:'2px 8px', borderRadius:10, background:g.color+'22', color:g.color, fontWeight:700, border:`1px solid ${g.color}` }}>{lang==='zh'?g.zh:g.en}</span> : null; })()}
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{since ? `${t('認識於','Since')} ${since}` : t('年份不詳','Year unknown')}</span>
+              {birthday?.month && birthday?.day && <span style={{ fontSize:12, color:'var(--muted)' }}>🎂 {birthdayStr(birthday)}</span>}
+            </div>
           </div>
         </div>
 
+        {/* Name */}
         <div className="fq-form-row">
-          <label className="fq-label">Name *</label>
-          <input
-            className="fq-input"
-            placeholder="朋友的名字或暱稱"
-            value={name}
-            onChange={e => { setName(e.target.value); setErr(''); }}
-          />
-          {err && <div style={{ color:'var(--fq-red)', fontSize:12, marginTop:6 }}>{err}</div>}
+          <label className="fq-label">{t('姓名 *','Name *')}</label>
+          <input className="fq-input" placeholder={t("朋友的名字或暱稱","Friend's name or nickname")}
+            value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
+          {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:6 }}>{err}</div>}
         </div>
 
+        {/* Photo */}
         <div className="fq-form-row">
-          <label className="fq-label">Avatar Emoji</label>
-          <div className="fq-emoji-row">
-            {EMOJI_OPTIONS.map(e => (
-              <button
-                key={e}
-                className={`fq-emoji-opt${emoji === e ? ' selected' : ''}`}
-                onClick={() => setEmoji(e)}
-                type="button"
-              >
-                {e}
+          <label className="fq-label">{t('照片','Photo')}</label>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div className="fq-photo-upload" onClick={() => fileRef.current?.click()} style={{ background: color + '22', borderColor: photo ? color : undefined }}>
+              {photo
+                ? <img src={photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                : <span className="fq-photo-upload-hint">{t('點擊','Click')}<br/>{t('上傳','Upload')}</span>
+              }
+            </div>
+            <div>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('PNG / JPG，最大 2 MB','PNG / JPG, max 2 MB')}</div>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setCropSrc(photo)}>{t('重新調整','Adjust')}</button>}
+                {photo && <button className="fq-btn fq-btn-ghost fq-btn-sm" type="button" onClick={() => setPhoto(null)}>{t('移除照片','Remove photo')}</button>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Relationship Group */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('關係分組','Relationship Group')}</label>
+          <div className="fq-tag-picker">
+            {[...DEFAULT_GROUPS, ...customGroups].map(g => (
+              <button key={g.id} type="button"
+                className={`fq-tag-chip${groupId === g.id ? ' selected' : ''}`}
+                style={{ '--tc': g.color }}
+                onClick={() => setGroupId(groupId === g.id ? '' : g.id)}>
+                {lang==='zh' ? g.zh : g.en}
               </button>
             ))}
+            {showGroupForm ? (
+              <div className="fq-tag-add-form">
+                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                  {RAINBOW_COLORS.map(c => (
+                    <button key={c} type="button" onClick={() => setNewGroupColor(c)}
+                      style={{ width:18, height:18, borderRadius:'50%', background:c, border: newGroupColor===c ? '2.5px solid var(--text)' : '2.5px solid transparent', cursor:'pointer', padding:0, flexShrink:0 }} />
+                  ))}
+                </div>
+                <IMEInput value={newGroupLabel} onChange={e => setNewGroupLabel(e.target.value)}
+                  onEnterKey={() => addNewGroup()}
+                  placeholder={t('自訂分組名稱','Group name')} className="fq-tag-label-inp" autoFocus />
+                <button type="button" className="fq-btn fq-btn-primary fq-btn-sm" onClick={addNewGroup}>✓</button>
+                <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setShowGroupForm(false)}>✕</button>
+              </div>
+            ) : (
+              <button type="button" className="fq-tag-chip fq-tag-chip-add" onClick={() => setShowGroupForm(true)}>＋ {t('自訂','Custom')}</button>
+            )}
+          </div>
+          {groupId && !groupId.startsWith('__new__') && (
+            <div style={{ marginTop:6, fontSize:12, color:'var(--muted)' }}>
+              <button type="button" onClick={() => setGroupId('')} style={{ fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer' }}>{t('清除','clear')}</button>
+            </div>
+          )}
+        </div>
+
+        {/* Birthday */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('生日（月/日）','Birthday (M/D)')}</label>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <select className="fq-input" style={{ width:110 }} value={birthday.month}
+              onChange={e => setBirthday(b => ({ ...b, month: e.target.value }))}>
+              <option value="">{t('月份','Month')}</option>
+              {Array.from({length:12},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}</option>)}
+            </select>
+            <span style={{ color:'var(--muted)' }}>/</span>
+            <select className="fq-input" style={{ width:110 }} value={birthday.day}
+              onChange={e => setBirthday(b => ({ ...b, day: e.target.value }))}>
+              <option value="">{t('日期','Day')}</option>
+              {Array.from({length:31},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}</option>)}
+            </select>
+            {(birthday.month || birthday.day) && (
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => setBirthday({month:'',day:''})}>{t('清除','clear')}</button>
+            )}
           </div>
         </div>
 
+        {/* Friends Since (year only) */}
         <div className="fq-form-row">
-          <label className="fq-label">Profile Color</label>
-          <div className="fq-color-row">
-            {COLOR_OPTIONS.map(c => (
-              <button
-                key={c}
-                className={`fq-color-opt${color === c ? ' selected' : ''}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-                type="button"
-              />
+          <label className="fq-label">{t('認識時間','Friends Since')}</label>
+          <select className="fq-input" value={since} onChange={e => setSince(e.target.value)}>
+            <option value="">{t('— 選擇年份 —','— Select year —')}</option>
+            {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
+        </div>
+
+        {/* Key Events */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('重要事件','Key Events')}</label>
+          <div className="fq-key-events">
+            {keyEvents.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:10 }}>{t('尚無事件，新增里程碑、回憶或消息吧。','No events yet. Add milestones, memories, or news.')}</div>
+            )}
+            {[...keyEvents].sort((a,b) => (b.year||0) - (a.year||0)).map((ev, idx) => (
+              <div key={ev.id} className="fq-key-event-row">
+                <span className="fq-key-event-num">#{idx + 1}</span>
+                {ev.year && <span className="fq-key-event-year">{ev.year}</span>}
+                <span className="fq-key-event-text">{ev.text}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => removeEvent(ev.id)}>✕</button>
+              </div>
             ))}
+            <div className="fq-key-event-add">
+              <IMEInput className="fq-key-event-year-inp" value={evtYear}
+                onChange={e => setEvtYear(e.target.value)} placeholder={t('年份','Year')} type="number"
+                min="1990" max={THIS_YEAR} />
+              <div style={{ position:'relative', flex:1, minWidth:0 }}>
+                <IMEInput className="fq-key-event-text-inp" value={evtText}
+                  onChange={e => { setEvtText(e.target.value); setEvtSharedId(''); setShowEvtSug(true); }}
+                  onFocus={() => setShowEvtSug(true)}
+                  onBlur={() => setTimeout(() => setShowEvtSug(false), 150)}
+                  onEnterKey={() => addEvent()}
+                  placeholder={t('例：創業','e.g. Started his own company')}
+                  style={{ width:'100%' }} />
+                {showEvtSug && <EventSuggest text={evtText} allProfiles={allProfiles} excludeId={editProfile?.id}
+                  onSelect={ev => { setEvtYear(ev.year || evtYear); setEvtText(ev.text); setEvtSharedId(getEvtKey(ev)); setShowEvtSug(false); }} />}
+              </div>
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm" onClick={addEvent}>＋</button>
+            </div>
           </div>
         </div>
 
+        {/* Pros */}
         <div className="fq-form-row">
-          <label className="fq-label">Friends Since</label>
-          <input
-            className="fq-input"
-            type="date"
-            value={since}
-            onChange={e => setSince(e.target.value)}
-          />
+          <label className="fq-label">{t('優點','Strengths')}</label>
+          <div className="fq-key-events">
+            {prosList.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('尚未新增任何優點。','No strengths added yet.')}</div>
+            )}
+            {prosList.map((item, i) => (
+              <div key={i} className="fq-key-event-row">
+                <span style={{ color:'#34D399', fontWeight:800, minWidth:14 }}>•</span>
+                <span className="fq-key-event-text">{item}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => setProsList(prev => prev.filter((_,idx) => idx !== i))}>✕</button>
+              </div>
+            ))}
+            <div className="fq-key-event-add">
+              <IMEInput className="fq-key-event-text-inp" value={prosInput}
+                onChange={e => setProsInput(e.target.value)}
+                onEnterKey={() => { if (prosInput.trim()) { setProsList(prev => [...prev, prosInput.trim()]); setProsInput(''); }}}
+                placeholder={t('例：很懂得傾聽、樂於幫忙','e.g. Great listener, always willing to help')} />
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm"
+                onClick={() => { if (prosInput.trim()) { setProsList(prev => [...prev, prosInput.trim()]); setProsInput(''); }}}>＋</button>
+            </div>
+          </div>
         </div>
 
+        {/* Cons */}
         <div className="fq-form-row">
-          <label className="fq-label">Notes</label>
-          <textarea
-            className="fq-textarea"
-            placeholder="備注、認識經過、關係描述..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-          />
+          <label className="fq-label">{t('缺點 / 挑戰','Weaknesses / Challenges')}</label>
+          <div className="fq-key-events">
+            {consList.length === 0 && (
+              <div style={{ fontSize:13, color:'var(--muted)', marginBottom:8 }}>{t('尚未新增任何缺點。','No weaknesses added yet.')}</div>
+            )}
+            {consList.map((item, i) => (
+              <div key={i} className="fq-key-event-row">
+                <span style={{ color:'#F87171', fontWeight:800, minWidth:14 }}>•</span>
+                <span className="fq-key-event-text">{item}</span>
+                <button type="button" className="fq-key-event-del" onClick={() => setConsList(prev => prev.filter((_,idx) => idx !== i))}>✕</button>
+              </div>
+            ))}
+            <div className="fq-key-event-add">
+              <IMEInput className="fq-key-event-text-inp" value={consInput}
+                onChange={e => setConsInput(e.target.value)}
+                onEnterKey={() => { if (consInput.trim()) { setConsList(prev => [...prev, consInput.trim()]); setConsInput(''); }}}
+                placeholder={t('例：容易遲到、有時太直接','e.g. Often late, sometimes too blunt')} />
+              <button type="button" className="fq-btn fq-btn-ghost fq-btn-sm"
+                onClick={() => { if (consInput.trim()) { setConsList(prev => [...prev, consInput.trim()]); setConsInput(''); }}}>＋</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Survey toggle */}
+        <div className="fq-form-row">
+          <label className="fq-label">{t('FQ 測驗','FQ Survey')}</label>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button type="button" onClick={() => setNoSurvey(v => !v)}
+              style={{ width:44, height:24, borderRadius:12, border:'none', cursor:'pointer', padding:0,
+                background: noSurvey ? 'var(--border)' : 'var(--accent)', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+              <span style={{ position:'absolute', top:3, left: noSurvey ? 3 : 23, width:18, height:18,
+                borderRadius:'50%', background:'white', transition:'left 0.2s', display:'block' }}/>
+            </button>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>
+              {noSurvey ? t('不做 FQ 測驗（純記錄用）','No FQ survey — record only') : t('啟用 FQ 測驗評分','FQ scoring enabled')}
+            </span>
+          </div>
         </div>
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave}>
-            {isEdit ? '✓ Save Changes' : '✓ Create Profile'}
+            {isEdit ? t('✓ 儲存變更','✓ Save Changes') : t('✓ 建立資料','✓ Create Profile')}
           </button>
-          <button className="fq-btn fq-btn-ghost" onClick={onCancel}>Cancel</button>
+          <button className="fq-btn fq-btn-ghost" onClick={onCancel}>{t('取消','Cancel')}</button>
           {isEdit && (
             <button className="fq-btn fq-btn-danger fq-btn-sm" style={{ marginLeft:'auto' }} onClick={onDelete}>
-              Delete Profile
+              {t('刪除資料','Delete Profile')}
             </button>
           )}
         </div>
       </div>
     </div>
+    {cropSrc && (
+      <PhotoCropModal
+        src={cropSrc}
+        onApply={result => { setPhoto(result); setCropSrc(null); }}
+        onCancel={() => setCropSrc(null)}
+      />
+    )}
+    </>
   );
 }
 
@@ -638,8 +1673,10 @@ function CreateView({ editProfile, onSave, onCancel, onDelete }) {
 // ─── Survey View ───────────────────────────────────────────────────────────────
 
 function SurveyView({ profile, onComplete, onCancel }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState(Array(20).fill(null));
+  const [answers, setAnswers] = useState(Array(24).fill(null));
 
   const liveAnswers = answers.map(a => a !== null ? a : 0);
   const liveScores = calcScores(liveAnswers);
@@ -652,7 +1689,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
   function handleNext() {
     if (answers[currentQ] === null) return;
-    if (currentQ < 19) {
+    if (currentQ < 23) {
       setCurrentQ(currentQ + 1);
     } else {
       // submit
@@ -695,12 +1732,10 @@ function SurveyView({ profile, onComplete, onCancel }) {
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 20 }}>
-        <div className="fq-avatar" style={{ background: profile.color + '33', borderColor: profile.color, width:32, height:32, fontSize:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid', flexShrink:0 }}>
-          {profile.emoji}
-        </div>
-        <h2 style={{ fontSize:14, letterSpacing:0 }}>{profile.name} — FQ Survey</h2>
+        <Avatar profile={profile} size={32} />
+        <h2 style={{ fontSize:14, letterSpacing:0 }}>{profile.name} — FQ {t('測驗','Survey')}</h2>
         <div className="fq-line" />
-        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onCancel}>✕ Cancel</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onCancel}>✕ {t('取消','Cancel')}</button>
       </div>
 
       <div className="fq-survey-layout">
@@ -711,13 +1746,13 @@ function SurveyView({ profile, onComplete, onCancel }) {
           </div>
 
           <div className="fq-survey-dim-header" style={{ color: dimMeta.color }}>
-            [{dimMeta.en.toUpperCase()}] {dimMeta.label}
+            [{dimMeta.en.toUpperCase()}] {lang === 'zh' ? dimMeta.label : dimMeta.en}
           </div>
-          <div className="fq-survey-q-num">Question {currentQ + 1} of 20</div>
-          <div className="fq-survey-q-text">{q.text}</div>
+          <div className="fq-survey-q-num">{t('第','Question')} {currentQ + 1} {t('題，共24題','of 24')}</div>
+          <div className="fq-survey-q-text">{lang === 'zh' ? q.text : q.en}</div>
 
           <div className="fq-likert">
-            {q.opts.map((opt, oi) => {
+            {(lang === 'zh' ? q.opts : q.enOpts).map((opt, oi) => {
               const val = oi + 1;
               const selected = answers[currentQ] === val;
               return (
@@ -743,16 +1778,16 @@ function SurveyView({ profile, onComplete, onCancel }) {
               disabled={currentQ === 0}
               style={{ opacity: currentQ === 0 ? 0.4 : 1 }}
             >
-              ← Prev
+              ← {t('上一題','Prev')}
             </button>
-            <span className="fq-q-counter">{currentQ + 1} / 20</span>
+            <span className="fq-q-counter">{currentQ + 1} / 24</span>
             <button
               className="fq-btn fq-btn-primary"
               onClick={handleNext}
               disabled={answers[currentQ] === null}
               style={{ opacity: answers[currentQ] === null ? 0.5 : 1 }}
             >
-              {currentQ === 19 ? '完成 →' : 'Next →'}
+              {currentQ === 23 ? `${t('完成','Done')} →` : `${t('下一題','Next')} →`}
             </button>
           </div>
         </div>
@@ -770,7 +1805,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
               return (
                 <div key={d.key} className="fq-dim-bar-row">
                   <div className="fq-dim-bar-top">
-                    <span className="fq-dim-bar-name" style={{ color: d.color }}>{d.label}</span>
+                    <span className="fq-dim-bar-name" style={{ color: d.color }}>{lang === 'zh' ? d.label : d.en}</span>
                     <span className="fq-dim-bar-score" style={{ color: d.color }}>
                       {partial !== null ? partial : '—'}
                     </span>
@@ -791,7 +1826,7 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
           {/* progress dots */}
           <div className="fq-survey-q-dots">
-            {Array.from({ length: 20 }, (_, i) => (
+            {Array.from({ length: 24 }, (_, i) => (
               <div
                 key={i}
                 className={`fq-survey-q-dot${i === currentQ ? ' current' : answers[i] !== null ? ' answered' : ''}`}
@@ -801,8 +1836,8 @@ function SurveyView({ profile, onComplete, onCancel }) {
               />
             ))}
           </div>
-          <div style={{ fontSize:11, color:'var(--fq-muted)', marginTop:8 }}>
-            {answers.filter(a => a !== null).length} / 20 answered
+          <div style={{ fontSize:11, color:'var(--muted)', marginTop:8 }}>
+            {answers.filter(a => a !== null).length} / 24 {t('已回答','answered')}
           </div>
         </div>
       </div>
@@ -813,21 +1848,25 @@ function SurveyView({ profile, onComplete, onCancel }) {
 
 // ─── Results View ──────────────────────────────────────────────────────────────
 
-function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
+function ResultsView({ survey, profile, surveys, onDone, onRetake, onViewDetail }) {
+  const lang = useContext(LangCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
   const { scores } = survey;
   const tier = getScoreTier(scores.total);
   const type = getFriendshipType(scores);
   const suggestions = getSuggestions(scores);
+  // Previous survey for delta
+  const prevSurvey = (surveys || [])
+    .filter(s => s.profileId === profile.id && s.id !== survey.id)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
 
   return (
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
-        <div className="fq-avatar" style={{ background: profile.color + '33', borderColor: profile.color, width:32, height:32, fontSize:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid', flexShrink:0 }}>
-          {profile.emoji}
-        </div>
-        <h2 style={{ fontSize:14 }}>{profile.name} — Analysis Results</h2>
+        <Avatar profile={profile} size={32} />
+        <h2 style={{ fontSize:14 }}>{profile.name} — {t('分析結果','Analysis Results')}</h2>
         <div className="fq-line" />
-        <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{fmtDate(survey.createdAt)}</span>
+        <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(survey.createdAt)}</span>
       </div>
 
       <div className="fq-results-layout">
@@ -838,6 +1877,11 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           </div>
           <div className="fq-results-tier" style={{ color: tier.color }}>
             TIER {tier.tier} — FQ SCORE
+            {prevSurvey && (() => {
+              const diff = scores.total - prevSurvey.total;
+              if (diff === 0) return null;
+              return <span style={{ fontSize:14, marginLeft:8, color: diff>0?'var(--green)':'var(--red)', fontWeight:700 }}>{diff>0?'+':''}{diff}</span>;
+            })()}
           </div>
           <div style={{
             display:'inline-block',
@@ -852,7 +1896,7 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
           }}>
             {type.key} · {type.en}
           </div>
-          <div className="fq-results-type-name">{type.name}</div>
+          <div className="fq-results-type-name">{lang === 'zh' ? type.name : type.en}</div>
           <div className="fq-results-type-desc">{type.desc}</div>
         </div>
 
@@ -865,8 +1909,8 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
       <div className="fq-results-layout">
         {/* Dimension breakdown */}
         <div className="fq-card">
-          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:16 }}>
-            Dimension Breakdown
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
+            {t('維度分析','Dimension Breakdown')}
           </div>
           <div className="fq-dim-breakdown">
             {DIM_META.map(d => (
@@ -874,11 +1918,16 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
                 <div className="fq-dim-breakdown-top">
                   <span className="fq-dim-breakdown-name">
                     <span style={{ width:10, height:10, borderRadius:'50%', background: d.color, display:'inline-block' }} />
-                    {d.label} <span style={{ color:'var(--fq-muted)', fontWeight:400, fontSize:12 }}>({d.en})</span>
+                    {lang === 'zh' ? d.label : d.en}
                   </span>
                   <span className="fq-dim-breakdown-score" style={{ color: d.color }}>
                     {scores[d.key]}
-                    <span style={{ fontSize:12, fontWeight:400, color:'var(--fq-muted)' }}>/100</span>
+                    <span style={{ fontSize:12, fontWeight:400, color:'var(--muted)' }}>/100</span>
+                    {prevSurvey && (() => {
+                      const diff = scores[d.key] - prevSurvey.scores[d.key];
+                      if (diff === 0) return null;
+                      return <span style={{ fontSize:11, marginLeft:4, color: diff>0?'var(--green)':'var(--red)', fontWeight:700 }}>{diff>0?'+':''}{diff}</span>;
+                    })()}
                   </span>
                 </div>
                 <div className="fq-dim-breakdown-track">
@@ -894,20 +1943,20 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
         {/* Suggestions */}
         <div className="fq-card">
-          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:16 }}>
-            AI Suggestions
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:16 }}>
+            {t('建議','Suggestions')}
           </div>
           <div className="fq-flags">
             {suggestions.map((s, i) => (
               <div key={i} className="fq-flag">
                 <span className="fq-flag-icon">{s.icon}</span>
-                <span>{s.text}</span>
+                <span>{lang === 'zh' ? s.zh : s.en}</span>
               </div>
             ))}
           </div>
           <div className="fq-divider" />
-          <div style={{ fontSize:11, color:'var(--fq-muted)', lineHeight:1.6 }}>
-            FQ Score is calculated as: F×20% + B×20% + S×25% + T×20% + St×15%
+          <div style={{ fontSize:11, color:'var(--muted)', lineHeight:1.6 }}>
+            FQ = (F×15% + R×18% + S×20% + T×20% + St×15% + E×12%) × 0.9 → max 90
           </div>
         </div>
       </div>
@@ -915,13 +1964,13 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
       {/* Actions */}
       <div className="fq-row" style={{ marginTop:24, gap:10 }}>
         <button className="fq-btn fq-btn-primary" onClick={onViewDetail}>
-          View Full History →
+          {t('查看完整歷史','View Full History')} →
         </button>
         <button className="fq-btn fq-btn-ghost" onClick={onRetake}>
-          Retake Survey
+          {t('重新測驗','Retake Survey')}
         </button>
         <button className="fq-btn fq-btn-ghost" onClick={onDone}>
-          ← Dashboard
+          ← {t('儀表板','Dashboard')}
         </button>
       </div>
     </div>
@@ -931,7 +1980,40 @@ function ResultsView({ survey, profile, onDone, onRetake, onViewDetail }) {
 
 // ─── Detail View ───────────────────────────────────────────────────────────────
 
-function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
+function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurvey, onBack, onLogUpdate, onProfileUpdate, allProfiles, onSelectFriend }) {
+  const lang = useContext(LangCtx);
+  const customGroups = useContext(GroupsCtx);
+  const t = (zh, en) => lang === 'zh' ? zh : en;
+  const [photoLightbox, setPhotoLightbox] = useState(false);
+  const [evtYear,     setEvtYear]     = useState('');
+  const [evtText,     setEvtText]     = useState('');
+  const [evtSharedId, setEvtSharedId] = useState('');
+  const [showEvtSug,  setShowEvtSug]  = useState(false);
+  const [evtMembersEv, setEvtMembersEv] = useState(null);
+  const [prosInput, setProsInput] = useState('');
+  const [consInput, setConsInput] = useState('');
+
+  function addEvent() {
+    if (!evtText.trim()) return;
+    const sid = evtSharedId || genId();
+    const updated = { ...profile, keyEvents: [...(profile.keyEvents || []), { id: genId(), sharedId: sid, year: evtYear, text: evtText.trim() }] };
+    onProfileUpdate(updated);
+    setEvtYear(''); setEvtText(''); setEvtSharedId(''); setShowEvtSug(false);
+  }
+  function addPro() {
+    if (!prosInput.trim()) return;
+    const updated = { ...profile, pros: [...(Array.isArray(profile.pros) ? profile.pros : []), prosInput.trim()] };
+    onProfileUpdate(updated);
+    setProsInput('');
+  }
+  function addCon() {
+    if (!consInput.trim()) return;
+    const updated = { ...profile, cons: [...(Array.isArray(profile.cons) ? profile.cons : []), consInput.trim()] };
+    onProfileUpdate(updated);
+    setConsInput('');
+  }
+  const group = getGroupById(profile.groupId, customGroups);
+  const bdays = birthdayCountdown(profile.birthday);
   const profileSurveys = surveys
     .filter(s => s.profileId === profile.id)
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -946,26 +2028,52 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
   const bestScore = surveyCount === 0 ? null :
     Math.max(...profileSurveys.map(s => s.total));
 
+  // Interaction score: average of last 5 rated logs × 20 (1★=20 … 5★=100)
+  const ratedLogs = journals
+    .filter(j => j.profileId === profile.id && j.rating)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+  const interactionScore = ratedLogs.length === 0 ? null :
+    Math.round(ratedLogs.reduce((acc, j) => acc + j.rating, 0) / ratedLogs.length * 20);
+  const interactionStars = ratedLogs.length === 0 ? null :
+    (ratedLogs.reduce((acc, j) => acc + j.rating, 0) / ratedLogs.length).toFixed(1);
+
   return (
+    <>
     <div className="fq-body">
       <div className="fq-section-hdr" style={{ marginBottom: 24 }}>
-        <h2>Friend Detail</h2>
+        <h2>{t('朋友詳情', 'Friend Detail')}</h2>
         <div className="fq-line" />
-        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ Edit</button>
-        <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-          + New Survey
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onEdit}>✎ {t('編輯', 'Edit')}</button>
+        <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('日誌', 'Log')}</button>
+        {!profile.noSurvey && (
+          <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
+            + {t('測驗', 'Survey')}
+          </button>
+        )}
+        <button className="fq-btn fq-btn-danger fq-btn-sm" onClick={onDelete}>
+          🗑 {t('刪除', 'Delete')}
         </button>
       </div>
 
       <div className="fq-detail-layout">
         {/* Sidebar */}
         <div className="fq-detail-sidebar fq-card">
-          <div className="fq-detail-avatar-big" style={{ background: profile.color + '33', borderColor: profile.color }}>
-            {profile.emoji}
+          <div onClick={() => profile.photo && setPhotoLightbox(true)}
+            style={{ cursor: profile.photo ? 'zoom-in' : 'default', display:'flex', justifyContent:'center', marginBottom:14 }}>
+            <Avatar profile={profile} size={68} />
           </div>
           <div className="fq-detail-name">{profile.name}</div>
           <div className="fq-detail-since">
-            {profile.since ? `Friends since ${fmtDate(profile.since)}` : 'Date not recorded'}
+            {profile.since ? `${t('認識於','Friends since')} ${profile.since}` : t('年份未記錄','Year not recorded')}
+          </div>
+          <div style={{ display:'flex', justifyContent:'center', gap:8, flexWrap:'wrap', marginBottom:14 }}>
+            {group && <span style={{ fontSize:12, padding:'2px 10px', borderRadius:10, background:group.color+'22', color:group.color, fontWeight:700, border:`1px solid ${group.color}44` }}>{lang==='zh'?group.zh:group.en}</span>}
+            {profile.birthday?.month && profile.birthday?.day && (
+              <span style={{ fontSize:12, padding:'2px 10px', borderRadius:10, background:'var(--bg2)', color: bdays!==null&&bdays<=7?'#F87171':'var(--muted)', fontWeight:600, border:'1px solid var(--border)' }}>
+                🎂 {birthdayStr(profile.birthday)}{bdays!==null&&bdays<=30?' · '+(bdays===0?t('今天！','Today!'):bdays+t('天後','d')):''}
+              </span>
+            )}
           </div>
 
           {latest && (
@@ -982,12 +2090,24 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
             </div>
           )}
 
-          <div style={{ borderTop:'1px solid var(--fq-border)', paddingTop:14 }}>
+          {interactionScore !== null && (
+            <div style={{ textAlign:'center', marginBottom:16, padding:'10px 0', borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:11, color:'var(--muted)', fontWeight:600, letterSpacing:1, textTransform:'uppercase', marginBottom:4 }}>
+                {t('近期互動分','Recent Interaction')}
+              </div>
+              <div style={{ fontSize:28, fontWeight:800, color:'#F59E0B', lineHeight:1 }}>{interactionScore}</div>
+              <div style={{ fontSize:12, color:'var(--muted)', marginTop:3 }}>
+                ⭐ {interactionStars} &nbsp;·&nbsp; {ratedLogs.length} {t('筆','logs')}
+              </div>
+            </div>
+          )}
+
+          <div style={{ borderTop:'1px solid var(--border)', paddingTop:14 }}>
             {[
-              ['Surveys taken', surveyCount],
-              ['Avg score', avgScore !== null ? avgScore : '—'],
-              ['Best score', bestScore !== null ? bestScore : '—'],
-              ['Last survey', latest ? fmtDate(latest.createdAt) : '—'],
+              [t('測驗次數','Surveys taken'), surveyCount],
+              [t('平均分數','Avg score'), avgScore !== null ? avgScore : '—'],
+              [t('最高分','Best score'), bestScore !== null ? bestScore : '—'],
+              [t('最近測驗','Last survey'), latest ? fmtDate(latest.createdAt) : '—'],
             ].map(([label, val]) => (
               <div key={label} className="fq-detail-stat">
                 <span className="fq-detail-stat-label">{label}</span>
@@ -996,16 +2116,103 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
             ))}
           </div>
 
-          {profile.notes && (
-            <div style={{ marginTop:14, padding:'10px 12px', background:'var(--fq-surface)', borderRadius:7, fontSize:13, color:'var(--fq-muted)', lineHeight:1.6 }}>
+          <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:8 }}>{t('重要事件','Key Events')}</div>
+            {(profile.keyEvents || []).length === 0 && (
+              <div style={{ fontSize:12, color:'var(--dim)', marginBottom:8 }}>{t('尚無事件','No events yet')}</div>
+            )}
+            {[...(profile.keyEvents || [])].sort((a,b)=>(b.year||0)-(a.year||0)).map((ev, i) => {
+              const members = allProfiles ? findEventMembers(ev, allProfiles) : [];
+              const othersCount = members.filter(p => p.id !== profile.id).length;
+              return (
+                <div key={ev.id || i}
+                  style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6, fontSize:13,
+                    cursor: othersCount > 0 ? 'pointer' : 'default',
+                    padding:'3px 4px', borderRadius:6, transition:'background 0.15s' }}
+                  onClick={() => othersCount > 0 && setEvtMembersEv(ev)}
+                  onMouseEnter={e => { if (othersCount > 0) e.currentTarget.style.background = 'var(--bg3)'; }}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <span style={{ fontSize:11, fontWeight:700, color:'var(--accent)', minWidth:16 }}>#{i+1}</span>
+                  {ev.year && <span style={{ fontSize:11, padding:'1px 6px', borderRadius:6, background:'var(--bg3)', color:'var(--muted)', flexShrink:0 }}>{ev.year}</span>}
+                  <span style={{ color:'var(--text)', lineHeight:1.5, flex:1 }}>{ev.text}</span>
+                  {othersCount > 0 && (
+                    <span style={{ fontSize:10, padding:'1px 5px', borderRadius:8, background:'var(--accent)22',
+                      color:'var(--accent)', fontWeight:700, flexShrink:0 }}>👥 {othersCount}</span>
+                  )}
+                </div>
+              );
+            })}
+            <div style={{ display:'flex', gap:4, marginTop:6 }}>
+              <IMEInput value={evtYear} onChange={e => setEvtYear(e.target.value)}
+                placeholder={t('年份','Year')} type="number" min="1990" max={THIS_YEAR}
+                style={{ width:64, padding:'4px 6px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', flexShrink:0 }} />
+              <div style={{ position:'relative', flex:1, minWidth:0 }}>
+                <IMEInput value={evtText}
+                  onChange={e => { setEvtText(e.target.value); setEvtSharedId(''); setShowEvtSug(true); }}
+                  onFocus={() => setShowEvtSug(true)}
+                  onBlur={() => setTimeout(() => setShowEvtSug(false), 150)}
+                  onEnterKey={addEvent}
+                  placeholder={t('新增事件…','Add event…')}
+                  style={{ width:'100%', padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} />
+                {showEvtSug && <EventSuggest text={evtText} allProfiles={allProfiles} excludeId={profile.id}
+                  onSelect={ev => { setEvtYear(ev.year || evtYear); setEvtText(ev.text); setEvtSharedId(getEvtKey(ev)); setShowEvtSug(false); }} />}
+              </div>
+              <button onClick={addEvent} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--muted)', cursor:'pointer', flexShrink:0 }}>＋</button>
+            </div>
+          </div>
+          {/* Pros & Cons */}
+          <div style={{ marginTop:14, borderTop:'1px solid var(--border)', paddingTop:14 }}>
+            {/* Pros */}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#34D399', marginBottom:6 }}>
+                {t('優點','Strengths')}
+              </div>
+              {(Array.isArray(profile.pros) ? profile.pros : []).map((item, i) => (
+                <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                  <span style={{ color:'#34D399', fontWeight:800, flexShrink:0 }}>•</span>
+                  <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
+                </div>
+              ))}
+              <div style={{ display:'flex', gap:4, marginTop:4 }}>
+                <IMEInput value={prosInput} onChange={e => setProsInput(e.target.value)}
+                  onEnterKey={addPro}
+                  placeholder={t('新增優點…','Add strength…')}
+                  style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+                <button onClick={addPro} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'#34D399', cursor:'pointer', flexShrink:0 }}>＋</button>
+              </div>
+            </div>
+            {/* Cons */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'#F87171', marginBottom:6 }}>
+                {t('缺點 / 挑戰','Weaknesses / Challenges')}
+              </div>
+              {(Array.isArray(profile.cons) ? profile.cons : []).map((item, i) => (
+                <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', marginBottom:4, fontSize:13 }}>
+                  <span style={{ color:'#F87171', fontWeight:800, flexShrink:0 }}>•</span>
+                  <span style={{ color:'var(--text)', lineHeight:1.6 }}>{item}</span>
+                </div>
+              ))}
+              <div style={{ display:'flex', gap:4, marginTop:4 }}>
+                <IMEInput value={consInput} onChange={e => setConsInput(e.target.value)}
+                  onEnterKey={addCon}
+                  placeholder={t('新增缺點…','Add weakness…')}
+                  style={{ flex:1, padding:'4px 8px', fontSize:12, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:0 }} />
+                <button onClick={addCon} style={{ padding:'4px 8px', fontSize:13, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'#F87171', cursor:'pointer', flexShrink:0 }}>＋</button>
+              </div>
+            </div>
+          </div>
+
+          {/* legacy notes support */}
+          {profile.notes && !profile.keyEvents && (
+            <div style={{ marginTop:14, padding:'10px 12px', background:'var(--bg2)', borderRadius:7, fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
               {profile.notes}
             </div>
           )}
 
           {latest && (
             <div style={{ marginTop:16 }}>
-              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--fq-muted)', marginBottom:10 }}>
-                Latest Dimensions
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                {t('最新維度','Latest Dimensions')}
               </div>
               {DIM_META.map(d => (
                 <div key={d.key} style={{ marginBottom:8 }}>
@@ -1013,7 +2220,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                     <span style={{ color: d.color, fontWeight:600 }}>{d.label}</span>
                     <span style={{ fontWeight:700, color: d.color }}>{latest.scores[d.key]}</span>
                   </div>
-                  <div style={{ height:5, background:'var(--fq-border)', borderRadius:3, overflow:'hidden' }}>
+                  <div style={{ height:5, background:'var(--border)', borderRadius:3, overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${latest.scores[d.key]}%`, background: d.color, borderRadius:3, transition:'width 0.6s' }} />
                   </div>
                 </div>
@@ -1024,22 +2231,47 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
 
         {/* Main content */}
         <div>
-          {/* Score trend */}
+          {/* Key Events Timeline */}
+          {profile.keyEvents && profile.keyEvents.length > 0 && (
+            <>
+              <div className="fq-section-hdr" style={{ marginBottom:14 }}>
+                <h2>{t('重要事件','Key Events')}</h2>
+                <div className="fq-line" />
+                <span style={{ fontSize:12, color:'var(--muted)' }}>{profile.keyEvents.length} {t('筆','events')}</span>
+              </div>
+              <div className="fq-card fq-key-event-timeline" style={{ marginBottom:20 }}>
+                {[...profile.keyEvents]
+                  .sort((a, b) => (b.year || 0) - (a.year || 0))
+                  .map((ev, i) => (
+                    <div key={ev.id || i} className="fq-ket-row">
+                      <div className="fq-ket-dot" />
+                      <div className="fq-ket-body">
+                        {ev.year && <span className="fq-ket-year">{ev.year}</span>}
+                        <span className="fq-ket-text">{ev.text}</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </>
+          )}
+
+          {/* Score trend + radar + survey history (survey-enabled only) */}
+          {!profile.noSurvey && (<>
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-            <h2>Score Trend</h2>
+            <h2>{t('分數趨勢','Score Trend')}</h2>
             <div className="fq-line" />
           </div>
           <div className="fq-card" style={{ marginBottom:20 }}>
             <LineChart surveys={profileSurveys} />
           </div>
 
-          {/* Latest radar */}
           {latest && (
             <>
               <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-                <h2>Latest Radar</h2>
+                <h2>{t('最新雷達圖','Latest Radar')}</h2>
                 <div className="fq-line" />
-                <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{fmtDate(latest.createdAt)}</span>
+                <span style={{ fontSize:12, color:'var(--muted)' }}>{fmtDate(latest.createdAt)}</span>
               </div>
               <div className="fq-card" style={{ display:'flex', justifyContent:'center', marginBottom:20 }}>
                 <RadarChart scores={latest.scores} size={280} />
@@ -1047,20 +2279,19 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
             </>
           )}
 
-          {/* Survey history */}
           <div className="fq-section-hdr" style={{ marginBottom:14 }}>
-            <h2>Survey History</h2>
+            <h2>{t('測驗記錄','Survey History')}</h2>
             <div className="fq-line" />
-            <span style={{ fontSize:12, color:'var(--fq-muted)' }}>{surveyCount} records</span>
+            <span style={{ fontSize:12, color:'var(--muted)' }}>{surveyCount} {t('筆','records')}</span>
           </div>
 
           {profileSurveys.length === 0 ? (
             <div className="fq-empty" style={{ padding:'40px 20px' }}>
               <div className="fq-empty-icon">📊</div>
-              <div className="fq-empty-title">No surveys yet</div>
-              <div className="fq-empty-sub">Start a survey to begin quantifying this friendship.</div>
+              <div className="fq-empty-title">{t('尚無測驗記錄','No surveys yet')}</div>
+              <div className="fq-empty-sub">{t('開始第一次測驗來量化這段友誼。','Start a survey to begin quantifying this friendship.')}</div>
               <button className="fq-btn fq-btn-primary fq-btn-sm" onClick={() => onStartSurvey(profile)}>
-                + Start Survey
+                + {t('開始測驗','Start Survey')}
               </button>
             </div>
           ) : (
@@ -1070,7 +2301,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                 const sType = getFriendshipType(s.scores);
                 return (
                   <div key={s.id} className="fq-survey-history-row">
-                    <span style={{ fontSize:11, color:'var(--fq-muted)', minWidth:24 }}>
+                    <span style={{ fontSize:11, color:'var(--muted)', minWidth:24 }}>
                       #{profileSurveys.length - idx}
                     </span>
                     <span className="fq-survey-history-date">{fmtDate(s.createdAt)}</span>
@@ -1087,7 +2318,7 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
                       const diff = s.total - prev.total;
                       if (diff === 0) return null;
                       return (
-                        <span style={{ fontSize:12, color: diff > 0 ? 'var(--fq-green)' : 'var(--fq-red)', fontWeight:700, minWidth:32 }}>
+                        <span style={{ fontSize:12, color: diff > 0 ? 'var(--green)' : 'var(--red)', fontWeight:700, minWidth:32 }}>
                           {diff > 0 ? `+${diff}` : diff}
                         </span>
                       );
@@ -1097,9 +2328,73 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
               })}
             </div>
           )}
+          </>)}
+
+          {/* Journal / Log entries */}
+          {(() => {
+            const profileJournals = (journals || [])
+              .filter(j => j.profileId === profile.id)
+              .sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt));
+            const moodMap = Object.fromEntries(MOODS.map(m => [m.key, m]));
+            return (
+              <>
+                <div className="fq-section-hdr" style={{ marginBottom:14, marginTop:24 }}>
+                  <h2>{t('互動日誌','Interaction Log')}</h2>
+                  <div className="fq-line" />
+                  <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={() => onLogUpdate(profile)}>+ {t('新增','Add')}</button>
+                </div>
+                {profileJournals.length === 0 ? (
+                  <div className="fq-empty" style={{ padding:'28px 20px' }}>
+                    <div className="fq-empty-title">{t('尚無日誌','No logs yet')}</div>
+                    <div className="fq-empty-sub">{t('點擊「+ 日誌」記錄最新的互動感受。','Click "+ Log" to record your latest interaction.')}</div>
+                  </div>
+                ) : (
+                  <div className="fq-journal-list">
+                    {profileJournals.map(j => {
+                      const m = moodMap[j.mood] || { icon:'📝', label:j.mood };
+                      return (
+                        <div key={j.id} className="fq-journal-entry">
+                          <div className="fq-journal-mood-icon">{m.icon}</div>
+                          <div className="fq-journal-body">
+                            <div className="fq-journal-meta">
+                              <span className="fq-journal-date">{fmtDate(j.date || j.createdAt)}</span>
+                              <span className="fq-journal-mood-label">{lang === 'zh' ? (m.zh || m.label || j.mood) : (m.en || j.mood)}</span>
+                            </div>
+                            <div className="fq-journal-text">{j.text}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>
+    {evtMembersEv && allProfiles && (
+      <EventMembersModal ev={evtMembersEv} allProfiles={allProfiles}
+        onClose={() => setEvtMembersEv(null)}
+        onSelectProfile={p => { setEvtMembersEv(null); onSelectFriend?.(p); }} />
+    )}
+    {photoLightbox && profile.photo && (
+      <div onClick={() => setPhotoLightbox(false)} style={{
+        position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:999,
+        display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-out'
+      }}>
+        <img src={profile.photo} alt={profile.name} onClick={e => e.stopPropagation()} style={{
+          maxWidth:'90vw', maxHeight:'90vh', borderRadius:16,
+          boxShadow:'0 24px 80px rgba(0,0,0,0.7)', objectFit:'contain'
+        }} />
+        <button onClick={() => setPhotoLightbox(false)} style={{
+          position:'absolute', top:24, right:28, background:'rgba(255,255,255,0.1)',
+          border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%',
+          width:40, height:40, color:'#fff', fontSize:18, cursor:'pointer'
+        }}>✕</button>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -1107,17 +2402,41 @@ function DetailView({ profile, surveys, onEdit, onStartSurvey, onBack }) {
 // ─── Main FriendPage ───────────────────────────────────────────────────────────
 
 export default function FriendPage() {
-  const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('yc_auth'));
-  const [profiles, setProfiles] = useState(loadProfiles);
-  const [surveys, setSurveys] = useState(loadSurveys);
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('yc_auth') === 'fq_ok');
+  const [profiles,   setProfiles]   = useState(loadProfiles);
+  const [surveys,    setSurveys]    = useState(loadSurveys);
+  const [journals,   setJournals]   = useState(loadJournals);
+  const [customGroups, setCustomGroups] = useState(loadCustomGroups);
   const [view, setView] = useState('dashboard'); // dashboard | create | survey | results | detail
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
   const [lastSurvey, setLastSurvey] = useState(null);
+  const [logTarget, setLogTarget] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem('fq_lang') || 'zh');
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('fq_dark') !== 'false');
 
   // Persist on change
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => { saveSurveys(surveys); }, [surveys]);
+  useEffect(() => { saveJournals(journals); }, [journals]);
+  useEffect(() => { saveCustomGroups(customGroups); }, [customGroups]);
+  useEffect(() => { localStorage.setItem('fq_lang', lang); }, [lang]);
+  useEffect(() => { localStorage.setItem('fq_dark', String(darkMode)); }, [darkMode]);
+
+  function handleAddGroup(group) { setCustomGroups(prev => [...prev, group]); }
+  function toggleLang() { setLang(l => l === 'zh' ? 'en' : 'zh'); }
+  function toggleDark() { setDarkMode(d => !d); }
+
+  function handleLogSave(entry) {
+    setJournals(prev => [entry, ...prev]);
+    if (entry.keyEvent) {
+      const ke = { id: genId(), year: entry.keyEvent.year, text: entry.keyEvent.text };
+      setProfiles(prev => prev.map(p =>
+        p.id !== entry.profileId ? p : { ...p, keyEvents: [...(p.keyEvents || []), ke] }
+      ));
+    }
+    setLogTarget(null);
+  }
 
   function handleAuth() { setAuthed(true); }
 
@@ -1144,12 +2463,16 @@ export default function FriendPage() {
   }
 
   function handleSaveProfile(profile) {
-    if (editingProfile) {
-      setProfiles(prev => prev.map(p => p.id === profile.id ? profile : p));
-    } else {
-      setProfiles(prev => [...prev, profile]);
+    if (profile._newGroup) {
+      setCustomGroups(prev => [...prev, profile._newGroup]);
     }
-    setSelectedProfile(profile);
+    const { _newGroup, ...cleanProfile } = profile;
+    if (editingProfile) {
+      setProfiles(prev => prev.map(p => p.id === cleanProfile.id ? cleanProfile : p));
+    } else {
+      setProfiles(prev => [...prev, cleanProfile]);
+    }
+    setSelectedProfile(cleanProfile);
     setEditingProfile(null);
     setView('detail');
   }
@@ -1158,6 +2481,7 @@ export default function FriendPage() {
     if (!editingProfile) return;
     setProfiles(prev => prev.filter(p => p.id !== editingProfile.id));
     setSurveys(prev => prev.filter(s => s.profileId !== editingProfile.id));
+    setJournals(prev => prev.filter(j => j.profileId !== editingProfile.id));
     goToDashboard();
   }
 
@@ -1172,25 +2496,43 @@ export default function FriendPage() {
     setView('create');
   }
 
-  if (!authed) {
-    return <AuthView onAuth={handleAuth} />;
+  function handleProfileUpdate(updatedProfile) {
+    setProfiles(prev => prev.map(p => p.id === updatedProfile.id ? updatedProfile : p));
+    setSelectedProfile(updatedProfile);
   }
 
+  if (!authed) {
+    return (
+      <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
+        <AuthView onAuth={handleAuth} />
+      </div>
+    );
+  }
+  // also pass surveys to DashboardView (already done in render)
+
   return (
-    <div className="fq-root">
+    <LangCtx.Provider value={lang}>
+    <GroupsCtx.Provider value={customGroups}>
+    <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
       <Topbar
         view={view}
         onDashboard={goToDashboard}
         onAddFriend={handleAddFriend}
+        lang={lang}
+        onToggleLang={toggleLang}
+        darkMode={darkMode}
+        onToggleDark={toggleDark}
       />
 
       {view === 'dashboard' && (
         <DashboardView
           profiles={profiles}
           surveys={surveys}
+          journals={journals}
           onSelectFriend={handleSelectFriend}
           onCreateFriend={handleAddFriend}
           onStartSurvey={handleStartSurvey}
+          onLogUpdate={p => setLogTarget(p)}
         />
       )}
 
@@ -1203,6 +2545,7 @@ export default function FriendPage() {
             else { goToDashboard(); }
           }}
           onDelete={handleDeleteProfile}
+          allProfiles={profiles}
         />
       )}
 
@@ -1219,6 +2562,7 @@ export default function FriendPage() {
       {view === 'results' && lastSurvey && selectedProfile && (
         <ResultsView
           survey={lastSurvey}
+          surveys={surveys}
           profile={selectedProfile}
           onDone={goToDashboard}
           onRetake={() => setView('survey')}
@@ -1230,11 +2574,27 @@ export default function FriendPage() {
         <DetailView
           profile={selectedProfile}
           surveys={surveys}
+          journals={journals}
           onEdit={() => handleEditProfile(selectedProfile)}
+          onDelete={() => {
+            if (!window.confirm(`Delete ${selectedProfile.name}? This cannot be undone.`)) return;
+            const pid = selectedProfile.id;
+            setProfiles(prev => prev.filter(p => p.id !== pid));
+            setSurveys(prev => prev.filter(s => s.profileId !== pid));
+            setJournals(prev => prev.filter(j => j.profileId !== pid));
+            goToDashboard();
+          }}
           onStartSurvey={handleStartSurvey}
           onBack={goToDashboard}
+          onLogUpdate={p => setLogTarget(p)}
+          onProfileUpdate={handleProfileUpdate}
+          allProfiles={profiles}
+          onSelectFriend={handleSelectFriend}
         />
       )}
+      {logTarget && <LogModal profile={logTarget} onSave={handleLogSave} onClose={() => setLogTarget(null)} />}
     </div>
+    </GroupsCtx.Provider>
+    </LangCtx.Provider>
   );
 }

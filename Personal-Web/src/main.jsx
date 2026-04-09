@@ -10,9 +10,9 @@ import "./styles/theme.css";
 const path = window.location.pathname;
 
 let Page = App;
-if (path.startsWith("/secret/fun")) Page = FunPage;
-else if (path.startsWith("/secret/friend")) Page = FriendPage;
-else if (path.startsWith("/secret")) Page = SecretPage;
+if (path.startsWith("/dashboard/fun")) Page = FunPage;
+else if (path.startsWith("/dashboard/friend")) Page = FriendPage;
+else if (path.startsWith("/dashboard")) Page = SecretPage;
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

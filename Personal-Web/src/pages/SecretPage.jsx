@@ -2,28 +2,57 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { encrypt, decrypt } from "./secretUtils.js";
 import "./SecretPage.css";
 
+// Handles Chinese IME: blocks Enter during composition (macOS fix)
+function IMEInput({ onEnterKey, onKeyDown, ...props }) {
+  const composing = useRef(false);
+  return (
+    <input
+      {...props}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={() => { setTimeout(() => { composing.current = false; }, 0); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter' && !composing.current) onEnterKey?.(e);
+        onKeyDown?.(e);
+      }}
+    />
+  );
+}
+
 const VALID_USERNAME = "chianghebe";
 const VALID_PASSWORD = "Hebe0722";
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const CARD_COLORS = ["#2563eb", "#7c3aed", "#dc2626", "#059669", "#d97706", "#0891b2"];
 const CIRCLED = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩"];
 
-const EVENT_CATS = [
-  { id: "exam",     label: "考試",   color: "#ef4444" },
-  { id: "meal",     label: "聚餐",   color: "#f97316" },
-  { id: "work",     label: "工作",   color: "#3b82f6" },
-  { id: "personal", label: "個人",   color: "#a855f7" },
-  { id: "exercise", label: "運動",   color: "#22c55e" },
-  { id: "deadline", label: "截止日", color: "#e11d48" },
-  { id: "other",    label: "其他",   color: "#64748b" },
+const DEFAULT_CATS = [
+  { id: "exam",     label: "Exam",     color: "#ef4444" },
+  { id: "meal",     label: "Dining",   color: "#f97316" },
+  { id: "work",     label: "Work",     color: "#3b82f6" },
+  { id: "personal", label: "Personal", color: "#a855f7" },
+  { id: "exercise", label: "Exercise", color: "#22c55e" },
+  { id: "deadline", label: "Deadline", color: "#e11d48" },
+  { id: "other",    label: "Other",    color: "#64748b" },
 ];
-function catColor(id) { return EVENT_CATS.find(c => c.id === id)?.color ?? "#64748b"; }
-function catLabel(id) { return EVENT_CATS.find(c => c.id === id)?.label ?? id; }
+function catColor(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.color ?? "#64748b"; }
+function catLabel(id, cats) { return (cats || DEFAULT_CATS).find(c => c.id === id)?.label ?? id; }
 
-function CategoryPicker({ value, onChange }) {
+function CategoryPicker({ value, onChange, categories, onAddCategory }) {
+  const cats = categories || DEFAULT_CATS;
+  const [showAdd, setShowAdd] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newColor, setNewColor] = useState("#3b82f6");
+
+  function addCat() {
+    if (!newLabel.trim()) return;
+    const id = "custom_" + Date.now();
+    onAddCategory?.({ id, label: newLabel.trim(), color: newColor });
+    onChange(id);
+    setShowAdd(false); setNewLabel(""); setNewColor("#3b82f6");
+  }
+
   return (
     <div className="sp-cat-picker">
-      {EVENT_CATS.map(c => (
+      {cats.map(c => (
         <button key={c.id}
           className={`sp-cat-chip${value === c.id ? " active" : ""}`}
           style={{ "--cat": c.color }}
@@ -31,6 +60,18 @@ function CategoryPicker({ value, onChange }) {
           type="button"
         >{c.label}</button>
       ))}
+      {showAdd ? (
+        <div className="sp-cat-add-inline">
+          <IMEInput type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="sp-cat-color-swatch" />
+          <IMEInput value={newLabel} onChange={e => setNewLabel(e.target.value)}
+            onEnterKey={() => addCat()} placeholder="Label name"
+            className="sp-cat-label-inp" autoFocus />
+          <button onClick={addCat} type="button" className="sp-cat-add-ok">✓</button>
+          <button onClick={() => setShowAdd(false)} type="button" className="sp-del">✕</button>
+        </div>
+      ) : (
+        <button className="sp-cat-chip" style={{ "--cat": "#64748b" }} onClick={() => setShowAdd(true)} type="button">+ New</button>
+      )}
     </div>
   );
 }
@@ -138,9 +179,9 @@ function QuickLinks({ links, onAdd, onRemove }) {
               </div>
             )}
           </div>
-          <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
-          <input value={url} onChange={e => setUrl(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addCustom()} placeholder="URL" />
+          <IMEInput value={label} onChange={e => setLabel(e.target.value)} placeholder="Label" />
+          <IMEInput value={url} onChange={e => setUrl(e.target.value)}
+            onEnterKey={() => addCustom()} placeholder="URL" />
           <button onClick={addCustom} className="ql-add-btn">+</button>
           <button onClick={() => setShowCustom(false)} className="sp-del">✕</button>
         </div>
@@ -175,7 +216,7 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
             </div>
           ))}
           <div className="sp-pill-add-row">
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder={placeholder} />
+            <IMEInput value={input} onChange={e => setInput(e.target.value)} onEnterKey={() => add()} placeholder={placeholder} />
             <button onClick={add}>+</button>
           </div>
         </div>
@@ -184,14 +225,45 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
   );
 }
 
+// ── Time Picker (10-min steps) ────────────────────────────────
+function TimePicker({ value, onChange, className }) {
+  const parts = (value || "").split(":");
+  const hVal = parts[0] || "";
+  const mVal = parts[1] ? parts[1].slice(0, 2) : "";
+
+  function update(newH, newM) {
+    if (!newH || !newM) { onChange(""); return; }
+    onChange(`${newH}:${newM}`);
+  }
+
+  return (
+    <div className="sp-time-picker">
+      <select value={hVal} onChange={e => update(e.target.value, mVal)} className={className}>
+        <option value="">HH</option>
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+      <span className="sp-time-colon">:</span>
+      <select value={mVal} onChange={e => update(hVal, e.target.value)} className={className}>
+        <option value="">MM</option>
+        {["00","10","20","30","40","50"].map(m => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ── Event Modal ───────────────────────────────────────────────
-function EventModal({ initial = {}, onSave, onClose }) {
-  const [title,    setTitle]    = useState(initial.title    || "");
-  const [date,     setDate]     = useState(initial.date     || "");
-  const [time,     setTime]     = useState(initial.time     || "");
-  const [category, setCategory] = useState(initial.category || "other");
-  const [location, setLocation] = useState(initial.location || "");
-  const [notes,    setNotes]    = useState(initial.notes    || "");
+function EventModal({ initial = {}, onSave, onClose, categories, onAddCategory }) {
+  const [title,       setTitle]       = useState(initial.title       || "");
+  const [date,        setDate]        = useState(initial.date        || "");
+  const [time,        setTime]        = useState(initial.time        || "");
+  const [category,    setCategory]    = useState(initial.category    || "other");
+  const [location,    setLocation]    = useState(initial.location    || "");
+  const [notes,       setNotes]       = useState(initial.notes       || "");
+  const [pinDeadline, setPinDeadline] = useState(initial.pinDeadline !== false);
 
   useEffect(() => {
     const onKey = e => { if (e.key === "Escape") onClose(); };
@@ -201,7 +273,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
 
   function save() {
     if (!title.trim()) return;
-    onSave({ id: initial.id || Date.now().toString(), title: title.trim(), date, time, category, location, notes });
+    onSave({ id: initial.id || Date.now().toString(), title: title.trim(), date, time, category, location, notes, pinDeadline });
     onClose();
   }
 
@@ -213,11 +285,11 @@ function EventModal({ initial = {}, onSave, onClose }) {
           <button onClick={onClose} className="sp-modal-close">✕</button>
         </div>
         <div className="sp-modal-body">
-          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && save()}
+          <IMEInput autoFocus value={title} onChange={e => setTitle(e.target.value)}
+            onEnterKey={() => save()}
             placeholder="Event title..." className="sp-modal-main-input" />
           <div className="sp-modal-label">Category</div>
-          <CategoryPicker value={category} onChange={setCategory} />
+          <CategoryPicker value={category} onChange={setCategory} categories={categories} onAddCategory={onAddCategory} />
           <div className="sp-modal-row2">
             <div className="sp-modal-field">
               <div className="sp-modal-label">Date</div>
@@ -225,7 +297,7 @@ function EventModal({ initial = {}, onSave, onClose }) {
             </div>
             <div className="sp-modal-field">
               <div className="sp-modal-label">Time</div>
-              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="sp-modal-input" />
+              <TimePicker value={time} onChange={setTime} className="sp-modal-input" />
             </div>
           </div>
           <div className="sp-modal-field">
@@ -238,6 +310,10 @@ function EventModal({ initial = {}, onSave, onClose }) {
             <textarea value={notes} onChange={e => setNotes(e.target.value)}
               placeholder="Add notes..." className="sp-modal-textarea" />
           </div>
+          <label className="sp-pin-toggle">
+            <input type="checkbox" checked={pinDeadline} onChange={e => setPinDeadline(e.target.checked)} />
+            <span>Show in Deadlines</span>
+          </label>
         </div>
         <div className="sp-modal-footer">
           <button onClick={onClose} className="sp-modal-cancel">Cancel</button>
@@ -282,10 +358,11 @@ function dlBadgeLabel(days) {
 }
 
 // ── Deadlines ─────────────────────────────────────────────────
-function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
-  const [modal, setModal] = useState(null); // null | event object
+function DeadlinesSection({ events, onAdd, onEdit, onRemove, categories }) {
+  const [modal, setModal] = useState(null);
 
-  const sorted = [...events].sort((a, b) => {
+  const list = events.filter(e => !e.deleted && e.pinDeadline !== false);
+  const sorted = [...list].sort((a, b) => {
     const da = daysLeft(a.date), db = daysLeft(b.date);
     if (da === null && db === null) return 0;
     if (da === null) return 1; if (db === null) return -1;
@@ -305,9 +382,10 @@ function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
           return (
             <div key={d.id} className="sp-dl-item sp-dl-item-click" onClick={() => setModal(d)}>
               <span className="sp-dl-badge" style={{ background: bg, color }}>{dlBadgeLabel(days)}</span>
-              <span className="sp-cat-dot" style={{ background: catColor(d.category) }} title={catLabel(d.category)} />
+              <span className="sp-cat-dot" style={{ background: catColor(d.category, categories) }}
+                title={catLabel(d.category, categories)} />
               <span className="sp-dl-name">{d.title}</span>
-              {d.time && <span className="sp-dl-time">{d.time}</span>}
+              {d.time && <span className="sp-dl-time">{d.time.slice(0,5)}</span>}
               <span className="sp-dl-datestr">{displayDate}</span>
               <button onClick={e => { e.stopPropagation(); onRemove(d.id); }} className="sp-del">✕</button>
             </div>
@@ -315,7 +393,7 @@ function DeadlinesSection({ events, onAdd, onEdit, onRemove }) {
         })}
       </div>
       {modal && (
-        <EventModal initial={modal}
+        <EventModal initial={modal} categories={categories}
           onSave={e => { modal.id ? onEdit(e) : onAdd(e); setModal(null); }}
           onClose={() => setModal(null)} />
       )}
@@ -342,6 +420,8 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
   const [localItems, setLocalItems] = useState([]);
   const [addModal, setAddModal]     = useState(null);
   const [viewCard, setViewCard]     = useState(null);
+  const [editMode, setEditMode]     = useState(false);
+  const [editForm, setEditForm]     = useState({ title: "", deadline: "", details: "" });
   const [form, setForm]             = useState({ title: "", deadline: "", details: "" });
 
   // Sync from parent when not dragging
@@ -405,6 +485,23 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
     e.stopPropagation();
     if (dragMoved.current) return;
     setViewCard(id);
+    setEditMode(false);
+  }
+
+  function startEdit(item) {
+    setEditForm({ title: item.title, deadline: item.deadline || "", details: item.details || "" });
+    setEditMode(true);
+  }
+
+  function saveEdit(id) {
+    if (!editForm.title.trim()) return;
+    const next = localItemsRef.current.map(i =>
+      i.id === id ? { ...i, title: editForm.title.trim(), deadline: editForm.deadline, details: editForm.details } : i
+    );
+    localItemsRef.current = next;
+    setLocalItems(next);
+    onUpdate(next);
+    setEditMode(false);
   }
 
   function addItem() {
@@ -493,8 +590,8 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
             </div>
             <div className="em-modal-field">
               <label>Title</label>
-              <input autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && addItem()} placeholder="Task title..." />
+              <IMEInput autoFocus value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                onEnterKey={() => addItem()} placeholder="Task title..." />
             </div>
             <div className="em-modal-field">
               <label>Deadline</label>
@@ -514,29 +611,61 @@ function EisenhowerMatrix({ matrix, onUpdate }) {
         </div>
       )}
 
-      {/* View Card */}
+      {/* View / Edit Card */}
       {viewItem && (() => {
         const q = getQuadrantInfo(viewItem.x, viewItem.y);
         return (
-          <div className="em-overlay" onClick={() => setViewCard(null)}>
+          <div className="em-overlay" onClick={() => { setViewCard(null); setEditMode(false); }}>
             <div className="em-modal" onClick={e => e.stopPropagation()}>
               <div className="em-modal-header">
                 <div>
                   <span className="em-modal-quad" style={{ color: q.color }}>{q.label} · {q.sub}</span>
-                  <h3>{viewItem.title}</h3>
+                  {!editMode && <h3>{viewItem.title}</h3>}
                 </div>
-                <button className="em-close" onClick={() => setViewCard(null)}>✕</button>
+                <button className="em-close" onClick={() => { setViewCard(null); setEditMode(false); }}>✕</button>
               </div>
-              {viewItem.deadline && (
-                <div className="em-card-row"><span className="em-card-key">Deadline</span><span>{viewItem.deadline}</span></div>
+
+              {editMode ? (
+                <>
+                  <div className="em-modal-field">
+                    <label>Title</label>
+                    <IMEInput autoFocus value={editForm.title}
+                      onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                      onEnterKey={() => saveEdit(viewItem.id)} />
+                  </div>
+                  <div className="em-modal-field">
+                    <label>Deadline</label>
+                    <input value={editForm.deadline}
+                      onChange={e => setEditForm(p => ({ ...p, deadline: e.target.value }))}
+                      placeholder="e.g. 2025/06/01" />
+                  </div>
+                  <div className="em-modal-field">
+                    <label>Details</label>
+                    <textarea value={editForm.details}
+                      onChange={e => setEditForm(p => ({ ...p, details: e.target.value }))}
+                      rows={3} placeholder="Notes, subtasks..." />
+                  </div>
+                  <div className="em-modal-actions">
+                    <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
+                    <button className="em-btn-cancel" onClick={() => setEditMode(false)}>Cancel</button>
+                    <button className="em-btn-add" onClick={() => saveEdit(viewItem.id)}>Save</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {viewItem.deadline && (
+                    <div className="em-card-row"><span className="em-card-key">Deadline</span><span>{viewItem.deadline}</span></div>
+                  )}
+                  {viewItem.details && (
+                    <div className="em-card-row"><span className="em-card-key">Details</span><span style={{ whiteSpace:"pre-wrap" }}>{viewItem.details}</span></div>
+                  )}
+                  <div className="em-modal-actions">
+                    <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
+                    <button className="em-btn-cancel" onClick={() => { setViewCard(null); setEditMode(false); }}>Close</button>
+                    <button className="em-btn-add" onClick={() => startEdit(viewItem)}>Edit</button>
+                  </div>
+                </>
               )}
-              {viewItem.details && (
-                <div className="em-card-row"><span className="em-card-key">Details</span><span>{viewItem.details}</span></div>
-              )}
-              <div className="em-modal-actions">
-                <button className="em-btn-delete" onClick={() => deleteItem(viewItem.id)}>Delete</button>
-                <button className="em-btn-cancel" onClick={() => setViewCard(null)}>Close</button>
-              </div>
             </div>
           </div>
         );
@@ -575,7 +704,7 @@ function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
 
   function eventsAtHour(h) {
     const hStr = String(h).padStart(2, "0");
-    return events.filter(e => e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
+    return events.filter(e => !e.deleted && e.date === selKey && e.time && e.time.startsWith(hStr + ":"));
   }
 
   const dayLabel = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow"
@@ -604,7 +733,7 @@ function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
                 <span key={e.id} className="sp-tl-chip"
                   style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}
                   onClick={() => setModal(e)} title="Edit event">
-                  {e.title}
+                  {e.time && <span style={{fontSize:10,opacity:0.7,marginRight:3}}>{e.time.slice(0,5)}</span>}{e.title}
                   <button onClick={ev => { ev.stopPropagation(); onRemove(e.id); }} className="sp-tl-chip-del">×</button>
                 </span>
               ))}
@@ -635,7 +764,7 @@ function CalendarSection({ events, onAdd, onEdit, onRemove }) {
   const todayISO = dateKey(now);
 
   function eventsForDate(iso) {
-    return events.filter(e => normToISO(e.date) === iso || e.date === iso)
+    return events.filter(e => !e.deleted && (normToISO(e.date) === iso || e.date === iso))
       .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   }
 
@@ -722,29 +851,110 @@ function CalendarSection({ events, onAdd, onEdit, onRemove }) {
   );
 }
 
-// ── Groceries ─────────────────────────────────────────────────
-function GroceriesSection({ items, onAdd, onToggle, onRemove }) {
+// ── Task Lists (replaces Groceries) ───────────────────────────
+function TaskListItem({ item, onToggle, onRemove }) {
+  return (
+    <div className={`sp-grocery-item${item.done ? " done" : ""}`}>
+      <input type="checkbox" checked={item.done} onChange={onToggle} />
+      <span>{item.text}</span>
+      <button onClick={onRemove} className="sp-del">✕</button>
+    </div>
+  );
+}
+
+function TaskList({ list, isOpen, onToggleOpen, onDelete, onAddItem, onToggleItem, onRemoveItem }) {
   const [input, setInput] = useState("");
 
   function add() {
     if (!input.trim()) return;
-    onAdd({ id: Date.now().toString(), text: input.trim(), done: false });
+    onAddItem(input.trim());
     setInput("");
   }
 
+  const done  = list.items.filter(i => i.done).length;
+  const total = list.items.length;
+
   return (
-    <div className="sp-groceries">
-      <div className="sp-section-title">Groceries</div>
-      {items.map((g, i) => (
-        <div key={g.id || i} className={`sp-grocery-item${g.done ? " done" : ""}`}>
-          <input type="checkbox" checked={g.done} onChange={() => onToggle(i)} />
-          <span>{g.text}</span>
-          <button onClick={() => onRemove(i)} className="sp-del">✕</button>
+    <div className="sp-tl-list">
+      <div className="sp-tl-list-header" onClick={onToggleOpen}>
+        <span className="sp-tl-list-caret">{isOpen ? "▲" : "▼"}</span>
+        <span className="sp-tl-list-name">{list.name}</span>
+        {total > 0 && <span className="sp-tl-list-count">{done}/{total}</span>}
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="sp-del" style={{marginLeft:"auto"}}>✕</button>
+      </div>
+      {isOpen && (
+        <div className="sp-tl-list-body">
+          {list.items.map(item => (
+            <TaskListItem key={item.id} item={item}
+              onToggle={() => onToggleItem(item.id)}
+              onRemove={() => onRemoveItem(item.id)} />
+          ))}
+          <div className="sp-grocery-add">
+            <IMEInput value={input} onChange={e => setInput(e.target.value)}
+              onEnterKey={() => add()} placeholder="Add item..." />
+            <button onClick={add}>+</button>
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function TaskListsSection({ taskLists, onUpdate }) {
+  const [newName, setNewName] = useState("");
+  const [open, setOpen]       = useState({});
+
+  function isOpen(id) { return open[id] !== false; } // default open
+
+  function addList() {
+    if (!newName.trim()) return;
+    const id = Date.now().toString();
+    onUpdate([...taskLists, { id, name: newName.trim(), items: [] }]);
+    setOpen(o => ({ ...o, [id]: true }));
+    setNewName("");
+  }
+
+  function deleteList(id) {
+    onUpdate(taskLists.filter(l => l.id !== id));
+  }
+
+  function addItem(listId, text) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: [...l.items, { id: Date.now().toString(), text, done: false }] }
+      : l
+    ));
+  }
+
+  function toggleItem(listId, itemId) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: l.items.map(it => it.id === itemId ? { ...it, done: !it.done } : it) }
+      : l
+    ));
+  }
+
+  function removeItem(listId, itemId) {
+    onUpdate(taskLists.map(l => l.id === listId
+      ? { ...l, items: l.items.filter(it => it.id !== itemId) }
+      : l
+    ));
+  }
+
+  return (
+    <div className="sp-tasklists">
+      <div className="sp-section-title">Task Lists</div>
+      {taskLists.map(list => (
+        <TaskList key={list.id} list={list} isOpen={isOpen(list.id)}
+          onToggleOpen={() => setOpen(o => ({ ...o, [list.id]: !isOpen(list.id) }))}
+          onDelete={() => deleteList(list.id)}
+          onAddItem={text => addItem(list.id, text)}
+          onToggleItem={itemId => toggleItem(list.id, itemId)}
+          onRemoveItem={itemId => removeItem(list.id, itemId)}
+        />
       ))}
-      <div className="sp-grocery-add">
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Add item..." />
-        <button onClick={add}>+</button>
+      <div className="sp-tl-add-list">
+        <IMEInput value={newName} onChange={e => setNewName(e.target.value)}
+          onEnterKey={() => addList()} placeholder="+ New list..." className="sp-tl-add-input" />
+        <button onClick={addList} className="sp-tl-add-btn">+</button>
       </div>
     </div>
   );
@@ -758,11 +968,13 @@ export default function SecretPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("sp_dark") !== "false");
 
   const [links,      setLinks]      = useState([]);
   const [events,     setEvents]     = useState([]);  // unified events
   const [matrix,     setMatrix]     = useState([]);
-  const [groceries,  setGroceries]  = useState([]);
+  const [taskLists,  setTaskLists]  = useState([]);
+  const [categories, setCategories] = useState(DEFAULT_CATS);
   const [globalModal,setGlobalModal]= useState(false);
 
   // Restore session
@@ -777,29 +989,39 @@ export default function SecretPage() {
 
   // Load all data after login
   useEffect(() => {
-    if (!loggedIn || !currentPassword) return;
-    (async () => {
-      const load = async (key, def, isStr = false) => {
-        const raw = localStorage.getItem(key);
-        if (!raw) return def;
+    if (!loggedIn) return;
+    // Try plain JSON first; if it fails (old encrypted format), migrate once
+    const tryLoad = async (key, def) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return def;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        // Old encrypted format – decrypt once and re-save as plain JSON
+        if (!currentPassword) return def;
         const text = await decrypt(raw, currentPassword);
         if (text == null) return def;
-        return isStr ? text : JSON.parse(text);
-      };
-      setLinks(await load("yc2_links", []));
-      setDeadlines(await load("yc2_deadlines", []));
-      const rawMatrix = await load("yc2_matrix", []);
+        try {
+          const val = JSON.parse(text);
+          localStorage.setItem(key, JSON.stringify(val)); // migrate
+          return val;
+        } catch { return def; }
+      }
+    };
+    (async () => {
+      setLinks(await tryLoad("yc2_links", []));
+      const rawMatrix = await tryLoad("yc2_matrix", []);
       setMatrix(Array.isArray(rawMatrix) ? rawMatrix : []);
 
       // Load unified events (migrate old formats if present)
-      let unified = await load("yc2_events", null);
+      let unified = await tryLoad("yc2_events", null);
       if (!unified) {
         unified = [];
         // Migrate old deadlines
-        const oldDL = await load("yc2_deadlines", []);
+        const oldDL = await tryLoad("yc2_deadlines", []);
         oldDL.forEach(d => unified.push({ id: d.id || Date.now().toString() + Math.random(), title: d.title, date: normToISO(d.date) || d.date, category: "deadline" }));
         // Migrate old timeline
-        const oldTL = await load("yc2_timeline", {});
+        const oldTL = await tryLoad("yc2_timeline", {});
         const tlObj = (typeof Object.values(oldTL)[0] === "string") ? { [dateKey(new Date())]: oldTL } : oldTL;
         Object.entries(tlObj).forEach(([date, hours]) => {
           Object.entries(hours).forEach(([h, txt]) => {
@@ -807,18 +1029,19 @@ export default function SecretPage() {
           });
         });
         // Migrate old cal events
-        const oldCal = await load("yc2_cal_events", []);
+        const oldCal = await tryLoad("yc2_cal_events", []);
         oldCal.forEach(e => unified.push({ id: e.id, title: e.title, date: e.date, time: e.time||"", category: e.category||"other" }));
       }
       setEvents(unified);
-      setGroceries(await load("yc2_groceries", []));
+      setTaskLists(await tryLoad("yc2_tasklists", []));
+      setCategories(await tryLoad("yc2_categories", DEFAULT_CATS));
     })();
   }, [loggedIn, currentPassword]);
 
-  const save = useCallback(async (key, value) => {
-    const text = typeof value === "string" ? value : JSON.stringify(value);
-    localStorage.setItem(key, await encrypt(text, currentPassword));
-  }, [currentPassword]);
+  // Synchronous plain-JSON save – no async, no timing issues
+  const save = useCallback((key, value) => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, []);
 
   function handleLogin() {
     if (username !== VALID_USERNAME || password !== VALID_PASSWORD) {
@@ -835,16 +1058,21 @@ export default function SecretPage() {
     sessionStorage.clear();
     setLoggedIn(false); setCurrentUser(""); setCurrentPassword(""); setPassword("");
     setLinks([]);
-    setEvents([]); setMatrix([]); setGroceries([]);
+    setEvents([]); setMatrix([]); setTaskLists([]); setCategories(DEFAULT_CATS);
   }
 
-  const updateLinks    = v => { setLinks(v);    save("yc2_links", v); };
-  const updateEvents   = v => { setEvents(v);   save("yc2_events", v); };
-  const handleAddEvent = e => updateEvents([...events, e]);
-  const handleEditEvent= e => updateEvents(events.map(x => x.id === e.id ? e : x));
-  const handleDelEvent = id=> updateEvents(events.filter(e => e.id !== id));
-  const updateMatrix   = v => { setMatrix(v);   save("yc2_matrix", v); };
-  const updateGroceries= v => { setGroceries(v);save("yc2_groceries", v); };
+  const updateLinks     = v => { setLinks(v);      save("yc2_links", v); };
+  const updateEvents    = v => { setEvents(v);     save("yc2_events", v); };
+  const handleAddEvent  = e => updateEvents([...events, e]);
+  const handleEditEvent = e => updateEvents(events.map(x => x.id === e.id ? e : x));
+  const handleDelEvent  = id => updateEvents(events.filter(e => e.id !== id));
+  const updateMatrix    = v => { setMatrix(v);     save("yc2_matrix", v); };
+  const updateTaskLists = v => { setTaskLists(v);  save("yc2_tasklists", v); };
+  const handleAddCategory = cat => {
+    const next = [...categories, cat];
+    setCategories(next);
+    save("yc2_categories", next);
+  };
 
   if (!loggedIn) {
     return (
@@ -854,11 +1082,11 @@ export default function SecretPage() {
           <p>This area is restricted. Please sign in.</p>
           <div className="sp-field">
             <label>USERNAME</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Enter username" autoComplete="off" />
+            <IMEInput type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Enter username" autoComplete="off" />
           </div>
           <div className="sp-field">
             <label>PASSWORD</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="Enter password" />
+            <IMEInput type="password" value={password} onChange={e => setPassword(e.target.value)} onEnterKey={() => handleLogin()} placeholder="Enter password" />
           </div>
           <button className="sp-login-btn" onClick={handleLogin}>Sign In</button>
           {loginError && <div className="sp-login-error">Incorrect username or password.</div>}
@@ -869,17 +1097,21 @@ export default function SecretPage() {
   }
 
   return (
-    <div className="sp-root">
+    <div className={`sp-root${darkMode ? "" : " sp-light"}`}>
       <div className="sp-topbar">
         <div className="sp-brand">YC<span>.</span> Private</div>
         <div className="sp-topbar-right">
           <button className="sp-new-ev-btn" onClick={() => setGlobalModal(true)}>＋ Event</button>
           <span className="sp-username">{currentUser}</span>
+          <button className="sp-theme-btn" onClick={() => setDarkMode(d => { localStorage.setItem("sp_dark", String(!d)); return !d; })} title="Toggle theme">
+            {darkMode ? "☀️" : "🌙"}
+          </button>
           <button className="sp-logout-btn" onClick={handleLogout}>Sign Out</button>
         </div>
       </div>
       {globalModal && (
         <EventModal initial={{ date: dateKey(new Date()) }}
+          categories={categories} onAddCategory={handleAddCategory}
           onSave={e => { handleAddEvent(e); setGlobalModal(false); }}
           onClose={() => setGlobalModal(false)} />
       )}
@@ -896,24 +1128,19 @@ export default function SecretPage() {
           <a href="https://music.youtube.com/playlist?list=PLdpw4c3Tb8_i87buXxix9KI3KS1JbPfl5&si=YqcEhZpE700XF6c6" target="_blank" rel="noreferrer" className="sp-pill sp-pill-link">
             <span>🎵</span>Music Playlist<span className="sp-pill-caret">→</span>
           </a>
-          <a href="/secret/fun" className="sp-pill sp-pill-link">
+          <a href="/dashboard/fun" className="sp-pill sp-pill-link">
             <span>🎉</span>Fun Things<span className="sp-pill-caret">→</span>
           </a>
-          <a href="/secret/friend" className="sp-pill sp-pill-link">
+          <a href="/dashboard/friend" className="sp-pill sp-pill-link">
             <span>👥</span>Friends<span className="sp-pill-caret">→</span>
           </a>
-          <GroceriesSection
-            items={groceries}
-            onAdd={g => updateGroceries([...groceries, g])}
-            onToggle={i => updateGroceries(groceries.map((g, idx) => idx === i ? { ...g, done: !g.done } : g))}
-            onRemove={i => updateGroceries(groceries.filter((_, idx) => idx !== i))}
-          />
+          <TaskListsSection taskLists={taskLists} onUpdate={updateTaskLists} />
         </div>
 
         {/* ── MIDDLE ── */}
         <div className="sp-middle">
           <DeadlinesSection
-            events={events}
+            events={events} categories={categories}
             onAdd={handleAddEvent} onEdit={handleEditEvent} onRemove={handleDelEvent}
           />
           <EisenhowerMatrix matrix={matrix} onUpdate={updateMatrix} />

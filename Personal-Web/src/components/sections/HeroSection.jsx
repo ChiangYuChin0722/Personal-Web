@@ -65,12 +65,12 @@ export default function HeroSection() {
         </div>
 
         <p className="hero-hint">{t("hero_hint")}</p>
-      </div>
 
-      {/* Scroll indicator */}
-      <div className="hero-scroll-indicator">
-        <span className="hero-scroll-label">scroll</span>
-        <span className="hero-scroll-line" />
+        {/* Scroll indicator */}
+        <div className="hero-scroll-indicator">
+          <span className="hero-scroll-label">scroll</span>
+          <span className="hero-scroll-line" />
+        </div>
       </div>
 
       <Modal open={open} onClose={() => setOpen(false)} title={lang === "zh-Hant" ? nameZh : nameEn}>
