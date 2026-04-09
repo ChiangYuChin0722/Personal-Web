@@ -288,7 +288,15 @@ function fmtDate(iso) {
 function loadProfiles() {
   try { return JSON.parse(localStorage.getItem('fq_profiles') || '[]'); } catch { return []; }
 }
-function saveProfiles(p) { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
+function saveProfiles(p) {
+  try { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
+  catch (e) {
+    // localStorage quota exceeded — strip photos and retry
+    const stripped = p.map(pr => ({ ...pr, photo: null }));
+    try { localStorage.setItem('fq_profiles', JSON.stringify(stripped)); } catch {}
+    console.warn('localStorage full — photos not saved', e);
+  }
+}
 function loadSurveys() {
   try { return JSON.parse(localStorage.getItem('fq_surveys') || '[]'); } catch { return []; }
 }
@@ -1318,17 +1326,15 @@ function PhotoCropModal({ src, onApply, onCancel }) {
   function handleApply() {
     const img = imgRef.current;
     const canvas = canvasRef.current;
-    const OUT = 400;
+    const OUT = 200;
     canvas.width = OUT; canvas.height = OUT;
     const ctx = canvas.getContext('2d');
     const W = img.naturalWidth, H = img.naturalHeight;
-    // image top-left in preview container coords
     const ix = PREVIEW / 2 + offset.x - (W * scale) / 2;
     const iy = PREVIEW / 2 + offset.y - (H * scale) / 2;
-    // map preview → output
     const r = OUT / PREVIEW;
     ctx.drawImage(img, ix * r, iy * r, W * scale * r, H * scale * r);
-    onApply(canvas.toDataURL('image/jpeg', 0.92));
+    onApply(canvas.toDataURL('image/jpeg', 0.75));
   }
 
   return (
