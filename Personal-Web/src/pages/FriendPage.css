@@ -225,7 +225,7 @@
 .fq-score-badge {
   margin-left: auto; font-size: 22px; font-weight: 800;
   color: var(--accent-light); line-height: 1; flex-shrink: 0;
-  align-self: flex-start; margin-right: 38px;
+  align-self: flex-start;
 }
 .fq-score-badge.tier-S { color: var(--fq-cyan); }
 .fq-score-badge.tier-A { color: var(--green); }

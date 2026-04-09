@@ -704,7 +704,7 @@ function AuthView({ onAuth }) {
 
 // ─── Dashboard View ────────────────────────────────────────────────────────────
 
-function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate, onUpdateSurvey }) {
+function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFriend, onStartSurvey, onLogUpdate }) {
   const lang = useContext(LangCtx);
   const customGroups = useContext(GroupsCtx);
   const t = (zh, en) => lang === 'zh' ? zh : en;
@@ -712,7 +712,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('');
   const [filterTier, setFilterTier] = useState('');
-  const [typePickerSurvey, setTypePickerSurvey] = useState(null); // survey being overridden
   const [sortBy, setSortBy] = useState('score');
   const [compareIds, setCompareIds] = useState([]);
 
@@ -1152,12 +1151,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               return (
                 <div key={p.id} className={`fq-friend-card${inCompare ? ' fq-compare-selected' : ''}`} onClick={() => onSelectFriend(p)}>
                   {type && (
-                    <div
-                      className="fq-type-tag"
-                      style={{ background: type.color + '22', color: type.color, cursor: onUpdateSurvey ? 'pointer' : 'default' }}
-                      title={t('點擊更改友誼類型','Click to change friendship type')}
-                      onClick={e => { e.stopPropagation(); if (onUpdateSurvey && latest) setTypePickerSurvey(latest); }}
-                    >
+                    <div className="fq-type-tag" style={{ background: type.color + '22', color: type.color }}>
                       {type.key}
                       {latest?.typeOverride && <span style={{ fontSize:8, marginLeft:2, opacity:0.7 }}>✎</span>}
                     </div>
@@ -1243,56 +1237,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
         </div>
       </div>
 
-      {/* Type Override Modal */}
-      {typePickerSurvey && (
-        <div
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}
-          onClick={() => setTypePickerSurvey(null)}
-        >
-          <div
-            style={{ background:'var(--bg1)', border:'1px solid var(--border)', borderRadius:14, padding:24, minWidth:320, maxWidth:480 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontSize:13, fontWeight:700, marginBottom:16 }}>{t('選擇友誼類型','Select Friendship Type')}</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-              {ALL_FRIENDSHIP_TYPES.map(tp => {
-                const isSelected = (typePickerSurvey.typeOverride || getFriendshipType(typePickerSurvey.scores).key) === tp.key;
-                const isAuto = !typePickerSurvey.typeOverride && tp.key === getFriendshipType(typePickerSurvey.scores).key;
-                return (
-                  <button
-                    key={tp.key}
-                    onClick={() => {
-                      const newOverride = typePickerSurvey.typeOverride === tp.key ? null : tp.key;
-                      const updated = { ...typePickerSurvey, typeOverride: newOverride };
-                      onUpdateSurvey(updated);
-                      setTypePickerSurvey(updated);
-                    }}
-                    style={{
-                      padding:'5px 12px', borderRadius:6,
-                      border:`2px solid ${isSelected ? tp.color : 'transparent'}`,
-                      background: isSelected ? tp.color + '22' : 'var(--surface2)',
-                      color: isSelected ? tp.color : 'var(--text)',
-                      fontSize:12, fontWeight: isSelected ? 700 : 400,
-                      cursor:'pointer', transition:'all 0.15s',
-                    }}
-                  >
-                    {tp.key} · {lang === 'zh' ? tp.name : tp.en}
-                    {isAuto && <span style={{ fontSize:9, marginLeft:3, opacity:0.6 }}>auto</span>}
-                  </button>
-                );
-              })}
-            </div>
-            {typePickerSurvey.typeOverride && (
-              <div style={{ marginTop:10, fontSize:11, color:'var(--muted)' }}>
-                {t('已手動設定。點擊同一個類型可取消覆蓋。','Manually set. Click the same type again to revert to auto.')}
-              </div>
-            )}
-            <button className="fq-btn fq-btn-ghost" style={{ marginTop:16 }} onClick={() => setTypePickerSurvey(null)}>
-              {t('完成','Done')}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -2702,7 +2646,6 @@ export default function FriendPage() {
           onCreateFriend={handleAddFriend}
           onStartSurvey={handleStartSurvey}
           onLogUpdate={p => setLogTarget(p)}
-          onUpdateSurvey={handleUpdateSurvey}
         />
       )}
 
