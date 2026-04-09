@@ -836,7 +836,6 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               { label: t('最佳朋友', 'Top Friend'),   value: highestProfile ? highestProfile.name : '—', sub: null, color: null, small: !!highestProfile },
               { label: t('測驗次數', 'Surveys'),       value: totalSurveys, sub: null,       color: null },
               { label: t('日誌條目', 'Log Entries'),   value: totalLogs,  sub: null,          color: null },
-              { label: t('需要關注', 'Need Attention'), value: needAttention, sub: t('分數低於40', 'Score < 40'), color: needAttention > 0 ? '#F87171' : null },
             ].map(({ label, value, sub, color, small }) => (
               <div key={label} className="fq-kpi-list-item">
                 <span className="fq-kpi-list-label">{label}</span>
