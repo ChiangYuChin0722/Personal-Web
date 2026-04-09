@@ -1365,6 +1365,7 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
   const [prosInput,   setProsInput]   = useState('');
   const [consInput,   setConsInput]   = useState('');
   const [noSurvey,    setNoSurvey]    = useState(editProfile?.noSurvey ?? false);
+  const [quickScore,  setQuickScore]  = useState('');  // direct score input (skip survey)
   const [err,         setErr]         = useState('');
   const [cropSrc,     setCropSrc]     = useState(null);
   const [evtSharedId, setEvtSharedId] = useState('');
@@ -1418,12 +1419,14 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
     }
     const group = getGroupById(resolvedGroupId, customGroups);
     const color = group ? group.color : '#60A5FA';
+    const qs = quickScore !== '' ? Math.max(0, Math.min(90, parseInt(quickScore, 10))) : null;
     onSave({
       id: editProfile?.id || genId(),
       name: name.trim(), photo, color, groupId: resolvedGroupId || '',
       since, keyEvents, birthday, pros: prosList, cons: consList, noSurvey: noSurvey || false,
       createdAt: editProfile?.createdAt || new Date().toISOString(),
       _newGroup: newCustomGroup,
+      _quickScore: (!isEdit && !noSurvey && qs !== null && !isNaN(qs)) ? qs : null,
     });
   }
 
@@ -1653,6 +1656,40 @@ function CreateView({ editProfile, onSave, onCancel, onDelete, allProfiles }) {
             </span>
           </div>
         </div>
+
+        {!isEdit && !noSurvey && (
+          <div className="fq-form-row">
+            <label className="fq-label">{t('直接給分（選填）','Quick Score (optional)')}</label>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <input
+                  type="number" min="0" max="90"
+                  className="fq-input"
+                  style={{ width:100 }}
+                  placeholder={t('0 – 90','0 – 90')}
+                  value={quickScore}
+                  onChange={e => setQuickScore(e.target.value)}
+                />
+                {quickScore !== '' && !isNaN(parseInt(quickScore)) && (() => {
+                  const s = Math.max(0, Math.min(90, parseInt(quickScore)));
+                  const d = Math.min(100, Math.round(s / 0.9));
+                  const scores = { F:d, R:d, S:d, T:d, St:d, E:d, total: s };
+                  const type = getFriendshipType(scores);
+                  const tier = getScoreTier(s);
+                  return (
+                    <span style={{ fontSize:12, display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color: tier.color, fontWeight:700 }}>Tier {tier.tier}</span>
+                      <span style={{ padding:'2px 8px', borderRadius:4, background: type.color+'22', color: type.color, fontWeight:700 }}>{type.key} {lang==='zh'?type.name:type.en}</span>
+                    </span>
+                  );
+                })()}
+              </div>
+              <div style={{ fontSize:11, color:'var(--muted)', marginTop:5 }}>
+                {t('留空則等到完成測驗後才有分數。填入後系統會自動推算各維度並判斷類型。','Leave blank to score via survey later. If filled, dimensions are auto-derived equally.')}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="fq-row" style={{ gap:10, marginTop:8 }}>
           <button className="fq-btn fq-btn-primary" onClick={handleSave}>
@@ -2573,11 +2610,27 @@ export default function FriendPage() {
     if (profile._newGroup) {
       setCustomGroups(prev => [...prev, profile._newGroup]);
     }
-    const { _newGroup, ...cleanProfile } = profile;
+    const { _newGroup, _quickScore, ...cleanProfile } = profile;
     if (editingProfile) {
       setProfiles(prev => prev.map(p => p.id === cleanProfile.id ? cleanProfile : p));
     } else {
       setProfiles(prev => [...prev, cleanProfile]);
+    }
+    if (_quickScore !== null && _quickScore !== undefined) {
+      const d = Math.min(100, Math.round(_quickScore / 0.9));
+      const scores = { F:d, R:d, S:d, T:d, St:d, E:d, total: _quickScore };
+      const type = getFriendshipType(scores);
+      const syntheticSurvey = {
+        id: genId(),
+        profileId: cleanProfile.id,
+        answers: Array(24).fill(null),
+        scores,
+        total: _quickScore,
+        type: type.key,
+        createdAt: new Date().toISOString(),
+        _synthetic: true,
+      };
+      setSurveys(prev => [...prev, syntheticSurvey]);
     }
     setSelectedProfile(cleanProfile);
     setEditingProfile(null);
