@@ -934,7 +934,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
           {/* Pending input list */}
           {(() => {
             const pending = profiles.filter(p =>
-              !p.photo || !p.since || !p.groupId || !(p.keyEvents?.length)
+              !p.photo || !p.groupId
             );
             if (!pending.length) return null;
             return (
@@ -955,10 +955,8 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
                       <Avatar profile={p} size={24} />
                       <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
                       <span style={{ fontSize:10, color:'var(--muted)', flexShrink:0, display:'flex', gap:3 }}>
-                        {!p.photo    && <span title={t('缺照片','no photo')}>📷</span>}
-                        {!p.since    && <span title={t('缺年份','no year')}>📅</span>}
-                        {!p.groupId  && <span title={t('缺分組','no group')}>🏷</span>}
-                        {!(p.keyEvents?.length) && <span title={t('缺事件','no events')}>📌</span>}
+                        {!p.photo   && <span title={t('缺照片','no photo')}>📷</span>}
+                        {!p.groupId && <span title={t('缺分組','no group')}>🏷</span>}
                       </span>
                     </div>
                   ))}
