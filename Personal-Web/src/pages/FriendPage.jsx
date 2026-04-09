@@ -931,6 +931,39 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
               <div style={{ fontSize:10, color:'var(--dim)', marginTop:2 }}>{t('各月平均 FQ','Monthly avg FQ')}</div>
             </div>
           )}
+          {/* Pending input list */}
+          {(() => {
+            const pending = profiles.filter(p => !p.noSurvey && !getLatestSurvey(p.id));
+            if (!pending.length) return null;
+            return (
+              <div className="fq-card">
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:10 }}>
+                  📋 {t('等待輸入資料','Pending Data')}
+                  <span style={{ marginLeft:6, padding:'1px 6px', borderRadius:8, background:'var(--bg3)', color:'var(--muted)', fontWeight:600, fontSize:10 }}>{pending.length}</span>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                  {pending.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => onSelectFriend(p)}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', borderRadius:7, cursor:'pointer', background:'var(--bg2)', border:'1px solid var(--border)' }}
+                      onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+                      onMouseLeave={e => e.currentTarget.style.background='var(--bg2)'}
+                    >
+                      <Avatar profile={p} size={24} />
+                      <span style={{ fontSize:12, fontWeight:600, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); onStartSurvey(p); }}
+                        style={{ fontSize:10, padding:'2px 7px', borderRadius:5, border:'1px solid var(--accent)', background:'transparent', color:'var(--accent)', cursor:'pointer', flexShrink:0 }}
+                      >
+                        {t('測驗','Survey')}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Right panel ── */}
