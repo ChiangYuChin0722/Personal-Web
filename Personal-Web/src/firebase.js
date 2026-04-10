@@ -11,24 +11,22 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+const db  = getFirestore(app);
 
-// Load items array from Firestore. Returns null on miss or error.
-export async function fsLoad(collection, docId) {
+// Load an array from Firestore. Returns null on miss or error.
+export async function fsLoad(collection, key) {
   try {
-    const snap = await getDoc(doc(db, collection, docId));
+    const snap = await getDoc(doc(db, collection, key));
     if (snap.exists()) return snap.data().items ?? null;
     return null;
   } catch (e) {
-    console.warn(`Firestore load ${collection}/${docId}:`, e.message);
+    console.warn(`Firestore load ${collection}/${key}:`, e.message);
     return null;
   }
 }
 
-// Save items array to Firestore (fire-and-forget style).
-export function fsSave(collection, docId, items) {
-  setDoc(doc(db, collection, docId), {
-    items,
-    updatedAt: new Date().toISOString(),
-  }).catch(e => console.warn(`Firestore save ${collection}/${docId}:`, e.message));
+// Save an array to Firestore (fire-and-forget).
+export function fsSave(collection, key, items) {
+  setDoc(doc(db, collection, key), { items, updatedAt: new Date().toISOString() })
+    .catch(e => console.warn(`Firestore save ${collection}/${key}:`, e.message));
 }
