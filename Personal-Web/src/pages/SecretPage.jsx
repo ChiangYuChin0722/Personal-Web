@@ -228,27 +228,33 @@ function PillSection({ icon, label, items, onAdd, onRemove, placeholder }) {
 // ── Time Picker (10-min steps) ────────────────────────────────
 function TimePicker({ value, onChange, className }) {
   const parts = (value || "").split(":");
-  const hVal = parts[0] || "";
-  const mVal = parts[1] ? parts[1].slice(0, 2) : "";
+  const [h, setH] = useState(parts[0] || "");
+  const [m, setM] = useState(parts[1] ? parts[1].slice(0, 2) : "");
 
-  function update(newH, newM) {
-    if (!newH || !newM) { onChange(""); return; }
-    onChange(`${newH}:${newM}`);
+  function onHChange(newH) {
+    setH(newH);
+    if (newH && m) onChange(`${newH}:${m}`);
+    else onChange("");
+  }
+  function onMChange(newM) {
+    setM(newM);
+    if (h && newM) onChange(`${h}:${newM}`);
+    else onChange("");
   }
 
   return (
     <div className="sp-time-picker">
-      <select value={hVal} onChange={e => update(e.target.value, mVal)} className={className}>
+      <select value={h} onChange={e => onHChange(e.target.value)} className={className}>
         <option value="">HH</option>
-        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-          <option key={h} value={h}>{h}</option>
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(hv => (
+          <option key={hv} value={hv}>{hv}</option>
         ))}
       </select>
       <span className="sp-time-colon">:</span>
-      <select value={mVal} onChange={e => update(hVal, e.target.value)} className={className}>
+      <select value={m} onChange={e => onMChange(e.target.value)} className={className}>
         <option value="">MM</option>
-        {["00","10","20","30","40","50"].map(m => (
-          <option key={m} value={m}>{m}</option>
+        {["00","10","20","30","40","50"].map(mv => (
+          <option key={mv} value={mv}>{mv}</option>
         ))}
       </select>
     </div>
