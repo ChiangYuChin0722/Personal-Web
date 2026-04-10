@@ -999,11 +999,13 @@ export default function SecretPage() {
         localStorage.setItem(key, JSON.stringify(cloud)); // keep local in sync
         return cloud;
       }
-      // 2. Fall back to localStorage
+      // 2. Fall back to localStorage — and upload to Firestore (first-time migration)
       const raw = localStorage.getItem(key);
       if (!raw) return def;
       try {
-        return JSON.parse(raw);
+        const val = JSON.parse(raw);
+        fsSave('sp', key, val); // first-time upload
+        return val;
       } catch {
         // Old encrypted format – decrypt once and re-save as plain JSON
         if (!currentPassword) return def;
@@ -1012,6 +1014,7 @@ export default function SecretPage() {
         try {
           const val = JSON.parse(text);
           localStorage.setItem(key, JSON.stringify(val)); // migrate
+          fsSave('sp', key, val);                        // first-time upload
           return val;
         } catch { return def; }
       }

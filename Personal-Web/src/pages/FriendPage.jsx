@@ -2848,14 +2848,21 @@ export default function FriendPage() {
         fsLoad('fq', 'journals'),
         fsLoad('fq', 'groups'),
       ]);
+      const localProfiles = localLoadProfiles();
       // Merge cloud profiles with local photos (photos are not stored in Firestore)
       if (cp !== null) {
-        const localPhotos = localLoadProfiles();
-        setProfiles(cp.map(p => ({ ...p, photo: localPhotos.find(lp => lp.id === p.id)?.photo ?? null })));
+        setProfiles(cp.map(p => ({ ...p, photo: localProfiles.find(lp => lp.id === p.id)?.photo ?? null })));
       }
       if (cs !== null) setSurveys(cs);
       if (cj !== null) setJournals(cj);
       if (cg !== null) setCustomGroups(cg);
+
+      // First-time upload: if Firestore was empty, push localStorage data up
+      if (cp === null) fsSave('fq', 'profiles', localProfiles.map(p => ({ ...p, photo: null })));
+      if (cs === null) fsSave('fq', 'surveys',  lsGet('fq_surveys', []));
+      if (cj === null) fsSave('fq', 'journals', lsGet('fq_journals', []));
+      if (cg === null) fsSave('fq', 'groups',   lsGet('fq_groups', []));
+
       fsReady.current = true;
       setSyncing(false);
     }
