@@ -935,7 +935,7 @@ function DashboardView({ profiles, surveys, journals, onSelectFriend, onCreateFr
   const latestScores = profiles.map(p => getLatestSurvey(p.id)?.total).filter(v => v != null);
   const avgScore = latestScores.length > 0 ? Math.round(latestScores.reduce((a,b)=>a+b,0)/latestScores.length) : null;
   const needAttention = profiles.filter(p => { const s = getLatestSurvey(p.id); return s && s.total < 40; }).length;
-  const totalSurveys = surveys.length;
+  const totalSurveys = surveys.filter(s => profiles.some(p => p.id === s.profileId)).length;
   const totalLogs = journals.length;
 
   let highestProfile = null, highestScore = -1;
