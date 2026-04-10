@@ -2848,20 +2848,36 @@ export default function FriendPage() {
         fsLoad('fq', 'journals'),
         fsLoad('fq', 'groups'),
       ]);
-      const localProfiles = localLoadProfiles();
-      // Merge cloud profiles with local photos (photos are not stored in Firestore)
-      if (cp !== null) {
-        setProfiles(cp.map(p => ({ ...p, photo: localProfiles.find(lp => lp.id === p.id)?.photo ?? null })));
-      }
-      if (cs !== null) setSurveys(cs);
-      if (cj !== null) setJournals(cj);
-      if (cg !== null) setCustomGroups(cg);
+      const localProfiles  = localLoadProfiles();
+      const localSurveys   = lsGet('fq_surveys',  []);
+      const localJournals  = lsGet('fq_journals', []);
+      const localGroups    = lsGet('fq_groups',   []);
 
-      // First-time upload: if Firestore was empty, push localStorage data up
-      if (cp === null) fsSave('fq', 'profiles', localProfiles.map(p => ({ ...p, photo: null })));
-      if (cs === null) fsSave('fq', 'surveys',  lsGet('fq_surveys', []));
-      if (cj === null) fsSave('fq', 'journals', lsGet('fq_journals', []));
-      if (cg === null) fsSave('fq', 'groups',   lsGet('fq_groups', []));
+      // Safety rule: never replace non-empty local data with empty cloud data.
+      // Cloud wins only when it has at least as many items as local (or local is empty).
+      const safeMerge = (cloud, local) =>
+        (cloud !== null && (local.length === 0 || cloud.length >= local.length)) ? cloud : local;
+
+      const finalProfiles = safeMerge(cp, localProfiles);
+      const finalSurveys  = safeMerge(cs, localSurveys);
+      const finalJournals = safeMerge(cj, localJournals);
+      const finalGroups   = safeMerge(cg, localGroups);
+
+      // Merge photos back (photos stay local only)
+      setProfiles(finalProfiles.map(p => ({
+        ...p,
+        photo: localProfiles.find(lp => lp.id === p.id)?.photo ?? null,
+      })));
+      setSurveys(finalSurveys);
+      setJournals(finalJournals);
+      setCustomGroups(finalGroups);
+
+      // Upload to Firestore whenever local has MORE data than cloud (covers first-time + recovery)
+      if (cp === null || localProfiles.length > (cp?.length ?? 0))
+        fsSave('fq', 'profiles', finalProfiles.map(p => ({ ...p, photo: null })));
+      if (cs === null || localSurveys.length  > (cs?.length ?? 0)) fsSave('fq', 'surveys',  finalSurveys);
+      if (cj === null || localJournals.length > (cj?.length ?? 0)) fsSave('fq', 'journals', finalJournals);
+      if (cg === null || localGroups.length   > (cg?.length ?? 0)) fsSave('fq', 'groups',   finalGroups);
 
       fsReady.current = true;
       setSyncing(false);
