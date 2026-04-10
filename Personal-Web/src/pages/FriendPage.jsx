@@ -1,5 +1,6 @@
 import './FriendPage.css';
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+import { fsLoad, fsSave } from '../firebase';
 
 // Handles Chinese IME: blocks Enter during composition (macOS fix)
 function IMEInput({ onEnterKey, onKeyDown, ...props }) {
@@ -319,30 +320,24 @@ function fmtDate(iso) {
 
 // ─── Storage helpers ───────────────────────────────────────────────────────────
 
-function loadProfiles() {
-  try { return JSON.parse(localStorage.getItem('fq_profiles') || '[]'); } catch { return []; }
+// ─── localStorage helpers (local cache + photos) ─────────────────────────────
+function lsGet(key, def = []) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); } catch { return def; }
 }
-function saveProfiles(p) {
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// Profiles: keep photos in localStorage only (Firestore strip)
+function localLoadProfiles() { return lsGet('fq_profiles', []); }
+function localSaveProfiles(p) {
   try { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
   catch (e) {
-    // localStorage quota exceeded — strip photos and retry
     const stripped = p.map(pr => ({ ...pr, photo: null }));
     try { localStorage.setItem('fq_profiles', JSON.stringify(stripped)); } catch {}
     console.warn('localStorage full — photos not saved', e);
   }
 }
-function loadSurveys() {
-  try { return JSON.parse(localStorage.getItem('fq_surveys') || '[]'); } catch { return []; }
-}
-function saveSurveys(s) { localStorage.setItem('fq_surveys', JSON.stringify(s)); }
-function loadJournals() {
-  try { return JSON.parse(localStorage.getItem('fq_journals') || '[]'); } catch { return []; }
-}
-function saveJournals(j) { localStorage.setItem('fq_journals', JSON.stringify(j)); }
-function loadCustomGroups() {
-  try { return JSON.parse(localStorage.getItem('fq_groups') || '[]'); } catch { return []; }
-}
-function saveCustomGroups(g) { localStorage.setItem('fq_groups', JSON.stringify(g)); }
 
 
 // ─── Group & Birthday helpers ─────────────────────────────────────────────────
@@ -2825,11 +2820,15 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
 
 export default function FriendPage() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('yc_auth') === 'fq_ok');
-  const [profiles,   setProfiles]   = useState(loadProfiles);
-  const [surveys,    setSurveys]    = useState(loadSurveys);
-  const [journals,   setJournals]   = useState(loadJournals);
-  const [customGroups, setCustomGroups] = useState(loadCustomGroups);
-  const [view, setView] = useState('dashboard'); // dashboard | create | survey | results | detail
+
+  // Start with localStorage cache so UI is instant; Firestore will override after load
+  const [profiles,     setProfiles]     = useState(localLoadProfiles);
+  const [surveys,      setSurveys]      = useState(() => lsGet('fq_surveys', []));
+  const [journals,     setJournals]     = useState(() => lsGet('fq_journals', []));
+  const [customGroups, setCustomGroups] = useState(() => lsGet('fq_groups', []));
+  const [syncing, setSyncing] = useState(true); // true while fetching from Firestore
+
+  const [view, setView] = useState('dashboard');
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
   const [lastSurvey, setLastSurvey] = useState(null);
@@ -2837,11 +2836,53 @@ export default function FriendPage() {
   const [lang, setLang] = useState(() => localStorage.getItem('fq_lang') || 'zh');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('fq_dark') !== 'false');
 
-  // Persist on change
-  useEffect(() => { saveProfiles(profiles); }, [profiles]);
-  useEffect(() => { saveSurveys(surveys); }, [surveys]);
-  useEffect(() => { saveJournals(journals); }, [journals]);
-  useEffect(() => { saveCustomGroups(customGroups); }, [customGroups]);
+  // Track whether the initial Firestore load is done (so saves don't fire prematurely)
+  const fsReady = useRef(false);
+
+  // Load from Firestore on mount
+  useEffect(() => {
+    async function init() {
+      const [cp, cs, cj, cg] = await Promise.all([
+        fsLoad('fq', 'profiles'),
+        fsLoad('fq', 'surveys'),
+        fsLoad('fq', 'journals'),
+        fsLoad('fq', 'groups'),
+      ]);
+      // Merge cloud profiles with local photos (photos are not stored in Firestore)
+      if (cp !== null) {
+        const localPhotos = localLoadProfiles();
+        setProfiles(cp.map(p => ({ ...p, photo: localPhotos.find(lp => lp.id === p.id)?.photo ?? null })));
+      }
+      if (cs !== null) setSurveys(cs);
+      if (cj !== null) setJournals(cj);
+      if (cg !== null) setCustomGroups(cg);
+      fsReady.current = true;
+      setSyncing(false);
+    }
+    init();
+  }, []);
+
+  // Persist changes to localStorage + Firestore (only after initial load)
+  useEffect(() => {
+    localSaveProfiles(profiles);
+    if (!fsReady.current) return;
+    fsSave('fq', 'profiles', profiles.map(p => ({ ...p, photo: null })));
+  }, [profiles]);
+  useEffect(() => {
+    lsSet('fq_surveys', surveys);
+    if (!fsReady.current) return;
+    fsSave('fq', 'surveys', surveys);
+  }, [surveys]);
+  useEffect(() => {
+    lsSet('fq_journals', journals);
+    if (!fsReady.current) return;
+    fsSave('fq', 'journals', journals);
+  }, [journals]);
+  useEffect(() => {
+    lsSet('fq_groups', customGroups);
+    if (!fsReady.current) return;
+    fsSave('fq', 'groups', customGroups);
+  }, [customGroups]);
   useEffect(() => { localStorage.setItem('fq_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('fq_dark', String(darkMode)); }, [darkMode]);
 
@@ -2951,12 +2992,17 @@ export default function FriendPage() {
       </div>
     );
   }
-  // also pass surveys to DashboardView (already done in render)
 
   return (
     <LangCtx.Provider value={lang}>
     <GroupsCtx.Provider value={customGroups}>
     <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
+      {syncing && (
+        <div style={{ position:'fixed', bottom:16, right:16, zIndex:9999, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:8, padding:'6px 14px', fontSize:12, color:'var(--muted)', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 16px rgba(0,0,0,0.3)' }}>
+          <span style={{ width:8, height:8, borderRadius:'50%', background:'#60A5FA', display:'inline-block', animation:'fq-pulse 1s infinite' }}/>
+          {lang === 'zh' ? '雲端同步中…' : 'Syncing…'}
+        </div>
+      )}
       <Topbar
         view={view}
         onDashboard={goToDashboard}

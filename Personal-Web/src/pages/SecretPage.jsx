@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { encrypt, decrypt } from "./secretUtils.js";
 import "./SecretPage.css";
+import { fsLoad, fsSave } from "../firebase";
 
 // Handles Chinese IME: blocks Enter during composition (macOS fix)
 function IMEInput({ onEnterKey, onKeyDown, ...props }) {
@@ -990,8 +991,15 @@ export default function SecretPage() {
   // Load all data after login
   useEffect(() => {
     if (!loggedIn) return;
-    // Try plain JSON first; if it fails (old encrypted format), migrate once
+    // Try Firestore first, then localStorage (with old encrypted format migration)
     const tryLoad = async (key, def) => {
+      // 1. Try Firestore
+      const cloud = await fsLoad('sp', key);
+      if (cloud !== null) {
+        localStorage.setItem(key, JSON.stringify(cloud)); // keep local in sync
+        return cloud;
+      }
+      // 2. Fall back to localStorage
       const raw = localStorage.getItem(key);
       if (!raw) return def;
       try {
@@ -1038,9 +1046,10 @@ export default function SecretPage() {
     })();
   }, [loggedIn, currentPassword]);
 
-  // Synchronous plain-JSON save – no async, no timing issues
+  // Save to localStorage + Firestore
   const save = useCallback((key, value) => {
     localStorage.setItem(key, JSON.stringify(value));
+    fsSave('sp', key, value);
   }, []);
 
   function handleLogin() {

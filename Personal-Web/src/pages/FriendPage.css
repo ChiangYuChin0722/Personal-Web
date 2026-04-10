@@ -691,3 +691,8 @@
   background: var(--bg2);
   box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
 }
+
+@keyframes fq-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
