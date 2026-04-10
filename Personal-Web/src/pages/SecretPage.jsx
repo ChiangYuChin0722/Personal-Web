@@ -712,16 +712,35 @@ function TodayTimeline({ events, onAdd, onEdit, onRemove }) {
     : selected.toLocaleDateString("en-US", { weekday: "short" });
   const dateLabel = selected.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+  // All-day events: on this date but no time set
+  const allDayEvs = events.filter(e => !e.deleted && (e.date === selKey || normToISO(e.date) === selKey) && !e.time);
+
   return (
     <div className="sp-timeline">
       <div className="sp-tl-header">
         <div className="sp-section-title">{dayLabel} <span className="sp-tl-sub">timeline</span></div>
         <div className="sp-tl-nav">
-          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o-1)} disabled={offset <= -3}>‹</button>
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o-1)} disabled={offset <= -365}>‹</button>
           <span className="sp-tl-date">{dateLabel}</span>
-          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o+1)} disabled={offset >= 7}>›</button>
+          <button className="sp-tl-nav-btn" onClick={() => setOffset(o => o+1)} disabled={offset >= 30}>›</button>
         </div>
       </div>
+      {allDayEvs.length > 0 && (
+        <div className="sp-tl-row">
+          <span className="sp-tl-hour" style={{ fontSize: 9, opacity: 0.5 }}>all‑day</span>
+          <div className="sp-tl-line" />
+          <div className="sp-tl-events">
+            {allDayEvs.map(e => (
+              <span key={e.id} className="sp-tl-chip"
+                style={{ background: catColor(e.category)+"22", borderColor: catColor(e.category), color: catColor(e.category) }}
+                onClick={() => setModal(e)} title="Edit event">
+                {e.title}
+                <button onClick={ev => { ev.stopPropagation(); onRemove(e.id); }} className="sp-tl-chip-del">×</button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       {HOURS.map(h => {
         const hourEvs = eventsAtHour(h);
         const isNow   = h === currentHour;
