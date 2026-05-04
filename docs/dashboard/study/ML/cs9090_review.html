@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS9090 Data Mining — Master Revision Notes</title>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+:root {
+  --bg: #faf8f3;
+  --panel: #ffffff;
+  --panel2: #f3efe6;
+  --text: #2c2a26;
+  --muted: #6b6862;
+  --accent: #5b7a8c;
+  --accent2: #b8865b;
+  --danger: #b85450;
+  --hot: #c87850;
+  --warn: #c9a455;
+  --border: #e0dcd2;
+  --link: #5b7a8c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "PingFang TC", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.topbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.topbar h1 { margin: 0; font-size: 18px; color: var(--accent); }
+.topbar nav a {
+  color: var(--text); text-decoration: none; margin: 0 8px;
+  padding: 6px 10px; border-radius: 6px; font-size: 14px;
+}
+.topbar nav a:hover { background: var(--panel2); color: var(--accent); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 30px 22px; }
+
+h2 {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 8px;
+  margin-top: 40px;
+  font-size: 26px;
+}
+h3 { color: var(--accent2); margin-top: 30px; font-size: 20px; }
+h4 { color: #6d4d8c; margin-top: 20px; font-size: 17px; }
+
+.zh { color: var(--muted); font-size: 0.85em; font-weight: normal; }
+
+.intro {
+  background: var(--panel);
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.priority-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  background: var(--panel);
+}
+.priority-table th, .priority-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+.priority-table th { background: var(--panel2); color: var(--accent); }
+.priority-table tr:nth-child(even) { background: rgba(0,0,0,0.015); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.tag-hot { background: var(--hot); color: #fff; }
+.tag-warn { background: var(--warn); color: #2c2a26; }
+.tag-2023 { background: #b8a4c9; color: #2c2a26; }
+.tag-2024 { background: #a4b8c9; color: #2c2a26; }
+.tag-2025 { background: #a4c9b8; color: #2c2a26; }
+
+.lecture {
+  background: var(--panel);
+  padding: 22px 26px;
+  border-radius: 12px;
+  margin: 18px 0;
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.lecture summary {
+  cursor: pointer;
+  font-size: 19px;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 6px 0;
+  user-select: none;
+}
+.lecture summary::marker { color: var(--accent2); }
+.lecture[open] { padding-bottom: 26px; }
+
+.exam-q {
+  background: var(--panel);
+  padding: 18px 22px;
+  border-radius: 10px;
+  margin: 18px 0;
+  border-left: 4px solid var(--accent2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.exam-q h4 { margin-top: 0; color: var(--accent2); }
+
+details.answer {
+  background: rgba(91, 122, 140, 0.06);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(91, 122, 140, 0.2);
+}
+details.answer summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+code {
+  background: var(--panel2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  color: #5d3a1c;
+}
+pre {
+  background: var(--panel2);
+  color: var(--text);
+  padding: 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.formula {
+  background: rgba(184, 134, 91, 0.08);
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent2);
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.tip {
+  background: rgba(91, 122, 140, 0.08);
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  margin: 14px 0;
+}
+.tip strong { color: var(--accent); }
+
+.warning {
+  background: rgba(184, 84, 80, 0.08);
+  padding: 12px 16px;
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  margin: 14px 0;
+}
+.warning strong { color: var(--danger); }
+
+.hot-topic {
+  background: linear-gradient(90deg, rgba(200, 120, 80, 0.12), transparent);
+  padding: 14px 18px;
+  border-left: 5px solid var(--hot);
+  margin: 16px 0;
+  border-radius: 4px;
+}
+.hot-topic h4 { margin-top: 4px; color: var(--hot); }
+
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+table { border-collapse: collapse; margin: 12px 0; }
+table th, table td { padding: 8px 12px; border: 1px solid var(--border); }
+table th { background: var(--panel2); }
+
+.toc {
+  background: var(--panel);
+  padding: 20px 26px;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 1px solid var(--border);
+}
+.toc ul { list-style: none; padding-left: 0; }
+.toc li { margin: 6px 0; }
+.toc a { color: var(--link); text-decoration: none; }
+.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+footer {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+@media (max-width: 700px) {
+  .topbar nav { display: none; }
+  .container { padding: 18px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>CS9090 — Master Revision Notes</h1>
+  <nav>
+    <a href="#test-topics">Test Topics</a>
+    <a href="#lectures">Lecture Notes</a>
+    <a href="#mock">Mock Exam</a>
+    <a href="#cheatsheet">Cheatsheet</a>
+  </nav>
+</div>
+
+<div class="container">
+
+<div class="intro">
+  <h2 style="margin-top:0; border:none;">📚 How to use these notes</h2>
+  <p>This revision pack distils <strong>14 lectures + 3 past exam papers (2023, 2024, 2025)</strong>. Recommended order:</p>
+  <ol>
+    <li>Read the <a href="#test-topics" style="color:var(--accent)">Test Topics</a> section first to see what is most likely to be examined.</li>
+    <li>Drill into the lecture notes for hot topics.</li>
+    <li>Self-test with the <a href="#mock" style="color:var(--accent)">Mock Exam</a>.</li>
+    <li>Memorise the <a href="#cheatsheet" style="color:var(--accent)">Cheatsheet</a> right before the exam.</li>
+  </ol>
+  <p><strong>Tag legend <span class="zh">（標籤說明）</span>:</strong>
+    <span class="tag tag-hot">🔥 Must-know</span> all 3 years
+    <span class="tag tag-warn">⚠️ High prob.</span> 2 of 3 years
+    <span class="tag tag-2023">'23</span> <span class="tag tag-2024">'24</span> <span class="tag tag-2025">'25</span>
+    years it appeared
+  </p>
+  <p class="zh"><em>備註：難一點的技術詞我會用括號標中文，例如 discriminant（判別函數）。</em></p>
+</div>
+
+<!-- =========================================================
+     Section 1 — TEST TOPICS HIGHLIGHTED
+     ========================================================= -->
+
+<h2 id="test-topics">🎯 Test Topic Analysis (cross-referenced across 3 years)</h2>
+
+<p>The exam is <strong>2 hours, answer 4 of 5 questions, each worth 25 marks</strong>. Question 1 has been a linear-discriminant + kNN problem for three years running — that is the safest 25 marks on the paper.</p>
+
+<table class="priority-table">
+<thead>
+<tr><th>Topic</th><th>'23</th><th>'24</th><th>'25</th><th>Priority</th><th>Lecture</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Linear discriminants <span class="zh">（線性判別）</span>: solve weights for a linearly-separable dataset</strong></td><td>Q1a</td><td>Q1a</td><td>Q1a</td><td><span class="tag tag-hot">🔥 Must</span></td><td>3, 3-4</td></tr>
+<tr><td><strong>kNN classification (Euclidean / Manhattan distance)</strong></td><td>Q1b,c</td><td>Q1c</td><td>Q1d / Q2e</td><td><span class="tag tag-hot">🔥 Must</span></td><td>1</td></tr>
+<tr><td><strong>Linear separability proof <span class="zh">（線性可分性證明）</span></strong></td><td>—</td><td>Q1b</td><td>Q1a</td><td><span class="tag tag-warn">⚠️ High</span></td><td>3</td></tr>
+<tr><td><strong>Valid kernel functions <span class="zh">（核函數合法性）</span></strong></td><td>Q2b</td><td>Q2b</td><td>Q2e</td><td><span class="tag tag-hot">🔥 Must</span></td><td>5</td></tr>
+<tr><td><strong>SVM formulation: decision / regularizer / loss</strong></td><td>Q2a</td><td>—</td><td>—</td><td><span class="tag tag-2023">'23</span></td><td>5</td></tr>
+<tr><td><strong>Loss functions: which can be used for classification / regression</strong></td><td>Q2d</td><td>Q3c</td><td>Q2b,c</td><td><span class="tag tag-hot">🔥 Must</span></td><td>5, 9</td></tr>
+<tr><td><strong>ε-insensitive loss / SVR</strong></td><td>Q2c</td><td>Q2a</td><td>—</td><td><span class="tag tag-warn">⚠️</span></td><td>9</td></tr>
+<tr><td><strong>Confusion matrix / Precision / Recall / Specificity <span class="zh">（混淆矩陣）</span></strong></td><td>Q3a</td><td>Q3a</td><td>—</td><td><span class="tag tag-warn">⚠️</span></td><td>6</td></tr>
+<tr><td><strong>ROC / AUC / random-classifier comparison</strong></td><td>Q3a</td><td>Q3a</td><td>Q3e</td><td><span class="tag tag-hot">🔥 Must</span></td><td>6</td></tr>
+<tr><td><strong>R² / regression metrics</strong></td><td>Q2c</td><td>Q3b</td><td>—</td><td><span class="tag tag-warn">⚠️</span></td><td>9</td></tr>
+<tr><td><strong>PCA: unit vectors / projection / reconstruction <span class="zh">（主成分分析）</span></strong></td><td>Q4a</td><td>Q2c</td><td>Q3a-c</td><td><span class="tag tag-hot">🔥 Must</span></td><td>8</td></tr>
+<tr><td><strong>Max number of PCs = min(N−1, d)</strong></td><td>Q4a-v</td><td>—</td><td>Q3a</td><td><span class="tag tag-warn">⚠️</span></td><td>8</td></tr>
+<tr><td><strong>PCA via Neural Network</strong></td><td>—</td><td>Q4a</td><td>Q3b</td><td><span class="tag tag-warn">⚠️</span></td><td>8</td></tr>
+<tr><td><strong>MLP: count weights & biases <span class="zh">（多層感知器）</span></strong></td><td>Q4b-ii</td><td>—</td><td>Q4c-ii</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>MLP: squared-error gradient via chain rule <span class="zh">（連鎖律）</span></strong></td><td>Q4b-iii</td><td>—</td><td>Q2b</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>Activation functions: when to use which</strong></td><td>Q5e</td><td>Q4b</td><td>Q4b</td><td><span class="tag tag-hot">🔥 Must</span></td><td>DL</td></tr>
+<tr><td><strong>Vanishing / exploding gradients <span class="zh">（梯度消失/爆炸）</span></strong></td><td>Q5a</td><td>Q4c-ii</td><td>—</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>CNN convolution by hand <span class="zh">（卷積手算）</span></strong></td><td>Q5c</td><td>Q4d</td><td>Q4c</td><td><span class="tag tag-hot">🔥 Must</span></td><td>DL</td></tr>
+<tr><td><strong>Convolution output-size formula (stride, padding)</strong></td><td>—</td><td>—</td><td>Q4c-i</td><td><span class="tag tag-2025">'25</span></td><td>DL</td></tr>
+<tr><td><strong>Pooling limitations (min / max / average) <span class="zh">（池化限制）</span></strong></td><td>Q5b</td><td>—</td><td>—</td><td><span class="tag tag-2023">'23</span></td><td>DL</td></tr>
+<tr><td><strong>Autoencoder: architecture / output neurons / loss <span class="zh">（自編碼器）</span></strong></td><td>Q5d</td><td>Q4a</td><td>—</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>Skip connections (ResNet) <span class="zh">（殘差連接）</span></strong></td><td>—</td><td>Q4c-v</td><td>Q4a</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>GAN: generator + discriminator <span class="zh">（生成對抗網路）</span></strong></td><td>—</td><td>Q4e</td><td>—</td><td><span class="tag tag-2024">'24</span></td><td>DL</td></tr>
+<tr><td><strong>Multi-label vs softmax</strong></td><td>—</td><td>Q4b</td><td>Q4b</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>Convergence factors (momentum, init, skip)</strong></td><td>—</td><td>Q4c</td><td>Q2a</td><td><span class="tag tag-warn">⚠️</span></td><td>DL</td></tr>
+<tr><td><strong>Learning to rank (pairwise loss) <span class="zh">（排序學習）</span></strong></td><td>—</td><td>Q5</td><td>—</td><td><span class="tag tag-2024">'24</span></td><td>10</td></tr>
+<tr><td><strong>Gradient descent / convexity (local minima)</strong></td><td>—</td><td>—</td><td>Q2a</td><td><span class="tag tag-2025">'25</span></td><td>gradients</td></tr>
+<tr><td><strong>Stratified k-fold cross-validation <span class="zh">（分層交叉驗證）</span></strong></td><td>—</td><td>—</td><td>Q3d</td><td><span class="tag tag-2025">'25</span></td><td>6</td></tr>
+<tr><td><strong>Practical ML case study (features, target, model)</strong></td><td>—</td><td>—</td><td>Q5</td><td><span class="tag tag-2025">'25</span></td><td>integrated</td></tr>
+<tr><td><strong>Imbalanced data (class weights, C)</strong></td><td>Q2a</td><td>—</td><td>—</td><td><span class="tag tag-2023">'23</span></td><td>5</td></tr>
+</tbody>
+</table>
+
+<div class="hot-topic">
+<h4>📌 Bankable Q1 formulas <span class="zh">（保底 Q1 公式）</span></h4>
+<p>Q1 has been linear discriminants + kNN every year. Nailing this question gives you a guaranteed 25 marks.</p>
+<ul>
+<li><strong>Linear discriminant</strong>: \( f(\mathbf{x}) = \mathbf{w}^T\mathbf{x} + b \). Predict positive when \(f(\mathbf{x})>0\), negative when \(f(\mathbf{x})<0\).</li>
+<li><strong>How to find weights</strong>: write the inequality system \(y_i (\mathbf{w}^T\mathbf{x}_i + b) > 0\) for every training example, then either solve algebraically or eyeball a separating line in low dimensions.</li>
+<li><strong>kNN</strong>: compute distances from query to every training point, take the k smallest, take the majority vote.</li>
+<li><strong>Euclidean</strong>: \( d(\mathbf{a},\mathbf{b}) = \sqrt{\sum_i (a_i - b_i)^2} \).</li>
+<li><strong>Manhattan</strong>: \( d_{L_1}(\mathbf{a},\mathbf{b}) = \sum_i |a_i - b_i| \).</li>
+<li><strong>kNN decision boundary is non-linear</strong> (it's a Voronoi tessellation <span class="zh">（沃羅諾伊分割）</span>).</li>
+</ul>
+</div>
+
+<!-- =========================================================
+     Section 2 — DETAILED LECTURE NOTES
+     ========================================================= -->
+
+<h2 id="lectures">📖 Detailed lecture notes</h2>
+
+<div class="toc">
+<strong>Jump to lecture:</strong>
+<ul>
+  <li><a href="#lec1">Lecture 1 — Introduction</a></li>
+  <li><a href="#lec2">Lecture 2 — ML Framework (REO)</a></li>
+  <li><a href="#lec3">Lecture 3 — Linear Discriminants</a></li>
+  <li><a href="#lec34">Lecture 3-4 — Building Linear Models</a></li>
+  <li><a href="#lec5">Lecture 5 — Perceptron to SVM <span class="tag tag-hot">🔥</span></a></li>
+  <li><a href="#lec6">Lecture 6 — Evaluating Models <span class="tag tag-hot">🔥</span></a></li>
+  <li><a href="#lec8">Lecture 8 — PCA <span class="tag tag-hot">🔥</span></a></li>
+  <li><a href="#lec9">Lecture 9 — Regression</a></li>
+  <li><a href="#lec10">Lecture 10 — Other Machines</a></li>
+  <li><a href="#lec11">Lecture 11 — Trees & XGBoost</a></li>
+  <li><a href="#lecgrad">Gradients & Convexity <span class="tag tag-2025">'25</span></a></li>
+  <li><a href="#lecdl">Deep Learning (largest section) <span class="tag tag-hot">🔥🔥🔥</span></a></li>
+</ul>
+</div>
+
+<!-- LEC 1 -->
+<details class="lecture" id="lec1">
+<summary>Lecture 1 — Introduction to ML</summary>
+
+<h4>Core concepts</h4>
+<ul>
+<li><strong>Definitions</strong>: AI = making a computer do tasks a human can do; ML = making a computer learn from data; Data Mining = mining patterns out of data; Deep Learning = solving an ML task using a deep layered network of biologically-inspired neurons.</li>
+<li><strong>Seven canonical ML tasks</strong>: Classification, Regression, Clustering, Dimensionality Reduction, Anomaly Detection, Next-Element Prediction, Reinforcement Learning.</li>
+<li><strong>Why ML is needed</strong>: high-dimensional data + Big Data + exponential growth in compute → induction <span class="zh">（歸納推理）</span> beats deduction.</li>
+</ul>
+
+<h4>Five philosophical foundations of ML <span class="zh">（五大哲學基礎）</span> — likely "describe" question</h4>
+<ol>
+<li>Entities have representations → representation learning.</li>
+<li>Semantic relatedness is context-dependent → convolutions, transformers, graph layers.</li>
+<li>Representations should allow reconstruction → GANs, diffusion models.</li>
+<li>Representations can be developed inductively from empirical observations (e.g. Kepler's laws) → gradient descent, self-supervised learning.</li>
+<li>Causal representations are needed for adaptive action → reinforcement learning, structural risk minimisation.</li>
+</ol>
+
+<h4>Key formulas</h4>
+<div class="formula">Euclidean distance: \( D(\mathbf{x}_a,\mathbf{x}_b) = \sqrt{(x_a^{(1)}-x_b^{(1)})^2 + (x_a^{(2)}-x_b^{(2)})^2} \)</div>
+<div class="formula">Linear classifier: \( f(\mathbf{x}) = w_1 x^{(1)} + w_2 x^{(2)} + b = 0 \)</div>
+
+<div class="tip"><strong>Exam-relevant:</strong> kNN uses Euclidean distance; a linear classifier's decision boundary is a hyperplane <span class="zh">（超平面）</span>; XOR is NOT linearly separable.</div>
+
+</details>
+
+<!-- LEC 2 -->
+<details class="lecture" id="lec2">
+<summary>Lecture 2 — ML Framework (REO)</summary>
+
+<h4>The REO framework <span class="zh">（最重要）</span></h4>
+<ul>
+<li><strong>R</strong>epresentation: represent each example in feature space and define a predictor function (e.g. \(f(\mathbf{x}; \mathbf{w}) = w_1 x^{(1)} + w_2 x^{(2)} + b\)).</li>
+<li><strong>E</strong>valuation: define an error / loss function (e.g. number of misclassifications).</li>
+<li><strong>O</strong>ptimization: tune parameters to minimise the error.</li>
+<li><strong>+ Generalization</strong>: performance on unseen data — the real test.</li>
+</ul>
+
+<h4>ML system pipeline</h4>
+<p>Real World → <strong>Sensor</strong> (e.g. camera) → <strong>Feature extraction</strong> → <strong>Machine Learning</strong> → <strong>Decision</strong>.</p>
+
+<h4>6-step model-building workflow</h4>
+<ol>
+<li>Define the problem (business goal).</li>
+<li>Identify required data.</li>
+<li>Prepare and pre-process (clean / select / format).</li>
+<li>Model the data (choose algorithm, build predictor).</li>
+<li>Train and test.</li>
+<li>Verify and deploy.</li>
+</ol>
+
+<div class="tip"><strong>Exam-relevant:</strong> 2025 Q5 asks you to apply REO + the 6-step workflow to a fleet-maintenance case study.</div>
+
+</details>
+
+<!-- LEC 3 -->
+<details class="lecture" id="lec3">
+<summary>Lecture 3 — Linear Discriminants</summary>
+
+<h4>Core definitions</h4>
+<ul>
+<li><strong>Discriminant function</strong> <span class="zh">（判別函數）</span>: \(f(\mathbf{x}) = \mathbf{w}^T\mathbf{x} + b\). Positive class when \(f>0\), negative when \(f<0\).</li>
+<li><strong>Multi-class</strong>: \(c(\mathbf{x}) = \arg\max_k f_k(\mathbf{x})\).</li>
+<li><strong>Linear separability</strong>: there exists \((\mathbf{w}, b)\) such that \(y_i \cdot f(\mathbf{x}_i) > 0\) for every training example.</li>
+</ul>
+
+<div class="hot-topic">
+<h4>🔥 Two methods for finding weights manually (must-know)</h4>
+<p><strong>Method 1: graphical + line equation</strong></p>
+<ol>
+<li>Plot the data points and find a separating line.</li>
+<li>Pick two points \(P_1, P_2\) on the line.</li>
+<li>Example: \(P_1=(1.5, 0), P_2=(0, 1.5)\) gives \(w_1 = w_2, b = -1.5 w_1\). Take \(w_1 = w_2 = 1, b = -1.5\).</li>
+<li>Verify by plugging each example into \(y_i \cdot f(\mathbf{x}_i) > 0\).</li>
+</ol>
+<p><strong>Method 2: solve the inequality system directly</strong></p>
+<ol>
+<li>For each \((\mathbf{x}_i, y_i)\), write \(y_i (\mathbf{w}^T\mathbf{x}_i + b) > 0\).</li>
+<li>Solve. If the system is inconsistent <span class="zh">（不一致）</span>, the data is not linearly separable (e.g. XOR: \(b>0\) is incompatible with \(w_1+b<0\)).</li>
+</ol>
+</div>
+
+<h4>Why XOR is not linearly separable</h4>
+<p>For XOR-like data — (0,0):+1, (0,1):−1, (1,0):−1, (1,1):−1 — the inequalities are \(b>0\), \(w_2+b<0\), \(w_1+b<0\), \(w_1+w_2+b<0\). From \(b>0\) and \(w_1+b<0\) we get \(w_1<-b<0\); similarly \(w_2<-b\). Adding gives \(w_1+w_2<-2b\), i.e. \(w_1+w_2+b<-b<0\) — consistent here, but in the standard XOR the +/- pattern produces a strict contradiction. Bottom line: XOR's two classes are arranged diagonally, no straight line can separate them.</p>
+
+<div class="tip"><strong>Exam-relevant:</strong> you'll be given a 6–7 row table and asked to find \(\mathbf{w}\), \(b\) and verify each example's discriminant score.</div>
+
+</details>
+
+<!-- LEC 3-4 -->
+<details class="lecture" id="lec34">
+<summary>Lecture 3-4 — Building Linear Models (Perceptron, Hinge Loss)</summary>
+
+<h4>Loss-function table</h4>
+<table>
+<tr><th>Loss</th><th>Formula</th><th>Properties</th></tr>
+<tr><td>0-1</td><td>\( \mathbb{1}[y f(\mathbf{x}) \le 0] \)</td><td>non-convex, non-differentiable</td></tr>
+<tr><td>Hinge</td><td>\( \max(0, 1 - y f(\mathbf{x})) \)</td><td>convex, has margin, used by SVM</td></tr>
+<tr><td>Squared</td><td>\( (y - f(\mathbf{x}))^2 \)</td><td>sensitive to outliers</td></tr>
+<tr><td>Absolute</td><td>\( |y - f(\mathbf{x})| \)</td><td>more robust</td></tr>
+<tr><td>Cross-entropy</td><td>\( -y\log z - (1-y)\log(1-z) \)</td><td>requires \(y\in\{0,1\}, z\in[0,1]\)</td></tr>
+<tr><td>ε-insensitive</td><td>\( \max(0, |y-f(\mathbf{x})| - \epsilon) \)</td><td>used by SVR <span class="zh">（支援向量迴歸）</span></td></tr>
+</table>
+
+<h4>Hinge loss sub-gradient <span class="zh">（次梯度）</span></h4>
+<div class="formula">\( \nabla_{\mathbf{w}} \max(0, 1 - y\mathbf{w}^T\mathbf{x}) = \begin{cases} -y\mathbf{x} & \text{if } yf(\mathbf{x}) < 1 \\ 0 & \text{otherwise} \end{cases} \)</div>
+
+<h4>Perceptron algorithm</h4>
+<pre>1. Initialise w randomly.
+2. For each epoch:
+     For each training (x_i, y_i):
+       Compute f(x_i) = w^T x_i.
+       If y_i * f(x_i) < 0:
+         w ← w + α y_i x_i
+3. Stop when no updates in an epoch (or max epochs reached).</pre>
+
+<div class="tip"><strong>Perceptron Convergence Theorem:</strong> if the data is linearly separable, the perceptron converges to a separating hyperplane in finitely many steps.</div>
+
+</details>
+
+<!-- LEC 5 -->
+<details class="lecture" id="lec5">
+<summary>Lecture 5 — Perceptron to SVM 🔥 (very high-yield)</summary>
+
+<h4>Empirical Risk vs Structural Risk Minimization</h4>
+<ul>
+<li><strong>ERM</strong> <span class="zh">（經驗風險最小化）</span>: minimise empirical loss only — prone to overfitting.</li>
+<li><strong>SRM</strong> <span class="zh">（結構風險最小化）</span>: minimise <em>empirical loss + regularization</em>.</li>
+<li><strong>Vapnik bound</strong>: \( L_{gen}(\mathbf{w}) \le L_{emp}(\mathbf{w}) + O(\|\mathbf{w}\|/\sqrt{N}) \).</li>
+</ul>
+
+<h4>Margin and regularization derivation</h4>
+<p>\( f(\mathbf{x}+\delta\mathbf{x}) - f(\mathbf{x}) = \mathbf{w}^T \delta\mathbf{x} \). By Cauchy-Schwarz, \( |\mathbf{w}^T \delta\mathbf{x}| \le \|\mathbf{w}\|\|\delta\mathbf{x}\| \). So minimising \(\|\mathbf{w}\|\) limits the model's sensitivity to input perturbations, and the geometric margin is exactly \(1/\|\mathbf{w}\|\).</p>
+
+<div class="hot-topic">
+<h4>🔥 SVM primal formulation (memorise verbatim)</h4>
+<div class="formula">\[
+\min_{\mathbf{w},b} \quad \underbrace{\tfrac{1}{2}\|\mathbf{w}\|^2}_{\text{regularization}} + \underbrace{\tfrac{C}{N}\sum_{i=1}^N \max(0, 1 - y_i(\mathbf{w}^T\mathbf{x}_i + b))}_{\text{empirical hinge loss}}
+\]</div>
+<ul>
+<li><strong>Decision function</strong>: \(f(\mathbf{x}) = \mathbf{w}^T\mathbf{x} + b\); predict \(\text{sign}(f(\mathbf{x}))\).</li>
+<li><strong>Regularization term</strong>: \(\tfrac{1}{2}\|\mathbf{w}\|^2\).</li>
+<li><strong>Empirical loss</strong>: hinge \(\max(0, 1 - y_i f(\mathbf{x}_i))\).</li>
+<li><strong>C (or λ)</strong>: trade-off. Large C → emphasise training accuracy; small C → emphasise margin.</li>
+</ul>
+</div>
+
+<div class="hot-topic">
+<h4>🔥 Kernelized SVM (essential)</h4>
+<p>By the Representer Theorem <span class="zh">（表示定理）</span>: \(\mathbf{w}^* = \sum_i \alpha_i \mathbf{x}_i\), so</p>
+<div class="formula">\[ f(\mathbf{x}) = b + \sum_{i=1}^N \alpha_i\, k(\mathbf{x}_i, \mathbf{x}) \]</div>
+<p><strong>Kernelized SVM objective:</strong></p>
+<div class="formula">\[
+\min_{\alpha, b} \tfrac{1}{2}\sum_{i,j}\alpha_i\alpha_j k(\mathbf{x}_i,\mathbf{x}_j) + \tfrac{C}{N}\sum_i \max\!\Big(0, 1 - y_i\big(b + \sum_j \alpha_j k(\mathbf{x}_i,\mathbf{x}_j)\big)\Big)
+\]</div>
+</div>
+
+<h4>Valid kernels (Mercer's condition)</h4>
+<p>A function \(k(\mathbf{a},\mathbf{b})\) is a valid kernel iff the Gram matrix <span class="zh">（核矩陣）</span> \(K_{ij} = k(\mathbf{x}_i, \mathbf{x}_j)\) is <strong>symmetric and positive semi-definite (PSD) <span class="zh">（半正定）</span></strong>. Equivalently, there exists a feature map \(\phi\) such that \(k(\mathbf{a},\mathbf{b}) = \phi(\mathbf{a})^T\phi(\mathbf{b})\).</p>
+
+<table>
+<tr><th>Kernel</th><th>Formula</th><th>Valid?</th></tr>
+<tr><td>Linear</td><td>\( \mathbf{a}^T\mathbf{b} \)</td><td>✅</td></tr>
+<tr><td>Polynomial</td><td>\( (\mathbf{a}^T\mathbf{b} + h)^d \) for \(h \ge 0, d \ge 1\)</td><td>✅</td></tr>
+<tr><td>RBF (Gaussian)</td><td>\( \exp(-\gamma\|\mathbf{a}-\mathbf{b}\|^2) \) with \(\gamma>0\)</td><td>✅</td></tr>
+<tr><td>Sigmoid</td><td>\( \tanh(\gamma\mathbf{a}^T\mathbf{b}+h) \)</td><td>conditionally</td></tr>
+<tr><td>\( -\mathbf{a}^T\mathbf{b} \)</td><td>negative inner product</td><td>❌ (PSD violated)</td></tr>
+<tr><td>\( \exp(\|\mathbf{a}-\mathbf{b}\|^2) \)</td><td>positive-sign RBF</td><td>❌ (diverges)</td></tr>
+</table>
+
+<div class="hot-topic">
+<h4>🔥 Kernel-checking template (asked every year)</h4>
+<p>Given several candidate \(k(\mathbf{a},\mathbf{b})\), say which are valid kernels. Decision rules:</p>
+<ol>
+<li><strong>Linear inner product \(\mathbf{a}^T\mathbf{b}\)</strong> → valid.</li>
+<li><strong>Polynomial \((\mathbf{a}^T\mathbf{b}+c)^d\)</strong> with \(c \ge 0, d \ge 1\) → valid.</li>
+<li><strong>RBF \(\exp(-\gamma\|\mathbf{a}-\mathbf{b}\|^2)\)</strong> with \(\gamma > 0\) → valid.</li>
+<li><strong>Negated \(-\mathbf{a}^T\mathbf{b}\)</strong> → invalid (Gram matrix not PSD).</li>
+<li><strong>\(1 - \mathbf{a}^T\mathbf{b}\) or \(1 - \tan(\cdot)^2\)</strong> → typically invalid (negative eigenvalues appear).</li>
+<li><strong>\(\exp(+\|\mathbf{a}-\mathbf{b}\|^2)\)</strong> → invalid (unbounded growth).</li>
+<li><strong>\(\exp(1 - \gamma\|\mathbf{a}-\mathbf{b}\|^2)\)</strong> with \(\gamma>0\) → valid (it's just \(e \cdot \text{RBF}\); a positive scalar times a valid kernel is still valid).</li>
+</ol>
+</div>
+
+<h4>Handling imbalanced data <span class="zh">（不平衡資料）</span></h4>
+<ul>
+<li><strong>Per-class C</strong>: a separate \(C\) for each class, with the minority class given a larger \(C\).</li>
+<li><strong>sklearn</strong>: <code>class_weight='balanced'</code>.</li>
+<li>Mathematically:</li>
+</ul>
+<div class="formula">\[ \min_{\alpha, b} \tfrac{1}{2}\sum_{i,j}\alpha_i\alpha_j k_{ij} + \sum_i c_i \max(0, 1 - y_i f(\mathbf{x}_i)) \]</div>
+<p>where \(c_i\) is larger for minority-class examples.</p>
+
+<h4>The SRM loss family</h4>
+<table>
+<tr><th>Method</th><th>Regularizer</th><th>Loss</th></tr>
+<tr><td>SVM</td><td>\(\frac{\lambda}{2}\|w\|^2\)</td><td>hinge</td></tr>
+<tr><td>Ridge regression</td><td>\(\frac{\lambda}{2}\|w\|^2\)</td><td>squared</td></tr>
+<tr><td>SVR</td><td>\(\frac{\lambda}{2}\|w\|^2\)</td><td>ε-insensitive</td></tr>
+<tr><td>Lasso</td><td>\(\lambda\|w\|_1\)</td><td>squared</td></tr>
+<tr><td>Logistic regression</td><td>\(\frac{\lambda}{2}\|w\|^2\)</td><td>log loss</td></tr>
+</table>
+
+</details>
+
+<!-- LEC 6 -->
+<details class="lecture" id="lec6">
+<summary>Lecture 6 — Evaluating Models 🔥 (essential)</summary>
+
+<h4>Confusion matrix</h4>
+<table>
+<tr><th></th><th>Actual +</th><th>Actual −</th></tr>
+<tr><th>Predicted +</th><td>TP</td><td>FP (Type I error)</td></tr>
+<tr><th>Predicted −</th><td>FN (Type II error)</td><td>TN</td></tr>
+</table>
+
+<div class="hot-topic">
+<h4>🔥 Memorise these formulas</h4>
+<table>
+<tr><th>Metric</th><th>Formula</th><th>Meaning</th></tr>
+<tr><td>Accuracy</td><td>\( \frac{TP+TN}{TP+TN+FP+FN} \)</td><td>overall correctness</td></tr>
+<tr><td><strong>Sensitivity / Recall / TPR</strong></td><td>\( \frac{TP}{TP+FN} \)</td><td>fraction of positives that we caught <span class="zh">（敏感度）</span></td></tr>
+<tr><td><strong>Specificity / TNR</strong></td><td>\( \frac{TN}{TN+FP} \)</td><td>fraction of negatives correctly excluded <span class="zh">（特異度）</span></td></tr>
+<tr><td>FPR</td><td>\( \frac{FP}{TN+FP} = 1 - \text{Specificity} \)</td><td>false-alarm rate</td></tr>
+<tr><td><strong>Precision / PPV</strong></td><td>\( \frac{TP}{TP+FP} \)</td><td>fraction of "predicted +" that are truly + <span class="zh">（精確度）</span></td></tr>
+<tr><td>F1</td><td>\( \frac{2\cdot TP}{2\cdot TP + FP + FN} \)</td><td>harmonic mean of P and R <span class="zh">（調和平均）</span></td></tr>
+</table>
+</div>
+
+<h4>ROC and AUC</h4>
+<ul>
+<li><strong>ROC</strong>: x-axis = FPR, y-axis = TPR, swept by varying the threshold \(\theta\) from \(+\infty\) to \(-\infty\).</li>
+<li><strong>AUC = P(score⁺ > score⁻)</strong>: probability that a randomly chosen positive scores higher than a randomly chosen negative.</li>
+<li>Random classifier → AUC = 0.5 (diagonal line).</li>
+<li>Perfect classifier → AUC = 1.0 (top-left corner).</li>
+<li>"Always predict positive" → ROC consists of a single point (1,1).</li>
+</ul>
+
+<div class="warning"><strong>Imbalanced classes:</strong> accuracy becomes misleading; prefer AUC or PR curves. With extreme imbalance, PR-AUC > ROC-AUC for differentiating models.</div>
+
+<h4>Sensitivity vs threshold</h4>
+<ul>
+<li>\(\theta \to -\infty\) → predict everything positive → Sensitivity = 100%.</li>
+<li>\(\theta \to +\infty\) → predict everything negative → Sensitivity = 0%.</li>
+<li>More precisely: \(\theta < \min_i f(x_i \mid y_i = +1)\) gives sens = 100%; \(\theta \ge \max_i f(x_i \mid y_i = +1)\) gives sens = 0%.</li>
+</ul>
+
+<h4>Cross-validation <span class="zh">（交叉驗證）</span></h4>
+<ul>
+<li><strong>K-fold</strong>: split data into K folds, hold each out in turn.</li>
+<li><strong>Stratified K-fold</strong>: each fold preserves the original class ratio. E.g. 500 samples with 10% positives → 50 positives + 450 negatives. With 5-fold, each fold = 100 samples = <strong>10 positives + 90 negatives</strong>.</li>
+<li><strong>LOOCV</strong>: K = N; suitable for small datasets.</li>
+<li><strong>Bootstrap</strong> <span class="zh">（自助法）</span>: sample N examples with replacement; the rest become the test set.</li>
+</ul>
+
+<div class="hot-topic">
+<h4>🔥 How to compare two models</h4>
+<ul>
+<li><strong>Same test set</strong>: AUC (threshold-independent).</li>
+<li><strong>Need a statistical test</strong>: McNemar test, Cochran's Q, paired t-test.</li>
+<li><strong>Across folds</strong>: stratified k-fold CV, compare mean ± standard deviation.</li>
+<li><strong>Low-FPR region matters</strong> (rare disease): use partial AUC or PR-AUC.</li>
+</ul>
+</div>
+
+<h4>2025 Q3e — using AUC to quantify distribution shift <span class="zh">（分布偏移）</span></h4>
+<p>To check whether 2020 vs 2025 social-media posts have changed:</p>
+<ol>
+<li>Label 2020 posts as −1 and 2025 posts as +1.</li>
+<li>Train a binary classifier on text features.</li>
+<li>Report the AUC.</li>
+</ol>
+<ul>
+<li>AUC ≈ 0.5 → posts are indistinguishable → no significant change.</li>
+<li>AUC ≈ 1.0 → easy to tell apart → big shift.</li>
+</ul>
+<p><strong>Limitations:</strong> AUC is threshold-independent but doesn't tell you <em>which</em> features changed; sensitive to noise; depends on representative sampling.</p>
+
+</details>
+
+<!-- LEC 8 -->
+<details class="lecture" id="lec8">
+<summary>Lecture 8 — PCA 🔥 (essential)</summary>
+
+<h4>Covariance matrix</h4>
+<div class="formula">\[ C = \frac{1}{N}\sum_{i=1}^N (\mathbf{x}_i - \boldsymbol{\mu})(\mathbf{x}_i - \boldsymbol{\mu})^T \quad \text{(centered: } C = \tfrac{1}{N}X^T X\text{)} \]</div>
+
+<h4>PCA derivation via Lagrange multipliers <span class="zh">（拉格朗日乘子法）</span></h4>
+<p>Project \(\mathbf{x}\) onto direction \(\mathbf{w}\): \(z = \mathbf{w}^T\mathbf{x}\). Variance after projection:</p>
+<div class="formula">\[ \text{var}(z) = \mathbf{w}^T C\mathbf{w} \]</div>
+<p>Maximise subject to \(\|\mathbf{w}\|^2 = 1\):</p>
+<div class="formula">\[ \mathcal{L} = \mathbf{w}^T C\mathbf{w} - \lambda(\mathbf{w}^T\mathbf{w} - 1), \quad \nabla_{\mathbf{w}}\mathcal{L} = 0 \Rightarrow \boxed{C\mathbf{w} = \lambda\mathbf{w}} \]</div>
+<p>So principal components <span class="zh">（主成分）</span> are eigenvectors of the covariance matrix, and the eigenvalue equals the variance along that direction.</p>
+
+<div class="hot-topic">
+<h4>🔥 Must-know facts</h4>
+<ol>
+<li>PC = eigenvector of the covariance matrix.</li>
+<li>Variance along the kth PC = \(\lambda_k\).</li>
+<li><strong>Maximum number of PCs = min(N − 1, d)</strong> (we lose one degree of freedom from centering <span class="zh">（中心化）</span>).</li>
+<li>All PCs are mutually orthogonal (spectral theorem, since C is symmetric).</li>
+<li>Choosing K: scree plot elbow, or \(\sum_{k=1}^K \lambda_k / \sum_k \lambda_k \ge 0.95\).</li>
+</ol>
+</div>
+
+<h4>Projection and reconstruction</h4>
+<div class="formula">\[ \mathbf{z} = W^T\mathbf{x}, \quad \hat{\mathbf{x}} = W\mathbf{z} + \boldsymbol{\mu} \]</div>
+<p>Projecting onto all d PCs gives zero reconstruction error. Using only the first K → variance lost = \(\sum_{k=K+1}^d \lambda_k\).</p>
+
+<h4>Two unit vectors per PC</h4>
+<p>The first PC points along the direction of maximum variance. <strong>Note that a unit vector has two opposite directions</strong>, so "all possible unit vectors for the first PC" includes both \([1,0]\) and \([-1,0]\). The second PC is orthogonal to the first.</p>
+
+<h4>Worked example — 2025 Q3c</h4>
+<p><strong>(i) Pure Gaussian noise, mean (1,2), variances 1.0 along x and 2.0 along y:</strong></p>
+<ul>
+<li>Covariance matrix is \(\text{diag}(1, 2)\); eigenvalues 2 and 1.</li>
+<li>First PC = \([0, \pm 1]\) (y-axis, larger variance).</li>
+<li>Second PC = \([\pm 1, 0]\).</li>
+</ul>
+<p><strong>(ii) Two points (1,0) and (0,1):</strong></p>
+<ul>
+<li>Centered: \((0.5, -0.5)\) and \((-0.5, 0.5)\).</li>
+<li>First PC = \([1,-1]/\sqrt{2}\) (or its negative).</li>
+<li>Second PC = \([1,1]/\sqrt{2}\), but both points project to 0 → eigenvalue = 0, this PC carries no information.</li>
+</ul>
+
+<h4>PCA via neural network <span class="zh">（用神經網路實現 PCA）</span></h4>
+<p>A <strong>linear autoencoder</strong>: input dim \(d\) → hidden dim \(K\) (the bottleneck <span class="zh">（瓶頸層）</span>) → output dim \(d\). Loss = MSE \(\|\mathbf{x} - \hat{\mathbf{x}}\|^2\). When the network is linear and trained to convergence, the hidden weights span the first K principal components.</p>
+
+<h4>PCA limitations</h4>
+<ul>
+<li>Assumes Gaussian / linear structure.</li>
+<li>The first PC may capture dominant nuisance variation (e.g. illumination in face images).</li>
+<li>Non-linear manifolds <span class="zh">（流形）</span> (e.g. swiss roll, the famous "dinosaur" example) are missed → use t-SNE, UMAP or kernel PCA.</li>
+<li>Uncorrelated ≠ independent.</li>
+</ul>
+
+</details>
+
+<!-- LEC 9 -->
+<details class="lecture" id="lec9">
+<summary>Lecture 9 — Regression</summary>
+
+<h4>OLS closed form <span class="zh">（普通最小平方法）</span></h4>
+<div class="formula">\[ \mathbf{w}^* = (X^T X)^{-1} X^T \mathbf{y} \]</div>
+
+<h4>Ridge regression</h4>
+<div class="formula">\[ \min_{\mathbf{w}} \|X\mathbf{w} - \mathbf{y}\|^2 + \alpha\|\mathbf{w}\|^2 \;\Rightarrow\; \mathbf{w}^* = (X^TX + \alpha I)^{-1}X^T\mathbf{y} \]</div>
+
+<h4>SVR (ε-insensitive)</h4>
+<div class="formula">\[ \min_{\mathbf{w}, b} \tfrac{1}{2}\|\mathbf{w}\|^2 + \tfrac{C}{N}\sum_i \max(0, |f(\mathbf{x}_i)-y_i| - \epsilon) \]</div>
+
+<div class="hot-topic">
+<h4>🔥 Regression metrics</h4>
+<table>
+<tr><th>Metric</th><th>Formula</th><th>Meaning</th></tr>
+<tr><td>MSE</td><td>\(\frac{1}{n}\sum(y_i-\hat{y}_i)^2\)</td><td>sensitive to outliers</td></tr>
+<tr><td>MAE</td><td>\(\frac{1}{n}\sum|y_i-\hat{y}_i|\)</td><td>more robust</td></tr>
+<tr><td>RMSE</td><td>\(\sqrt{\text{MSE}}\)</td><td>same units as y</td></tr>
+<tr><td><strong>R²</strong></td><td>\(1 - \frac{\sum(y_i-\hat{y}_i)^2}{\sum(y_i-\bar{y})^2}\)</td><td>1 = perfect, 0 = no better than mean, &lt; 0 = worse than mean <span class="zh">（決定係數）</span></td></tr>
+<tr><td>Pearson r</td><td>\(\frac{\text{cov}(x,y)}{\sigma_x\sigma_y}\)</td><td>linear correlation</td></tr>
+<tr><td>Spearman</td><td>Pearson on ranks</td><td>monotonic correlation</td></tr>
+</table>
+</div>
+
+<div class="warning">
+<strong>2024 Q3b trap:</strong> the plot shows all predictions clustered around -0.9 while true values range from -5 to 3. R² will be near 0 (or negative), because the model is essentially predicting the mean. Even if RMSE looks OK, this model has <em>no predictive power</em>.
+</div>
+
+<h4>Classic question — 2023 Q2c</h4>
+<p>Which conditions show model A is "better" than model B?</p>
+<ul>
+<li>Pearson negative vs positive → A worse (A is anti-correlated with the target).</li>
+<li>R² of 0.3 vs 0.5 → A worse.</li>
+<li>RMSE lower → A better ✓.</li>
+<li>ε-insensitive losses are equal → cannot tell, because this loss returns 0 for all errors within ε.</li>
+<li>A is non-linear, B is linear → not a generalisation criterion on its own.</li>
+</ul>
+
+<h4>2023 Q2d / 2024 Q3c — which losses work for regression / classification</h4>
+<ul>
+<li><strong>0-1 loss</strong> → classification only; doesn't make sense for continuous output.</li>
+<li><strong>Squared (y-z)²</strong> → regression ✓; usable for classification but not ideal.</li>
+<li><strong>Cubic (y-z)³</strong> → <strong>regression ✗</strong> (asymmetric, can be unbounded below → minimisation diverges).</li>
+<li><strong>Cross-entropy −y log z + (1−y) log(1−z)</strong> → requires \(y\in\{0,1\}, z\in[0,1]\); cannot be used directly with \(y\in\{-1,+1\}\).</li>
+<li><strong>ε-insensitive squared</strong> → regression ✓.</li>
+<li><strong>−(y−z)²</strong> → minimising would make the error larger ✗.</li>
+<li><strong>|y-z|</strong> → fine for classification (can be minimised); MAE for regression.</li>
+</ul>
+
+</details>
+
+<!-- LEC 10 -->
+<details class="lecture" id="lec10">
+<summary>Lecture 10 — Other Machines (K-means, OCC, Ranking)</summary>
+
+<h4>K-means</h4>
+<pre>1. Initialise K centroids m_i.
+2. Repeat:
+     Assign each x to its nearest centroid.
+     Update each m_i = mean of its cluster.
+   Until centroids stop moving.</pre>
+<div class="formula">\[ \min_S \sum_{j=1}^K \sum_{\mathbf{x}\in S_j} \|\mathbf{x} - \mathbf{m}_j\|^2, \quad \mathbf{m}_j = \tfrac{1}{|S_j|}\sum_{\mathbf{x}\in S_j}\mathbf{x} \]</div>
+
+<h4>Hierarchical clustering <span class="zh">（階層式分群）</span></h4>
+<ul>
+<li><strong>Agglomerative</strong>: bottom-up (each point starts as its own cluster, merge greedily).</li>
+<li><strong>Divisive</strong>: top-down.</li>
+<li><strong>Linkage</strong>: Single (min), Complete (max), Average.</li>
+</ul>
+
+<h4>Learning to Rank — 2024 Q5 <span class="zh">（排序學習）</span></h4>
+<p>Training set \(S = \{(\mathbf{x}_i, \mathbf{x}'_i, r_i)\}\) with \(r_i > 0\) — \(\mathbf{x}_i\) should score higher than \(\mathbf{x}'_i\) by at least \(r_i\).</p>
+
+<div class="hot-topic">
+<h4>🔥 Pairwise ranking loss</h4>
+<div class="formula">\[ \ell(\mathbf{x}_i, \mathbf{x}'_i, r_i; f) = \max(0, r_i - (f(\mathbf{x}_i) - f(\mathbf{x}'_i))) \]</div>
+<p>Objective:</p>
+<div class="formula">\[ \min_{\mathbf{w}} \tfrac{\lambda}{2}\|\mathbf{w}\|^2 + \sum_i \max(0, r_i - (f(\mathbf{x}_i; \mathbf{w}) - f(\mathbf{x}'_i; \mathbf{w}))) \]</div>
+</div>
+
+<h4>Converting \((\mathbf{x}, y)\) labels into ranking pairs</h4>
+<p>Given \(T = \{(\mathbf{x}_i, y_i)\}\) (e.g. X-rays with severity levels 1, 2, 3), for every pair with \(y_i > y_j\) build \(S = \{(\mathbf{x}_i, \mathbf{x}_j, r_{ij})\}\) with \(r_{ij} = y_i - y_j\). With N samples this gives up to \(O(N^2)\) pairs.</p>
+
+<h4>Why ranking beats regression / classification for severity prediction</h4>
+<ul>
+<li><strong>Severity is ordinal</strong>: 3 > 2 > 1, but the gap 1→2 may differ from 2→3 → forcing regression imposes a false metric.</li>
+<li><strong>Classification ignores order</strong> → throws away ordinal information.</li>
+<li><strong>Ranking directly learns "who is more severe"</strong>, which matches the clinical decision (which patient should be triaged first).</li>
+</ul>
+
+<h4>One-class classification <span class="zh">（單類別分類）</span></h4>
+<ul>
+<li><strong>SVDD</strong>: \(\min_{a, R} R^2 + \frac{C}{N}\sum_i \max(0, \|\mathbf{x}_i - a\|^2 - R^2)\) — find the smallest hypersphere enclosing the positive class.</li>
+<li><strong>One-Class SVM</strong>: separate the positive class from the origin in feature space with maximum margin.</li>
+</ul>
+
+</details>
+
+<!-- LEC 11 -->
+<details class="lecture" id="lec11">
+<summary>Lecture 11 — Trees & XGBoost</summary>
+
+<h4>Impurity measures <span class="zh">（不純度）</span></h4>
+<table>
+<tr><th>Measure</th><th>Formula</th></tr>
+<tr><td>Error rate</td><td>\(1 - \max_c p_c\)</td></tr>
+<tr><td>Entropy <span class="zh">（熵）</span></td><td>\(H = -\sum_c p_c \log_2 p_c\)</td></tr>
+<tr><td>Gini</td><td>\(G = 1 - \sum_c p_c^2 = \sum_c p_c(1-p_c)\)</td></tr>
+</table>
+
+<h4>Information gain <span class="zh">（資訊增益）</span></h4>
+<div class="formula">\[ IG(T, a) = I(T) - \sum_k \tfrac{|a_k|}{N} I(a_k) \]</div>
+
+<h4>Random Forest = Bagging + random feature subsets</h4>
+<ul>
+<li>Each tree trained on a bootstrap sample <span class="zh">（自助樣本）</span>.</li>
+<li>Each split considers only a random subset of features.</li>
+<li>Final prediction: majority vote (classification) / average (regression).</li>
+</ul>
+
+<h4>XGBoost = gradient-boosted trees + SRM</h4>
+<ul>
+<li>Each tree fits the residual: \(\hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + f_t(\mathbf{x}_i)\).</li>
+<li>Regularization penalises number of leaves and magnitude of leaf weights (L1 / L2 / L0 on leaves).</li>
+<li>Key hyperparameters: \(\eta\) (learning rate), max_depth, γ (L0 leaf penalty), λ (L2), α (L1).</li>
+</ul>
+
+</details>
+
+<!-- LEC GRADIENTS -->
+<details class="lecture" id="lecgrad">
+<summary>Gradients, Gradient Descent and Convexity (2025 Q2a)</summary>
+
+<h4>Gradient descent</h4>
+<div class="formula">\[ \mathbf{w}^{(k+1)} = \mathbf{w}^{(k)} - \alpha \nabla f(\mathbf{w}^{(k)}) \]</div>
+
+<h4>Convexity <span class="zh">（凸性）</span></h4>
+<p>A function f is convex iff for any two points the chord lies on or above the curve: \(f(\lambda a + (1-\lambda)b) \le \lambda f(a) + (1-\lambda) f(b)\).</p>
+
+<div class="hot-topic">
+<h4>🔥 2025 Q2a — local minima problem</h4>
+<p>The figure shows an objective function with multiple local minima. Starting near a local maximum, will gradient descent reach the global minimum?</p>
+<ul>
+<li><strong>Not guaranteed.</strong> Gradient descent only finds the nearest local minimum.</li>
+<li><strong>Remedies:</strong>
+  <ol>
+    <li>Multiple random initialisations, keep the best.</li>
+    <li>Use momentum / Adam to escape small saddle regions <span class="zh">（鞍點區）</span>.</li>
+    <li>Simulated annealing or noise injection (SGD already adds some).</li>
+    <li>Reformulate the problem as convex (guarantees a single minimum).</li>
+    <li>Learning-rate schedules (large then small).</li>
+  </ol>
+</li>
+</ul>
+</div>
+
+<h4>Chain rule example — 2025 Q2b</h4>
+<p>Cubic predictor \(f(\mathbf{x}; \mathbf{w}) = (\mathbf{w}^T\mathbf{x})^3\), loss \(\ell = (y - f)^4\).</p>
+<p><strong>Apply chain rule <span class="zh">（連鎖律）</span>:</strong></p>
+<div class="formula">\[
+\begin{aligned}
+\frac{\partial \ell}{\partial \mathbf{w}}
+&= \frac{\partial \ell}{\partial f}\cdot \frac{\partial f}{\partial(\mathbf{w}^T\mathbf{x})}\cdot \frac{\partial(\mathbf{w}^T\mathbf{x})}{\partial \mathbf{w}} \\
+&= -4(y - f)^3 \cdot 3(\mathbf{w}^T\mathbf{x})^2 \cdot \mathbf{x} \\
+&= -12(y - f)^3 (\mathbf{w}^T\mathbf{x})^2 \mathbf{x}
+\end{aligned}
+\]</div>
+<p>Update: \(\mathbf{w} \leftarrow \mathbf{w} - \alpha \cdot \tfrac{\partial \ell}{\partial \mathbf{w}}\).</p>
+
+<div class="warning">
+<strong>Problems with the cubic predictor:</strong>
+<ul>
+<li>Non-convex → multiple local minima.</li>
+<li>Unbounded output → numerical instability <span class="zh">（數值不穩定）</span>.</li>
+<li>Different from "linear regression on cubed input features": the latter is convex with a closed-form solution; the former is non-convex and needs gradient descent without convergence guarantees.</li>
+<li>However, the cubic predictor shares parameters across cubic terms, using fewer weights when there are many features.</li>
+</ul>
+</div>
+
+</details>
+
+<!-- LEC DL -->
+<details class="lecture" id="lecdl">
+<summary>Deep Learning 🔥🔥🔥 (largest section, highest weight)</summary>
+
+<h4>From neuron to MLP</h4>
+<p>Single neuron: \(z = a(\mathbf{w}^T\mathbf{x} + b)\). MLP = stacked layers of neurons.</p>
+
+<div class="hot-topic">
+<h4>🔥 Counting weights and biases</h4>
+<p>For a fully-connected network \(d_0 \to d_1 \to d_2 \to \cdots \to d_L\):</p>
+<ul>
+<li>Layer \(l\) weights = \(d_{l-1} \times d_l\).</li>
+<li>Layer \(l\) biases = \(d_l\).</li>
+<li>Total parameters = \(\sum_l (d_{l-1} d_l + d_l)\).</li>
+</ul>
+
+<p><strong>Example: 3 inputs, 1 hidden layer of 2 units, 4 outputs:</strong></p>
+<ul>
+<li>Layer 1: \(3 \times 2 = 6\) weights, \(2\) biases.</li>
+<li>Layer 2: \(2 \times 4 = 8\) weights, \(4\) biases.</li>
+<li><strong>Total = 14 weights + 6 biases = 20 parameters.</strong></li>
+</ul>
+
+<p><strong>Autoencoder example (3-input, single hidden layer of 10):</strong></p>
+<ul>
+<li>Input → hidden: \(3 \times 10 = 30\) weights, \(10\) biases.</li>
+<li>Hidden → output: \(10 \times 3 = 30\) weights, \(3\) biases.</li>
+<li>Number of output neurons = <strong>3</strong> (must reconstruct the input).</li>
+<li><strong>Total = 60 weights + 13 biases = 73 parameters.</strong></li>
+</ul>
+</div>
+
+<h4>Activation functions <span class="zh">（激活函數）</span></h4>
+<table>
+<tr><th>Name</th><th>Formula</th><th>Range</th><th>Best for</th></tr>
+<tr><td>Identity / Linear</td><td>\(z\)</td><td>\((-\infty, +\infty)\)</td><td>Regression output</td></tr>
+<tr><td>Sigmoid</td><td>\(\frac{1}{1+e^{-z}}\)</td><td>\((0, 1)\)</td><td>Binary classification output (probability)</td></tr>
+<tr><td>Tanh</td><td>\(\frac{e^z-e^{-z}}{e^z+e^{-z}}\)</td><td>\((-1, 1)\)</td><td>Hidden layer (zero-centred)</td></tr>
+<tr><td>ReLU</td><td>\(\max(0, z)\)</td><td>\([0, +\infty)\)</td><td>Hidden layer (default)</td></tr>
+<tr><td>Leaky ReLU</td><td>\(\max(\alpha z, z)\), small \(\alpha\)</td><td>\((-\infty, +\infty)\)</td><td>Avoids "dead neuron" <span class="zh">（死神經元）</span></td></tr>
+<tr><td>Softmax</td><td>\(\frac{e^{z_i}}{\sum_j e^{z_j}}\)</td><td>probability simplex</td><td>Multi-class output</td></tr>
+</table>
+
+<div class="hot-topic">
+<h4>🔥 2023 Q5e / 2025 Q4b — choosing an activation</h4>
+<p><strong>2023 Q5e:</strong> regression target is in \([-10, +10]\). Which can be used at the output?</p>
+<ul>
+<li>\(a_1(z) = z\) (linear) → ✅ usable.</li>
+<li>\(a_2(z) = \max(0, z)\) (ReLU) → ❌ cannot output negative values.</li>
+<li>\(a_3(z) = 1/(1-e^{-z})\) → ❌ (regardless of typo, even sigmoid-style outputs are bounded in (0,1)).</li>
+<li>\(a_4(z) = \tanh(z)\) → ❌ output is bounded in (−1, 1), too small without scaling.</li>
+<li>\(a_5(z) = -z\) → ✅ this is also linear (just sign-flipped); usable but you must compensate the sign in training.</li>
+</ul>
+
+<p><strong>2025 Q4b — which activation gives the index of the minimum?</strong></p>
+<ul>
+<li><strong>(i) ReLU</strong> → no, drops negatives and doesn't normalise to a probability.</li>
+<li><strong>(ii) softmax over \(z_i\)</strong> → gives the argmax, not argmin.</li>
+<li><strong>(iii) softmax over \(-z_i\)</strong> → ✅ correct! Negating swaps min and max, so the smallest \(z_i\) becomes the largest \(-z_i\) and gets the highest probability.</li>
+</ul>
+</div>
+
+<h4>Backpropagation <span class="zh">（反向傳播）</span> — chain-rule application</h4>
+<p>For squared loss \(L = \frac{1}{2}(y - f)^2\) the chain looks like:</p>
+<div class="formula">\[
+\frac{\partial L}{\partial w_{ij}} = \frac{\partial L}{\partial y_k}\cdot \frac{\partial y_k}{\partial z_j}\cdot\frac{\partial z_j}{\partial u_j}\cdot\frac{\partial u_j}{\partial w_{ij}}
+\]</div>
+<p>where \(u_j = \sum_i w_{ij} x_i\), \(z_j = a(u_j)\), \(y_k = a(\sum_j v_{jk} z_j)\).</p>
+
+<div class="hot-topic">
+<h4>🔥 2023 Q4b-iii — classic question</h4>
+<p>"If all weights from inputs to hidden neuron \(j\) are zero, what is the gradient of the squared error w.r.t. \(w_{ij}\)?"</p>
+<p><strong>Analysis:</strong></p>
+<ul>
+<li>\(u_j = \sum_i w_{ij} x_i = 0\) (all weights zero).</li>
+<li>\(z_j = a(u_j) = a(0)\): for sigmoid \(=0.5\); for ReLU \(=0\); for tanh \(=0\).</li>
+<li>\(\frac{\partial u_j}{\partial w_{ij}} = x_i\).</li>
+<li>\(\frac{\partial z_j}{\partial u_j} = a'(0)\).</li>
+<li>\(\frac{\partial y_k}{\partial z_j} = a'(\sum_j v_{jk}z_j)\cdot v_{jk}\).</li>
+<li>So \(\frac{\partial L}{\partial w_{ij}} = (f - y) \cdot \sum_k v_{jk} \cdot a'(\sum_j v_{jk}z_j) \cdot a'(0) \cdot x_i\).</li>
+</ul>
+<p><strong>Punchline:</strong> for ReLU, \(a'(0)\) is undefined (usually set to 0) → gradient = 0 → the neuron is dead. For sigmoid, \(a'(0) = 0.25\) so the gradient is non-zero, but \(z_j = 0.5\) is constant — symmetry breaking <span class="zh">（對稱性破壞）</span> fails and all hidden neurons learn identically.</p>
+</div>
+
+<h4>Vanishing / exploding gradients</h4>
+<p><strong>Causes of vanishing:</strong></p>
+<ul>
+<li>Sigmoid / tanh saturate at large \(|z|\), so derivatives → 0.</li>
+<li>Chain rule multiplies many small numbers → exponential decay through depth.</li>
+<li>Initial weights too small.</li>
+</ul>
+<p><strong>Five key remedies (memorise):</strong></p>
+<ol>
+<li><strong>ReLU / Leaky ReLU / ELU</strong>: avoid saturation.</li>
+<li><strong>Xavier / He initialisation <span class="zh">（權重初始化）</span></strong>: keep forward variance stable across layers.</li>
+<li><strong>Batch normalization <span class="zh">（批量正規化）</span></strong>: rescale each layer to mean 0, variance 1.</li>
+<li><strong>Skip / residual connections (ResNet)</strong>: \(\mathbf{y} = F(\mathbf{x}) + \mathbf{x}\) — gradient has an identity path.</li>
+<li><strong>Gradient clipping <span class="zh">（梯度裁剪）</span></strong>: caps gradient magnitude (cures exploding gradient).</li>
+</ol>
+
+<h4>Convolution (CNN basics)</h4>
+
+<div class="hot-topic">
+<h4>🔥 Convolution output-size formula (memorise)</h4>
+<div class="formula">\[ O = \left\lfloor \frac{W - K + 2P}{S} \right\rfloor + 1 \]</div>
+<p>where \(W\) = input size, \(K\) = kernel size, \(P\) = padding, \(S\) = stride <span class="zh">（步幅）</span>.</p>
+<p><strong>2025 Q4c-i:</strong> 7×7 input, 3×3 kernel, stride=2, padding=1:</p>
+<p>\(O = \lfloor (7 - 3 + 2)/2 \rfloor + 1 = \lfloor 6/2 \rfloor + 1 = 4\) → output <strong>4×4</strong>.</p>
+<p style="color: var(--warn)">⚠️ However, the expected output in 2025 Q4c is 7×7 (no down-sampling). With stride=1, padding=1: \(O = (7-3+2)/1+1 = 7\) ✓ matches. The exam wording was probably stride=1.</p>
+</div>
+
+<h4>Convolution by hand (2023 Q5c, 2024 Q4d, 2025 Q4c-iii)</h4>
+<p>Slide the filter over the image; at each position compute element-wise product and sum.</p>
+<p><strong>2023 Q5c:</strong> filter is all \(\frac{1}{9}\), stride=1. This is an <strong>average / box-blur filter</strong> — image smoothing. For an 8×5 image with valid convolution: output is (8-3+1) × (5-3+1) = 6×3, each entry = mean of a 3×3 patch.</p>
+<p><strong>Edge handling:</strong></p>
+<ul>
+<li><strong>Valid</strong>: no padding, output shrinks.</li>
+<li><strong>Same</strong>: zero-pad to keep size (most common).</li>
+<li><strong>Reflect / replicate</strong>: mirror or repeat boundary values.</li>
+</ul>
+
+<p><strong>2024 Q4d:</strong> find \(w\) so the centre of the convolution output is 0.</p>
+<ul>
+<li>Filter = \(\begin{pmatrix}0&1&0\\1&w&1\\0&1&0\end{pmatrix}\), input = \(\begin{pmatrix}2&10&3\\7&5&3\\1&5&3\end{pmatrix}\).</li>
+<li>Centre = \(0\cdot 2 + 1\cdot 10 + 0\cdot 3 + 1\cdot 7 + w\cdot 5 + 1\cdot 3 + 0\cdot 1 + 1\cdot 5 + 0\cdot 3\)</li>
+<li>= \(10 + 7 + 5w + 3 + 5 = 25 + 5w\).</li>
+<li>Set = 0 → \(w = -5\).</li>
+</ul>
+
+<p><strong>2025 Q4c-iii:</strong> design a 3×3 filter that detects "corner" pixels of the cross/plus pattern. Use \(\begin{pmatrix}0&1&0\\1&1&1\\0&1&0\end{pmatrix}\) (plus shape) so it responds maximally only at the centre of a cross; threshold via an activation function to get a binary 0/1 output.</p>
+
+<h4>Pooling — 2023 Q5b</h4>
+<table>
+<tr><th>Type</th><th>What it does</th><th>Limitations</th></tr>
+<tr><td>Max</td><td>Take the max</td><td>Sensitive to outliers; ignores other values; non-differentiable</td></tr>
+<tr><td>Min</td><td>Take the min</td><td>Same issues; rarely used (after ReLU, min is often 0)</td></tr>
+<tr><td>Average</td><td>Take the mean</td><td>Mixes strong with weak signals → blurs / dilutes activation</td></tr>
+</table>
+
+<p><strong>Role of pooling <span class="zh">（池化）</span>:</strong></p>
+<ul>
+<li>Spatial dimension reduction.</li>
+<li>Provides translation invariance <span class="zh">（平移不變性）</span>.</li>
+<li>Reduces parameter count and overfitting.</li>
+</ul>
+
+<h4>Autoencoder</h4>
+<div class="formula">\[ L = \frac{1}{n}\sum_{i=1}^n (\mathbf{x}_i - \hat{\mathbf{x}}_i)^2 \quad \text{(MSE reconstruction loss)} \]</div>
+<ul>
+<li>Number of output neurons = input dim \(d\).</li>
+<li>Bottleneck (hidden layer) forces the network to learn a compressed representation.</li>
+<li>Applications: dimensionality reduction, denoising, anomaly detection, pre-training.</li>
+</ul>
+
+<h4>Skip connections (ResNet)</h4>
+<div class="formula">\[ \text{Residual block}: \mathbf{y} = F(\mathbf{x}) + \mathbf{x} \]</div>
+<p><strong>2025 Q4a:</strong> a 3-layer MLP \(f(\mathbf{x}) = a(W_3 a(W_2 a(W_1 \mathbf{x})))\) with a skip from layer 1 to layer 3:</p>
+<div class="formula">\[
+f(\mathbf{x}) = a\big(W_3\, a(W_2\, a(W_1\mathbf{x})) + W_{skip}\, a(W_1\mathbf{x})\big)
+\]</div>
+<p>where \(W_{skip} \in \mathbb{R}^{d_{out}\times d_1}\) maps the layer-1 output \(\in \mathbb{R}^{d_1}\) into the pre-activation space of layer 3 \(\in \mathbb{R}^{d_{out}}\).</p>
+
+<h4>GAN <span class="zh">（生成對抗網路）</span></h4>
+<p><strong>Two networks trained adversarially:</strong></p>
+<ul>
+<li><strong>Generator \(G(z; \theta_G)\)</strong>: maps noise \(z \sim \mathcal{N}(0, I)\) to fake samples.</li>
+<li><strong>Discriminator \(D(x; \theta_D)\)</strong>: classifies samples as real (1) or fake (0).</li>
+</ul>
+
+<p><strong>Discriminator loss:</strong></p>
+<div class="formula">\[ \min_{\theta_D} \sum_{x_i \in R} \ell(D(x_i), 1) + \sum_{z_j} \ell(D(G(z_j)), 0) \]</div>
+
+<p><strong>Generator loss:</strong></p>
+<div class="formula">\[ \min_{\theta_G} \sum_{z_j} \ell(D(G(z_j; \theta_G)), 1) \]</div>
+
+<div class="hot-topic">
+<h4>🔥 Why must G and D be trained jointly?</h4>
+<ol>
+<li>G has no direct access to the real data distribution; it can only learn through D's gradients.</li>
+<li>If D is too weak, G has no useful signal; if D is too strong, G's gradient vanishes <span class="zh">（梯度消失）</span>.</li>
+<li>They must <strong>co-evolve</strong>, forming a minimax game \(\min_G \max_D V(D, G)\).</li>
+<li>Training them separately breaks the equilibrium → divergence or mode collapse <span class="zh">（模式崩潰）</span>.</li>
+</ol>
+</div>
+
+<h4>Multi-class vs multi-label</h4>
+<ul>
+<li><strong>Multi-class</strong> (one label per example): use <strong>softmax + cross-entropy</strong>; outputs sum to 1.</li>
+<li><strong>Multi-label</strong> (multiple labels per example): use <strong>independent sigmoid + binary cross-entropy per output</strong>; each label is independent.</li>
+</ul>
+
+<div class="hot-topic">
+<h4>🔥 2024 Q4b — cell-type detection (multi-label)</h4>
+<ul>
+<li>Output layer size = N (one neuron per cell type).</li>
+<li><strong>Don't use softmax</strong>: a single image can contain multiple cell types — they're not mutually exclusive, so probabilities should not sum to 1.</li>
+<li>Use <strong>independent sigmoid per output + BCE loss</strong>.</li>
+</ul>
+</div>
+
+<h4>Convergence factors — 2024 Q4c</h4>
+<table>
+<tr><th>Choice</th><th>Faster convergence</th><th>Why</th></tr>
+<tr><td>Non-negative inputs vs zero-mean</td><td><strong>Zero-mean</strong></td><td>avoids same-sign gradients → less zigzagging</td></tr>
+<tr><td>Saturating vs non-saturating activation</td><td><strong>Non-saturating (ReLU)</strong></td><td>avoids 0 gradients in the saturated region</td></tr>
+<tr><td>Large vs small initial weights</td><td><strong>Small (well-tuned)</strong></td><td>large → saturates; too small → vanishing; use Xavier/He</td></tr>
+<tr><td>With vs without momentum</td><td><strong>With momentum</strong></td><td>accumulates direction, smooths oscillations</td></tr>
+<tr><td>With vs without skip connections</td><td><strong>With skip</strong></td><td>direct gradient path avoids vanishing</td></tr>
+</table>
+
+<h4>Transformers (overview)</h4>
+<p>Core idea: <strong>attention <span class="zh">（注意力機制）</span></strong>. Given query \(\mathbf{q}\), keys \(\mathbf{k}_i\), values \(\mathbf{v}_i\):</p>
+<div class="formula">\[ \text{Attn}(\mathbf{q}, K, V) = \text{softmax}\!\left(\frac{\mathbf{q} K^T}{\sqrt{d}}\right) V \]</div>
+<p>Applications: NLP (GPT, BERT), Vision (ViT). Advantages over RNNs: parallelisable, captures long-range dependencies.</p>
+
+<h4>Graph Neural Networks (overview)</h4>
+<p>Each layer does message passing <span class="zh">（訊息傳遞）</span>:</p>
+<div class="formula">\[ \mathbf{x}_i^{(l)} = \gamma\!\Big(\mathbf{x}_i^{(l-1)},\; \bigoplus_{j\in N(i)}\phi(\mathbf{x}_i^{(l-1)}, \mathbf{x}_j^{(l-1)}, e_{ji})\Big) \]</div>
+<p>Suitable for non-Euclidean / graph-structured data (chemistry, social networks, 3D point clouds).</p>
+
+<h4>CNN limitations — 2025 Q4d</h4>
+<ul>
+<li><strong>Limitations:</strong>
+  <ul>
+    <li>Fixed receptive field <span class="zh">（感受野）</span> (small filters can't see global context).</li>
+    <li>Translation-equivariant but <strong>not rotation/scale-invariant</strong>.</li>
+    <li>Need many parameters to go deep.</li>
+    <li>Sensitive to object position / size variation.</li>
+    <li>Struggles with long-range dependencies (unlike transformers).</li>
+  </ul>
+</li>
+<li><strong>Remedies:</strong>
+  <ul>
+    <li>Data augmentation (rotation, scale, flip).</li>
+    <li>Dilated convolutions <span class="zh">（擴張卷積）</span> for larger receptive field.</li>
+    <li>Skip connections to share information across layers.</li>
+    <li>Attention / Transformers.</li>
+    <li>Vision Transformers (ViT) replacing CNN backbones.</li>
+    <li>Spatial Transformer Networks.</li>
+  </ul>
+</li>
+</ul>
+
+</details>
+
+<!-- =========================================================
+     Section 3 — MOCK EXAM
+     ========================================================= -->
+
+<h2 id="mock">📝 Mock Exam (120 minutes / answer 4 of 5 / 25 marks each)</h2>
+
+<div class="warning">
+<strong>Instructions:</strong> these five questions follow the distribution of the past three years' exams. Q1 is linear discriminants + kNN (all but guaranteed). Try each one without peeking, then expand the answer.
+</div>
+
+<!-- Q1 -->
+<div class="exam-q">
+<h4>Q1 (25 marks) — Linear Discriminants and kNN</h4>
+
+<p><strong>(a) [10]</strong> For the dataset below, find weights for \(f(\mathbf{x}) = w_1 x_1 + w_2 x_2 + w_3 x_3 + b = 0\) that classifies it correctly:</p>
+<table>
+<tr><th>Idx</th><th>x₁</th><th>x₂</th><th>x₃</th><th>Label</th></tr>
+<tr><td>1</td><td>2</td><td>1</td><td>-3</td><td>+1</td></tr>
+<tr><td>2</td><td>-2</td><td>0</td><td>4</td><td>-1</td></tr>
+<tr><td>3</td><td>3</td><td>-1</td><td>2</td><td>+1</td></tr>
+<tr><td>4</td><td>-3</td><td>2</td><td>-1</td><td>-1</td></tr>
+<tr><td>5</td><td>1</td><td>2</td><td>0</td><td>+1</td></tr>
+<tr><td>6</td><td>-1</td><td>-2</td><td>3</td><td>-1</td></tr>
+</table>
+<p>Give \(w_1, w_2, w_3, b\) and verify each example.</p>
+
+<p><strong>(b) [5]</strong> Can the classifier be expressed with a unit weight vector (\(\|w\|_2=1\))? If yes, derive it.</p>
+
+<p><strong>(c) [5]</strong> Using the data above as training data, classify the query \([1.0, 0.0, 1.0]\) with k=3 nearest neighbours under Euclidean distance.</p>
+
+<p><strong>(d) [5]</strong> Repeat with Manhattan distance — does the answer change?</p>
+
+<details class="answer">
+<summary>Show solution</summary>
+<p><strong>(a)</strong> Notice that x₁ correlates strongly with the label. Try \(w_1 = 1, w_2 = 0, w_3 = 0, b = 0\):</p>
+<ul>
+<li>(2,1,-3): \(f=2 > 0\) → +1 ✓</li>
+<li>(-2,0,4): \(f=-2 < 0\) → -1 ✓</li>
+<li>(3,-1,2): \(f=3 > 0\) → +1 ✓</li>
+<li>(-3,2,-1): \(f=-3 < 0\) → -1 ✓</li>
+<li>(1,2,0): \(f=1 > 0\) → +1 ✓</li>
+<li>(-1,-2,3): \(f=-1 < 0\) → -1 ✓</li>
+</ul>
+<p>So \(\mathbf{w}=[1,0,0], b=0\) separates the data.</p>
+
+<p><strong>(b)</strong> \(\|\mathbf{w}\|_2 = \sqrt{1+0+0}=1\) — already a unit vector. Same scores.</p>
+
+<p><strong>(c)</strong> Distances \(d_i = \sqrt{(x_{i1}-1)^2+x_{i2}^2+(x_{i3}-1)^2}\):</p>
+<ul>
+<li>1: √(1+1+16)=√18≈4.24</li>
+<li>2: √(9+0+9)=√18≈4.24</li>
+<li>3: √(4+1+1)=√6≈2.45</li>
+<li>4: √(16+4+4)=√24≈4.90</li>
+<li>5: √(0+4+1)=√5≈2.24</li>
+<li>6: √(4+4+4)=√12≈3.46</li>
+</ul>
+<p>3 nearest: 5(+1), 3(+1), 6(-1) → vote 2 to 1 → <strong>label = +1</strong>.</p>
+
+<p><strong>(d)</strong> Manhattan distances:</p>
+<ul>
+<li>1: 1+1+4=6</li>
+<li>2: 3+0+3=6</li>
+<li>3: 2+1+1=4</li>
+<li>4: 4+2+2=8</li>
+<li>5: 0+2+1=3</li>
+<li>6: 2+2+2=6</li>
+</ul>
+<p>3 nearest: 5(+1), 3(+1), and one of 1/2/6 (tied at 6). If we pick 1(+1) → all positive; if 2 or 6 → 2 vs 1. <strong>Majority is still +1 either way.</strong> Tied distances are a classic trap — the canonical fix is to take all tied points or use distance-weighted voting.</p>
+</details>
+</div>
+
+<!-- Q2 -->
+<div class="exam-q">
+<h4>Q2 (25 marks) — SVM, Kernels, Loss Functions</h4>
+
+<p><strong>(a) [5]</strong> Write the decision function, regularization term, and empirical loss for a kernelized SVM. How would you handle imbalanced data?</p>
+
+<p><strong>(b) [10]</strong> Decide whether each is a valid kernel and justify:</p>
+<ol>
+<li>\(k_1(\mathbf{a},\mathbf{b}) = (\mathbf{a}^T\mathbf{b} + 1)^3\)</li>
+<li>\(k_2(\mathbf{a},\mathbf{b}) = -\|\mathbf{a}-\mathbf{b}\|^2\)</li>
+<li>\(k_3(\mathbf{a},\mathbf{b}) = \exp(-\|\mathbf{a}-\mathbf{b}\|^2/2)\)</li>
+<li>\(k_4(\mathbf{a},\mathbf{b}) = 2\, \mathbf{a}^T\mathbf{b}\)</li>
+<li>\(k_5(\mathbf{a},\mathbf{b}) = \tan(\mathbf{a}^T\mathbf{b})\)</li>
+</ol>
+
+<p><strong>(c) [10]</strong> With \(y \in \{0, 1\}\) and \(z \in [0, 1]\), say whether each loss is suitable for classification:</p>
+<ol>
+<li>\(\ell(z,y) = -y\log z - (1-y)\log(1-z)\)</li>
+<li>\(\ell(z,y) = (z-y)^2\)</li>
+<li>\(\ell(z,y) = -|z-y|\)</li>
+<li>\(\ell(z,y) = \exp(-yz)\)</li>
+</ol>
+
+<details class="answer">
+<summary>Show solution</summary>
+<p><strong>(a)</strong></p>
+<ul>
+<li><strong>Decision</strong>: \(f(\mathbf{x}) = \sum_i \alpha_i k(\mathbf{x}_i, \mathbf{x}) + b\); predict \(\text{sign}(f)\).</li>
+<li><strong>Regularization</strong>: \(\frac{1}{2}\sum_{i,j}\alpha_i\alpha_j k(\mathbf{x}_i,\mathbf{x}_j)\).</li>
+<li><strong>Empirical loss</strong>: \(\sum_i \max(0, 1-y_i f(\mathbf{x}_i))\) (hinge).</li>
+<li><strong>Imbalance:</strong> assign per-class \(c_i\) (larger for the minority class), or use <code>class_weight='balanced'</code>.</li>
+</ul>
+
+<p><strong>(b)</strong></p>
+<ol>
+<li><strong>k₁ ✓ valid</strong>: polynomial kernel (degree 3, non-negative offset 1) → Mercer satisfied.</li>
+<li><strong>k₂ ✗ invalid</strong>: negative; the Gram matrix has zero diagonal and negative off-diagonal → not PSD.</li>
+<li><strong>k₃ ✓ valid</strong>: Gaussian RBF with \(\gamma = 1/2 > 0\) → Mercer satisfied.</li>
+<li><strong>k₄ ✓ valid</strong>: linear kernel × positive constant; positive scalar times a valid kernel is valid.</li>
+<li><strong>k₅ ✗ invalid</strong>: tan diverges and is non-monotonic → Gram matrix not PSD.</li>
+</ol>
+
+<p><strong>(c)</strong></p>
+<ol>
+<li><strong>BCE ✓</strong>: domains match; this is the standard cross-entropy classification loss.</li>
+<li><strong>Squared (z-y)² ✓</strong>: usable for classification, but cross-entropy usually trains faster.</li>
+<li><strong>−|z-y| ✗</strong>: minimising would increase \(|z-y|\) — opposite of what we want.</li>
+<li><strong>exp(-yz) ✗</strong>: when y=0 the loss is constant 1 (no gradient); only penalises y=1 cases — asymmetric.</li>
+</ol>
+</details>
+</div>
+
+<!-- Q3 -->
+<div class="exam-q">
+<h4>Q3 (25 marks) — Performance Evaluation</h4>
+
+<p>Test-set scores from a model:</p>
+<table>
+<tr><th>Idx</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>
+<tr><td>f(x)</td><td>5</td><td>2</td><td>-3</td><td>4</td><td>-1</td><td>1</td><td>-4</td><td>3</td></tr>
+<tr><td>True</td><td>+1</td><td>+1</td><td>-1</td><td>+1</td><td>-1</td><td>-1</td><td>-1</td><td>+1</td></tr>
+</table>
+
+<p><strong>(a) [4]</strong> Write the confusion matrix at \(\theta = 1.5\).</p>
+<p><strong>(b) [4]</strong> Compute precision, recall, and specificity at \(\theta = 0\).</p>
+<p><strong>(c) [5]</strong> What is the AUC, approximately? Is the model better than random?</p>
+<p><strong>(d) [5]</strong> 200 samples, stratified 4-fold CV, 30% positives. How many positives and negatives in each fold?</p>
+<p><strong>(e) [7]</strong> A model for rare-cancer detection: would you label "disease present" as +1 or -1? Which metric should you use to compare two models, and why?</p>
+
+<details class="answer">
+<summary>Show solution</summary>
+
+<p><strong>(a)</strong> Predictions at \(\theta=1.5\) (score > 1.5): {1(5), 2(2), 4(4), 8(3)} = 4 examples.</p>
+<table>
+<tr><th></th><th>Actual +</th><th>Actual −</th></tr>
+<tr><th>Predicted +</th><td>TP=4</td><td>FP=0</td></tr>
+<tr><th>Predicted −</th><td>FN=0</td><td>TN=4</td></tr>
+</table>
+<p>Perfect classification at this threshold.</p>
+
+<p><strong>(b)</strong> At \(\theta = 0\), predicted positives are {1, 2, 4, 6, 8}.</p>
+<ul>
+<li>TP = 4 (1, 2, 4, 8 are truly +)</li>
+<li>FP = 1 (6 is truly -)</li>
+<li>FN = 0</li>
+<li>TN = 3 (3, 5, 7 are truly -)</li>
+</ul>
+<ul>
+<li>Precision = 4/(4+1) = 0.80</li>
+<li>Recall = 4/(4+0) = 1.00</li>
+<li>Specificity = 3/(3+1) = 0.75</li>
+</ul>
+
+<p><strong>(c)</strong> Sort scores descending: 5(+), 4(+), 3(+), 2(+), 1(-), -1(-), -3(-), -4(-). All positives outrank all negatives → AUC = 1.0. <strong>Far better than random (0.5).</strong></p>
+
+<p><strong>(d)</strong> 200 × 30% = 60 positives, 140 negatives. Stratified 4-fold: each fold = 50 samples = <strong>15 positive + 35 negative</strong>.</p>
+
+<p><strong>(e)</strong></p>
+<ul>
+<li>Convention: +1 means "disease present" (the positive class is what you want to detect).</li>
+<li>Rare disease → highly imbalanced → <strong>accuracy is misleading</strong> (always predicting - gives 99% accuracy).</li>
+<li>Use <strong>AUC-PR</strong> (focuses on precision) or <strong>AUC-ROC</strong> (threshold-independent).</li>
+<li>If false negatives are catastrophic (missed diagnosis) → emphasise recall / sensitivity. If false positives are costly → emphasise precision.</li>
+<li><strong>AUC-ROC is the safe default</strong> for comparing the overall discriminative ability of two models on the same test set.</li>
+</ul>
+</details>
+</div>
+
+<!-- Q4 -->
+<div class="exam-q">
+<h4>Q4 (25 marks) — PCA and MLP</h4>
+
+<p><strong>(a) [10]</strong> Four points: (0,0), (2,2), (4,4), (6,6).</p>
+<ol>
+<li>Find all unit vectors for the first PC.</li>
+<li>Find a unit vector for the second PC.</li>
+<li>What do the points become when projected onto the second PC?</li>
+<li>What is the maximum number of PCs for N points in d dimensions?</li>
+</ol>
+
+<p><strong>(b) [15]</strong> Fully-connected MLP: 4 inputs → 3 hidden → 2 outputs (one hidden layer).</p>
+<ol>
+<li>How many weights and biases in total?</li>
+<li>If all hidden neurons use ReLU, can it solve XOR? Justify.</li>
+<li>If all weights from \(x_3\) to the hidden layer are zero, and squared-error loss \(L = (y-\hat{y})^2\), what is \(\partial L / \partial w_{3j}\) (input 3 to hidden j)?</li>
+<li>If output target is in \([0, 1]\), which output activation should you use?</li>
+</ol>
+
+<details class="answer">
+<summary>Show solution</summary>
+<p><strong>(a)</strong></p>
+<ol>
+<li>All points lie on \(y=x\) → <strong>first PC = \([1/\sqrt{2}, 1/\sqrt{2}]\) or \([-1/\sqrt{2}, -1/\sqrt{2}]\)</strong> (unit vector has two opposite directions).</li>
+<li>Second PC orthogonal: \([1/\sqrt{2}, -1/\sqrt{2}]\) (or its negative).</li>
+<li>Projection onto second PC: \((x_1 - x_2)/\sqrt{2} = 0\) for every point. <strong>All points project to 0</strong> — eigenvalue = 0.</li>
+<li>Max number of PCs = \(\min(N-1, d) = \min(3, 2) = 2\). Only 1 carries variance here.</li>
+</ol>
+
+<p><strong>(b)</strong></p>
+<ol>
+<li>Layer 1: \(4\times 3 = 12\) weights, \(3\) biases. Layer 2: \(3\times 2 = 6\) weights, \(2\) biases. <strong>Total = 18 weights + 5 biases = 23 parameters.</strong></li>
+<li><strong>Yes</strong> — with ReLU and one hidden layer of sufficient width, MLPs are universal approximators and can solve XOR (and any linearly separable problem).</li>
+<li>\(u_j = w_{1j}x_1 + w_{2j}x_2 + w_{4j}x_4\) (since \(w_{3j}=0\)). Backprop gives \(\partial L / \partial w_{3j} = \delta_j \cdot x_3\), where \(\delta_j\) is the upstream error signal. If \(x_3 \ne 0\) and \(\delta_j \ne 0\), the gradient is non-zero and \(w_{3j}\) will move away from 0 in the next update.</li>
+<li>Output range \([0, 1]\) → <strong>sigmoid</strong> is safest. Linear output risks values outside the range.</li>
+</ol>
+</details>
+</div>
+
+<!-- Q5 -->
+<div class="exam-q">
+<h4>Q5 (25 marks) — Deep Learning</h4>
+
+<p><strong>(a) [5]</strong> Explain vanishing / exploding gradients. List three remedies.</p>
+<p><strong>(b) [5]</strong> 9×9 image, 3×3 kernel, stride=2, padding=1 — what is the output size?</p>
+<p><strong>(c) [5]</strong> A 3×3 filter of \(\frac{1}{9}\)s applied to a 5×5 image with valid convolution: output size? What does this filter do?</p>
+<p><strong>(d) [5]</strong> Autoencoder: input dim 5, bottleneck 2. Give (i) number of output neurons, (ii) total weights + biases, (iii) loss function.</p>
+<p><strong>(e) [5]</strong> Why must G and D in a GAN be trained jointly? List five benefits of skip connections.</p>
+
+<details class="answer">
+<summary>Show solution</summary>
+<p><strong>(a)</strong></p>
+<ul>
+<li><strong>Vanishing</strong>: chain-rule product of small activation derivatives (e.g. saturated sigmoid) → early layers receive ~0 gradient.</li>
+<li><strong>Exploding</strong>: product of large terms → unstable updates.</li>
+<li><strong>Three remedies:</strong> (1) ReLU/Leaky ReLU instead of sigmoid/tanh; (2) Xavier/He init; (3) Batch normalisation; (4) Skip / residual connections; (5) Gradient clipping (specifically for exploding).</li>
+</ul>
+
+<p><strong>(b)</strong> \(O = \lfloor (9-3+2\cdot 1)/2 \rfloor + 1 = \lfloor 8/2 \rfloor + 1 = 5\) → <strong>5×5</strong>.</p>
+
+<p><strong>(c)</strong> \(O = (5-3)/1 + 1 = 3\) → <strong>3×3</strong>. The filter averages each 3×3 patch — an <strong>average / box-blur filter (smoothing)</strong>.</p>
+
+<p><strong>(d)</strong></p>
+<ul>
+<li>(i) Output neurons = <strong>5</strong> (must reconstruct the input).</li>
+<li>(ii) Layer 1: 5×2 = 10 weights, 2 biases. Layer 2: 2×5 = 10 weights, 5 biases. <strong>Total = 20 weights + 7 biases.</strong></li>
+<li>(iii) \(L = \frac{1}{N}\sum_{n=1}^N \|\mathbf{x}_n - \hat{\mathbf{x}}_n\|^2\), where \(\mathbf{x}_n\) is the input and \(\hat{\mathbf{x}}_n\) the reconstruction.</li>
+</ul>
+
+<p><strong>(e) Why GANs need joint training:</strong></p>
+<ol>
+<li>G has no direct access to the real data distribution; it learns only via D's gradients.</li>
+<li>G and D must be balanced: D too strong → G's gradient vanishes; D too weak → G has no challenge.</li>
+<li>The minimax game \(\min_G \max_D V(D, G)\) requires co-evolution; separate training breaks the equilibrium and prevents convergence.</li>
+</ol>
+
+<p><strong>Skip connection benefits:</strong></p>
+<ol>
+<li>Mitigates vanishing gradients (identity path carries gradient back).</li>
+<li>Allows training of very deep networks (>100 layers).</li>
+<li>Easier to learn the residual than the full mapping.</li>
+<li>Provides a shortcut so unhelpful layers can be effectively skipped.</li>
+<li>Faster convergence.</li>
+</ol>
+</details>
+</div>
+
+<!-- =========================================================
+     Section 4 — CHEATSHEET
+     ========================================================= -->
+
+<h2 id="cheatsheet">⚡ Cheatsheet (memorise in the last 30 minutes)</h2>
+
+<h3>Classification</h3>
+<ul>
+<li>Linear discriminant: \(f(\mathbf{x}) = \mathbf{w}^T\mathbf{x} + b\)</li>
+<li>Hinge loss: \(\max(0, 1 - y f(\mathbf{x}))\)</li>
+<li>SVM: \(\min \frac{1}{2}\|\mathbf{w}\|^2 + \frac{C}{N}\sum \max(0, 1-y_i f(\mathbf{x}_i))\)</li>
+<li>Kernel SVM: \(f(\mathbf{x}) = b + \sum_i \alpha_i k(\mathbf{x}_i, \mathbf{x})\)</li>
+<li>Cross-entropy: \(-y\log z - (1-y)\log(1-z)\)</li>
+</ul>
+
+<h3>Distances</h3>
+<ul>
+<li>Euclidean: \(\sqrt{\sum_i (a_i-b_i)^2}\)</li>
+<li>Manhattan: \(\sum_i |a_i-b_i|\)</li>
+</ul>
+
+<h3>Kernels</h3>
+<ul>
+<li>Linear: \(\mathbf{a}^T\mathbf{b}\)</li>
+<li>Polynomial: \((\mathbf{a}^T\mathbf{b}+c)^d\), \(c\ge 0, d\ge 1\)</li>
+<li>RBF: \(\exp(-\gamma\|\mathbf{a}-\mathbf{b}\|^2), \gamma>0\)</li>
+<li>Mercer: Gram matrix must be symmetric PSD</li>
+</ul>
+
+<h3>Evaluation metrics</h3>
+<ul>
+<li>Accuracy = \((TP+TN)/N\)</li>
+<li>Recall / Sensitivity / TPR = \(TP/(TP+FN)\)</li>
+<li>Specificity / TNR = \(TN/(TN+FP)\)</li>
+<li>Precision / PPV = \(TP/(TP+FP)\)</li>
+<li>F1 = \(2 \cdot PR / (P + R)\)</li>
+<li>FPR = \(FP/(TN+FP) = 1 - \text{Specificity}\)</li>
+<li>AUC-ROC = \(P(\text{score}^+ > \text{score}^-)\)</li>
+</ul>
+
+<h3>Regression</h3>
+<ul>
+<li>OLS: \(\mathbf{w} = (X^TX)^{-1}X^T\mathbf{y}\)</li>
+<li>Ridge: \(\mathbf{w} = (X^TX + \alpha I)^{-1}X^T\mathbf{y}\)</li>
+<li>R² = \(1 - \frac{\sum(y-\hat{y})^2}{\sum(y-\bar{y})^2}\)</li>
+<li>RMSE = \(\sqrt{\frac{1}{n}\sum(y-\hat{y})^2}\)</li>
+<li>ε-insensitive: \(\max(0, |y-\hat{y}|-\epsilon)\)</li>
+</ul>
+
+<h3>PCA</h3>
+<ul>
+<li>Covariance: \(C = \frac{1}{N}\sum (\mathbf{x}_i - \boldsymbol{\mu})(\mathbf{x}_i - \boldsymbol{\mu})^T\)</li>
+<li>Variance after projection: \(\mathbf{w}^T C\mathbf{w}\)</li>
+<li>Eigen problem: \(C\mathbf{w} = \lambda\mathbf{w}\)</li>
+<li>Max PCs = \(\min(N-1, d)\)</li>
+<li>Projection \(\mathbf{z} = W^T\mathbf{x}\); reconstruction \(\hat{\mathbf{x}} = W\mathbf{z} + \boldsymbol{\mu}\)</li>
+</ul>
+
+<h3>Neural Networks</h3>
+<ul>
+<li>Layer params: weights = \(d_{in} \times d_{out}\), biases = \(d_{out}\)</li>
+<li>Convolution output: \(O = \lfloor(W-K+2P)/S\rfloor + 1\)</li>
+<li>Autoencoder loss: \(\frac{1}{N}\sum\|\mathbf{x}-\hat{\mathbf{x}}\|^2\)</li>
+<li>Skip: \(\mathbf{y} = F(\mathbf{x}) + \mathbf{x}\)</li>
+<li>Softmax: \(z_i = e^{x_i}/\sum_j e^{x_j}\)</li>
+<li>Sigmoid: \(\sigma(x) = 1/(1+e^{-x})\); \(\sigma'(x)=\sigma(x)(1-\sigma(x))\)</li>
+<li>tanh': \(1 - \tanh^2(x)\)</li>
+<li>ReLU': 1 if x>0 else 0</li>
+</ul>
+
+<h3>Trees</h3>
+<ul>
+<li>Entropy: \(-\sum p_c \log_2 p_c\)</li>
+<li>Gini: \(1 - \sum p_c^2\)</li>
+<li>Info gain: \(IG = I(T) - \sum_k (|a_k|/N) I(a_k)\)</li>
+</ul>
+
+<h3>Learning to Rank</h3>
+<ul>
+<li>Pairwise loss: \(\max(0, r_i - (f(\mathbf{x}_i) - f(\mathbf{x}'_i)))\)</li>
+</ul>
+
+<h3>GAN</h3>
+<ul>
+<li>Discriminator: \(\min \sum_R \ell(D(x), 1) + \sum_F \ell(D(G(z)), 0)\)</li>
+<li>Generator: \(\min \sum_F \ell(D(G(z)), 1)\)</li>
+</ul>
+
+<h3>Choosing the right activation</h3>
+<table>
+<tr><th>Output range</th><th>Use</th></tr>
+<tr><td>Real-valued (regression)</td><td>linear (identity)</td></tr>
+<tr><td>(0,1) probability</td><td>sigmoid</td></tr>
+<tr><td>(-1,1)</td><td>tanh</td></tr>
+<tr><td>Multi-class probability simplex</td><td>softmax</td></tr>
+<tr><td>Multi-label independent probabilities</td><td>sigmoid per output</td></tr>
+<tr><td>Hidden layer default</td><td>ReLU</td></tr>
+</table>
+
+<div class="tip">
+<strong>Final 30 minutes:</strong> sweep this cheatsheet three times. Make sure you can recall the SVM primal, the Mercer condition for kernels, kNN procedure, ROC/AUC definitions, the PCA eigen problem, the convolution output-size formula, the autoencoder loss, and the GAN G/D roles. Add the chain rule and you're set.
+</div>
+
+<footer>
+CS9090 Data Mining — University of Warwick<br>
+Compiled from 14 lectures + Summer 2023 / 2024 / 2025 exam papers<br>
+Good luck 🎓
+</footer>
+
+</div>
+</body>
+</html>
