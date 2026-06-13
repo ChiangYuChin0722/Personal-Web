@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Profile photos live at users/{uid}/photos/{profileId}.
+// Only the owner may read/write, and uploads are capped at 5 MB images.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/photos/{photoId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
