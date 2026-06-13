@@ -2,11 +2,12 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { useStore } from '../store';
 import Avatar from '../components/Avatar';
 import RadarChart from '../components/RadarChart';
+import AnalyticsTrendChart from '../components/AnalyticsTrendChart';
 import { getScoreTier, getFriendshipType, MOODS } from '../fqcore';
 import { C } from '../theme';
 
 export default function FriendDetailScreen({ navigation, route }) {
-  const { profiles, journals, customGroups, latestSurvey } = useStore();
+  const { profiles, surveys, journals, customGroups, latestSurvey } = useStore();
   const profile = profiles.find(p => p.id === route.params.id);
 
   if (!profile) {
@@ -18,6 +19,10 @@ export default function FriendDetailScreen({ navigation, route }) {
   const type = sv ? getFriendshipType(sv.scores, sv.type) : null;
   const logs = journals.filter(j => j.profileId === profile.id)
     .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+
+  const trendPoints =
+    surveys.filter(s => s.profileId === profile.id && s.total != null).length +
+    journals.filter(j => j.profileId === profile.id && j.rating).length;
 
   return (
     <ScrollView style={s.root} contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
@@ -58,6 +63,13 @@ export default function FriendDetailScreen({ navigation, route }) {
           <Text style={s.secondaryText}>＋ 記錄互動</Text>
         </TouchableOpacity>
       </View>
+
+      {trendPoints >= 2 && (
+        <>
+          <Text style={s.sectionTitle}>趨勢分析</Text>
+          <AnalyticsTrendChart surveys={surveys} journals={journals} profileId={profile.id} />
+        </>
+      )}
 
       <Text style={s.sectionTitle}>互動紀錄</Text>
       {logs.length === 0 && <Text style={s.muted}>還沒有任何紀錄</Text>}

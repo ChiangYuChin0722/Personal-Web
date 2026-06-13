@@ -65,6 +65,6 @@ eas build -p ios        # needs an Apple Developer account
   same change, so the two stay in sync. Existing data created under the old
   shared `fq/*` collection is **not** auto-migrated to `users/{uid}/*`; if you
   had data there, run a one-off copy in the Firebase console.
-- Not yet ported from web: trend/analytics line chart, key-event sharing,
-  birthday list view, friend comparison, light mode, EN/ZH toggle. The scoring
-  core (`src/fqcore.js`) is shared verbatim so adding these is straightforward.
+- Not yet ported from web: key-event sharing, birthday list view, friend
+  comparison, light mode, EN/ZH toggle. The scoring core (`src/fqcore.js`) is
+  shared verbatim so adding these is straightforward.

@@ -136,3 +136,30 @@ export function birthdayCountdown(birthday) {
   if (next <= today) next = new Date(today.getFullYear() + 1, m - 1, d);
   return Math.ceil((next - today) / 86400000);
 }
+
+// Ordinary least-squares linear regression on [{x, y}] points.
+// Returns { slope, intercept, se (residual std-dev), predict(x) } or null.
+export function linearRegression(points) {
+  const n = points.length;
+  if (n < 2) return null;
+  const sx  = points.reduce((a, p) => a + p.x, 0);
+  const sy  = points.reduce((a, p) => a + p.y, 0);
+  const sxy = points.reduce((a, p) => a + p.x * p.y, 0);
+  const sxx = points.reduce((a, p) => a + p.x * p.x, 0);
+  const denom = n * sxx - sx * sx;
+  if (Math.abs(denom) < 1e-9) return null;
+  const slope     = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  const se = Math.sqrt(
+    points.reduce((a, p) => a + Math.pow(p.y - (slope * p.x + intercept), 2), 0)
+    / Math.max(1, n - 2)
+  );
+  return { slope, intercept, se, predict: x => slope * x + intercept };
+}
+
+export function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
