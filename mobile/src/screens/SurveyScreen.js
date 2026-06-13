@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useStore } from '../store';
+import { useUI } from '../ui';
 import { QUESTIONS, DIM_META, calcScores, getFriendshipType, genId } from '../fqcore';
-import { C } from '../theme';
 
 export default function SurveyScreen({ navigation, route }) {
   const { addSurvey } = useStore();
+  const { C, t, lang } = useUI();
+  const s = useMemo(() => makeStyles(C), [C]);
   const profileId = route.params.id;
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState(Array(QUESTIONS.length).fill(null));
@@ -13,10 +15,11 @@ export default function SurveyScreen({ navigation, route }) {
   const q = QUESTIONS[idx];
   const dim = DIM_META.find(d => d.key === q.dim);
   const progress = (idx + (answers[idx] ? 1 : 0)) / QUESTIONS.length;
+  const opts = lang === 'zh' ? q.opts : q.enOpts;
 
   function choose(optIdx) {
     const next = [...answers];
-    next[idx] = optIdx + 1; // values 1..4 (matches web calcScores)
+    next[idx] = optIdx + 1;
     setAnswers(next);
     setTimeout(() => {
       if (idx < QUESTIONS.length - 1) setIdx(idx + 1);
@@ -27,11 +30,10 @@ export default function SurveyScreen({ navigation, route }) {
   function finish(finalAnswers) {
     const scores = calcScores(finalAnswers);
     const type = getFriendshipType(scores);
-    const survey = {
+    addSurvey({
       id: genId(), profileId, answers: finalAnswers, scores,
       total: scores.total, type: type.key, createdAt: new Date().toISOString(),
-    };
-    addSurvey(survey);
+    });
     navigation.replace('FriendDetail', { id: profileId });
   }
 
@@ -44,8 +46,8 @@ export default function SurveyScreen({ navigation, route }) {
 
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <Text style={[s.dimTag, { color: dim.color }]}>{dim.label} · {dim.en}</Text>
-        <Text style={s.question}>{q.text}</Text>
-        {q.opts.map((opt, i) => (
+        <Text style={s.question}>{lang === 'zh' ? q.text : q.en}</Text>
+        {opts.map((opt, i) => (
           <TouchableOpacity key={i} style={[s.opt, answers[idx] === i + 1 && { borderColor: dim.color, backgroundColor: dim.color + '1A' }]}
             onPress={() => choose(i)}>
             <Text style={s.optText}>{opt}</Text>
@@ -55,17 +57,17 @@ export default function SurveyScreen({ navigation, route }) {
 
       <View style={s.nav}>
         <TouchableOpacity disabled={idx === 0} onPress={() => setIdx(idx - 1)}>
-          <Text style={[s.navBtn, idx === 0 && { opacity: 0.3 }]}>← 上一題</Text>
+          <Text style={[s.navBtn, idx === 0 && { opacity: 0.3 }]}>← {t('上一題', 'Previous')}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={s.navBtn}>取消</Text>
+          <Text style={s.navBtn}>{t('取消', 'Cancel')}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   progressTrack: { height: 4, backgroundColor: C.bg2 },
   progressFill: { height: 4 },

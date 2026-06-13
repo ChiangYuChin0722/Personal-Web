@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import Svg, { Line, Polyline, Circle, Rect, Text as SvgText } from 'react-native-svg';
 import { linearRegression, fmtDate } from '../fqcore';
-import { C } from '../theme';
+import { useUI } from '../ui';
 
 // Trend of a friend's relationship over time: survey totals + rated journals
 // (rating ×18 to share the 0–90 scale), an OLS regression line and a 30-day
 // forecast with a confidence band. Ported from the web AnalyticsTrendChart.
 export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
+  const { C, t } = useUI();
+  const st = useMemo(() => makeStyles(C), [C]);
   const [sel, setSel] = useState(null);
 
   const profileSurveys = surveys
@@ -23,11 +25,7 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
   ];
 
   if (allDates.length < 2) {
-    return (
-      <Text style={st.note}>
-        至少需要 2 筆資料（測驗或日誌評分）才能顯示分析圖表
-      </Text>
-    );
+    return <Text style={st.note}>{t('至少需要 2 筆資料（測驗或日誌評分）才能顯示分析圖表', 'Need at least 2 data points (surveys or rated journals) to show analytics')}</Text>;
   }
 
   const minDate = Math.min(...allDates);
@@ -40,11 +38,11 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
 
   const surveyPts = profileSurveys.map(s => ({
     x: dayOf(new Date(s.createdAt).getTime()), y: s.total,
-    label: String(s.total), date: fmtDate(s.createdAt), type: 'survey',
+    label: String(s.total), date: fmtDate(s.createdAt),
   }));
   const journalPts = profileJournals.map(j => ({
     x: dayOf(new Date(j.date || j.createdAt).getTime()), y: j.rating * 18,
-    label: '★' + j.rating, date: fmtDate(j.date || j.createdAt), type: 'journal',
+    label: '★' + j.rating, date: fmtDate(j.date || j.createdAt),
   }));
   const allPts = [...surveyPts, ...journalPts].sort((a, b) => a.x - b.x);
 
@@ -55,7 +53,6 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
   const slopeColor = slopePerMonth > 2 ? C.green : slopePerMonth < -2 ? C.danger : C.muted;
   const slopeSign = slopePerMonth >= 0 ? '+' : '';
 
-  // Coordinate system (matches web), scaled to screen width via viewBox.
   const W = 600, H = 200, PL = 40, PR = 36, PT = 20, PB = 32;
   const iW = W - PL - PR, iH = H - PT - PB;
   const xOf = x => PL + Math.min(1, x / totalDays) * iW;
@@ -67,49 +64,45 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
   return (
     <View>
       <View style={st.summary}>
-        <Text style={st.sumMuted}>趨勢斜率：</Text>
-        <Text style={[st.sumStrong, { color: slopeColor }]}>{slopeSign}{slopePerMonth.toFixed(1)}/月</Text>
+        <Text style={st.sumMuted}>{t('趨勢斜率', 'Slope')}：</Text>
+        <Text style={[st.sumStrong, { color: slopeColor }]}>{slopeSign}{slopePerMonth.toFixed(1)}{t('/月', '/mo')}</Text>
         {futurePred !== null && <>
           <Text style={st.sumDim}>·</Text>
-          <Text style={st.sumMuted}>30天預測：</Text>
+          <Text style={st.sumMuted}>{t('30天預測', '30d forecast')}：</Text>
           <Text style={[st.sumStrong, { color: '#A78BFA' }]}>
             {Math.round(futurePred)}<Text style={st.sumTiny}> ±{Math.round(futureCI)}</Text>
           </Text>
         </>}
         <Text style={st.sumDim}>·</Text>
-        <Text style={st.sumMuted}>資料點：{allPts.length}</Text>
+        <Text style={st.sumMuted}>{t('資料點', 'Data pts')}：{allPts.length}</Text>
       </View>
 
       <Svg width={dispW} height={dispH} viewBox={`0 0 ${W} ${H}`}>
         {[0, 30, 60, 90].map(v => (
           <Line key={v} x1={PL} y1={yOf(v)} x2={W - PR} y2={yOf(v)}
-            stroke={C.border} strokeWidth={1} strokeDasharray={v === 0 ? undefined : '3,4'} />
+            stroke={C.grid} strokeWidth={1} strokeDasharray={v === 0 ? undefined : '3,4'} />
         ))}
         {[0, 30, 60, 90].map(v => (
           <SvgText key={'l' + v} x={PL - 5} y={yOf(v)} fill={C.dim} fontSize={9}
             textAnchor="end" alignmentBaseline="middle">{v}</SvgText>
         ))}
 
-        {/* "now" divider */}
         {nowDay > 0 && nowDay < totalDays && (
           <Line x1={xOf(nowDay)} y1={PT} x2={xOf(nowDay)} y2={PT + iH}
-            stroke="rgba(255,255,255,0.12)" strokeWidth={1} strokeDasharray="3,3" />
+            stroke={C.grid} strokeWidth={1} strokeDasharray="3,3" />
         )}
 
-        {/* regression line */}
         {reg && (
           <Line x1={xOf(0)} y1={yOf(reg.predict(0))} x2={xOf(totalDays)} y2={yOf(reg.predict(totalDays))}
             stroke={slopeColor} strokeWidth={1.5} strokeDasharray="5,3" opacity={0.55} />
         )}
 
-        {/* CI band at forecast */}
         {futurePred !== null && futureCI > 0 && (
           <Rect x={xOf(futureDay) - 8} y={yOf(futurePred + futureCI)} width={16}
             height={Math.max(2, yOf(Math.max(0, futurePred - futureCI)) - yOf(futurePred + futureCI))}
             fill="#A78BFA" opacity={0.18} rx={2} />
         )}
 
-        {/* forecast point */}
         {futurePred !== null && (
           <>
             <Circle cx={xOf(futureDay)} cy={yOf(futurePred)} r={6} fill="#A78BFA" stroke={C.bg} strokeWidth={2} opacity={0.9} />
@@ -118,14 +111,12 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
           </>
         )}
 
-        {/* journal dots */}
         {journalPts.map((p, i) => (
           <Circle key={'j' + i} cx={xOf(p.x)} cy={yOf(p.y)} r={sel?.k === 'j' + i ? 6 : 4}
             fill="#F59E0B" stroke={C.bg} strokeWidth={1.5} opacity={0.85}
             onPress={() => setSel({ k: 'j' + i, ...p })} />
         ))}
 
-        {/* survey line + dots */}
         {surveyPts.length > 1 && (
           <Polyline points={surveyPts.map(p => `${xOf(p.x)},${yOf(p.y)}`).join(' ')}
             fill="none" stroke={C.accent2} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
@@ -136,7 +127,6 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
             onPress={() => setSel({ k: 's' + i, ...p })} />
         ))}
 
-        {/* selected tooltip */}
         {sel && (
           <SvgText x={xOf(sel.x)} y={yOf(sel.y) - 12} fill={C.text} fontSize={11} fontWeight="700" textAnchor="middle">
             {sel.label} · {sel.date}
@@ -146,10 +136,10 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
 
       <View style={st.legend}>
         {[
-          { color: C.accent, label: '測驗' },
-          { color: '#F59E0B', label: '日誌評分 (×18)' },
-          { color: '#A78BFA', label: '30天預測' },
-          { color: slopeColor, label: '趨勢線', dash: true },
+          { color: C.accent, label: t('測驗', 'Survey') },
+          { color: '#F59E0B', label: t('日誌評分 (×18)', 'Journal ×18') },
+          { color: '#A78BFA', label: t('30天預測', '30d forecast') },
+          { color: slopeColor, label: t('趨勢線', 'Trend'), dash: true },
         ].map(({ color, label, dash }) => (
           <View key={label} style={st.legendItem}>
             <View style={dash
@@ -163,7 +153,7 @@ export default function AnalyticsTrendChart({ surveys, journals, profileId }) {
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   note: { color: C.muted, fontSize: 12, paddingVertical: 20, textAlign: 'center' },
   summary: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 10 },
   sumMuted: { color: C.muted, fontSize: 12 },

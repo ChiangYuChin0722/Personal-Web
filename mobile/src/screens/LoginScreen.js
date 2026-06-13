@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useGoogleAuth } from '../useGoogleAuth';
-import { C } from '../theme';
+import { useUI } from '../ui';
 
 export default function LoginScreen() {
   const { signIn, busy, error } = useGoogleAuth();
+  const { C } = useUI();
+  const s = useMemo(() => makeStyles(C), [C]);
   return (
     <View style={s.root}>
       <View style={s.box}>
@@ -20,7 +23,7 @@ export default function LoginScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
   box: { width: '100%', maxWidth: 340, backgroundColor: C.bg1, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 28, alignItems: 'center' },
   title: { color: C.text, fontSize: 22, fontWeight: '800', letterSpacing: 1 },

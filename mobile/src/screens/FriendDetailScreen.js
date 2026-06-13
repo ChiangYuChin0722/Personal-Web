@@ -1,17 +1,20 @@
+import { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useStore } from '../store';
+import { useUI } from '../ui';
 import Avatar from '../components/Avatar';
 import RadarChart from '../components/RadarChart';
 import AnalyticsTrendChart from '../components/AnalyticsTrendChart';
 import { getScoreTier, getFriendshipType, MOODS } from '../fqcore';
-import { C } from '../theme';
 
 export default function FriendDetailScreen({ navigation, route }) {
   const { profiles, surveys, journals, customGroups, latestSurvey } = useStore();
+  const { C, t, lang } = useUI();
+  const s = useMemo(() => makeStyles(C), [C]);
   const profile = profiles.find(p => p.id === route.params.id);
 
   if (!profile) {
-    return <View style={s.root}><Text style={s.muted}>找不到這位朋友</Text></View>;
+    return <View style={s.root}><Text style={s.muted}>{t('找不到這位朋友', 'Friend not found')}</Text></View>;
   }
 
   const sv = latestSurvey(profile.id);
@@ -19,9 +22,8 @@ export default function FriendDetailScreen({ navigation, route }) {
   const type = sv ? getFriendshipType(sv.scores, sv.type) : null;
   const logs = journals.filter(j => j.profileId === profile.id)
     .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
-
   const trendPoints =
-    surveys.filter(s => s.profileId === profile.id && s.total != null).length +
+    surveys.filter(x => x.profileId === profile.id && x.total != null).length +
     journals.filter(j => j.profileId === profile.id && j.rating).length;
 
   return (
@@ -29,9 +31,9 @@ export default function FriendDetailScreen({ navigation, route }) {
       <View style={{ alignItems: 'center' }}>
         <Avatar profile={profile} size={88} customGroups={customGroups} />
         <Text style={s.name}>{profile.name}</Text>
-        {profile.since ? <Text style={s.muted}>認識於 {profile.since}</Text> : null}
+        {profile.since ? <Text style={s.muted}>{t('認識於', 'Since')} {profile.since}</Text> : null}
         <TouchableOpacity onPress={() => navigation.navigate('EditFriend', { id: profile.id })}>
-          <Text style={s.editLink}>編輯資料</Text>
+          <Text style={s.editLink}>{t('編輯資料', 'Edit profile')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -43,7 +45,7 @@ export default function FriendDetailScreen({ navigation, route }) {
             </View>
             <View style={{ marginLeft: 14 }}>
               <Text style={s.scoreVal}>{sv.total}<Text style={s.muted}> / 90</Text></Text>
-              {type && <Text style={[s.typeName, { color: type.color }]}>{type.name}</Text>}
+              {type && <Text style={[s.typeName, { color: type.color }]}>{lang === 'zh' ? type.name : type.en}</Text>}
             </View>
           </View>
           {type && <Text style={s.typeDesc}>{type.desc}</Text>}
@@ -52,34 +54,34 @@ export default function FriendDetailScreen({ navigation, route }) {
           </View>
         </>
       ) : (
-        <Text style={[s.muted, { textAlign: 'center', marginTop: 24 }]}>尚未評測這段友誼</Text>
+        <Text style={[s.muted, { textAlign: 'center', marginTop: 24 }]}>{t('尚未評測這段友誼', 'This friendship has not been rated yet')}</Text>
       )}
 
       <View style={s.actions}>
         <TouchableOpacity style={s.primaryBtn} onPress={() => navigation.navigate('Survey', { id: profile.id })}>
-          <Text style={s.primaryText}>{sv ? '重新評測' : '開始評測'}</Text>
+          <Text style={s.primaryText}>{sv ? t('重新評測', 'Retake') : t('開始評測', 'Start survey')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('Log', { id: profile.id })}>
-          <Text style={s.secondaryText}>＋ 記錄互動</Text>
+          <Text style={s.secondaryText}>＋ {t('記錄互動', 'Log update')}</Text>
         </TouchableOpacity>
       </View>
 
       {trendPoints >= 2 && (
         <>
-          <Text style={s.sectionTitle}>趨勢分析</Text>
+          <Text style={s.sectionTitle}>{t('趨勢分析', 'Trend Analysis')}</Text>
           <AnalyticsTrendChart surveys={surveys} journals={journals} profileId={profile.id} />
         </>
       )}
 
-      <Text style={s.sectionTitle}>互動紀錄</Text>
-      {logs.length === 0 && <Text style={s.muted}>還沒有任何紀錄</Text>}
+      <Text style={s.sectionTitle}>{t('互動紀錄', 'Interaction Log')}</Text>
+      {logs.length === 0 && <Text style={s.muted}>{t('還沒有任何紀錄', 'No logs yet')}</Text>}
       {logs.map(l => {
         const mood = MOODS.find(m => m.key === l.mood);
         return (
           <View key={l.id} style={s.logCard}>
             <Text style={s.logHead}>
               {mood ? mood.icon + ' ' : ''}{l.date || ''}
-              {l.rating ? '   ' + '⭐'.repeat(l.rating) : ''}
+              {l.rating ? '   ' + '★'.repeat(l.rating) : ''}
             </Text>
             <Text style={s.logText}>{l.text}</Text>
           </View>
@@ -89,7 +91,7 @@ export default function FriendDetailScreen({ navigation, route }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   name: { color: C.text, fontSize: 22, fontWeight: '800', marginTop: 12 },
   muted: { color: C.muted, fontSize: 13, marginTop: 4 },

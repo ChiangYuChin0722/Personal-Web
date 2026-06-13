@@ -119,6 +119,11 @@ export function StoreProvider({ children }) {
 
   const addGroup = useCallback((g) => setCustomGroups(prev => [...prev, g]), []);
 
+  // Wipe everything (used by the "clear all / remove sample data" button).
+  const clearAll = useCallback(() => {
+    setProfiles([]); setSurveys([]); setJournals([]); setCustomGroups([]);
+  }, []);
+
   const latestSurvey = useCallback((pid) => {
     const ps = surveys.filter(s => s.profileId === pid);
     if (!ps.length) return null;
@@ -128,7 +133,7 @@ export function StoreProvider({ children }) {
   const value = {
     user, uid, syncing,
     profiles, surveys, journals, customGroups,
-    saveProfile, deleteProfile, addSurvey, addJournal, addGroup, latestSurvey,
+    saveProfile, deleteProfile, addSurvey, addJournal, addGroup, latestSurvey, clearAll,
     signOut: () => (DEMO_MODE ? Promise.resolve() : signOutUser()),
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

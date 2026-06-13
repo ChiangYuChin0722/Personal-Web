@@ -1,6 +1,6 @@
 import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { DIM_META } from '../fqcore';
-import { C } from '../theme';
+import { useUI } from '../ui';
 
 function polar(angleDeg, r, cx, cy) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -8,6 +8,7 @@ function polar(angleDeg, r, cx, cy) {
 }
 
 export default function RadarChart({ scores, size = 260 }) {
+  const { C, lang } = useUI();
   const cx = size / 2, cy = size / 2;
   const maxR = size / 2 - 36;
   const dims = DIM_META;
@@ -26,11 +27,11 @@ export default function RadarChart({ scores, size = 260 }) {
   return (
     <Svg width={size} height={size}>
       {grid.map((f, gi) => (
-        <Polygon key={gi} points={poly(f)} fill="none" stroke={C.border} strokeWidth={f === 1 ? 1.5 : 1} />
+        <Polygon key={gi} points={poly(f)} fill="none" stroke={C.grid} strokeWidth={f === 1 ? 1.5 : 1} />
       ))}
       {angles.map((a, i) => {
         const o = polar(a, maxR, cx, cy);
-        return <Line key={i} x1={cx} y1={cy} x2={o.x} y2={o.y} stroke={C.border} strokeWidth={1} />;
+        return <Line key={i} x1={cx} y1={cy} x2={o.x} y2={o.y} stroke={C.grid} strokeWidth={1} />;
       })}
       <Polygon points={dataPts.map(p => `${p.x},${p.y}`).join(' ')}
         fill="rgba(34,211,238,0.15)" stroke={C.accent2} strokeWidth={2} strokeLinejoin="round" />
@@ -41,7 +42,7 @@ export default function RadarChart({ scores, size = 260 }) {
         const lp = polar(angles[i], maxR + 18, cx, cy);
         return (
           <SvgText key={i} x={lp.x} y={lp.y} fill={d.color} fontSize={12} fontWeight="700"
-            textAnchor="middle" alignmentBaseline="middle">{d.label}</SvgText>
+            textAnchor="middle" alignmentBaseline="middle">{lang === 'zh' ? d.label : d.en}</SvgText>
         );
       })}
     </Svg>
