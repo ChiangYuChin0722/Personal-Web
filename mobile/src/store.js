@@ -4,6 +4,11 @@ import {
   watchAuth, signOutUser, fsLoad, fsSave, uploadPhoto,
 } from './firebase';
 import { genId } from './fqcore';
+import { demoProfiles, demoSurveys, demoJournals } from './demoData';
+
+// Set to true to skip Google sign-in and load sample data — handy for previewing
+// the app in a simulator before OAuth is configured. Keep false for real use.
+export const DEMO_MODE = false;
 
 const StoreCtx = createContext(null);
 export const useStore = () => useContext(StoreCtx);
@@ -22,22 +27,22 @@ function cacheSet(uid, name, val) {
 }
 
 export function StoreProvider({ children }) {
-  const [user, setUser] = useState(undefined); // undefined = checking, null = signed out
+  const [user, setUser] = useState(DEMO_MODE ? { uid: 'demo', displayName: 'Demo' } : undefined);
   const uid = user?.uid || null;
 
-  const [profiles, setProfiles] = useState([]);
-  const [surveys, setSurveys] = useState([]);
-  const [journals, setJournals] = useState([]);
+  const [profiles, setProfiles] = useState(DEMO_MODE ? demoProfiles : []);
+  const [surveys, setSurveys] = useState(DEMO_MODE ? demoSurveys : []);
+  const [journals, setJournals] = useState(DEMO_MODE ? demoJournals : []);
   const [customGroups, setCustomGroups] = useState([]);
   const [syncing, setSyncing] = useState(false);
 
   const fsReady = useRef(false);
 
-  useEffect(() => watchAuth(u => setUser(u || null)), []);
+  useEffect(() => { if (DEMO_MODE) return; return watchAuth(u => setUser(u || null)); }, []);
 
   // Load this user's data from Firestore (with cache) once signed in.
   useEffect(() => {
-    if (!uid) { fsReady.current = false; return; }
+    if (DEMO_MODE || !uid) { fsReady.current = false; return; }
     let cancelled = false;
     fsReady.current = false;
 
@@ -73,18 +78,18 @@ export function StoreProvider({ children }) {
     return () => { cancelled = true; };
   }, [uid]);
 
-  // Persist on change.
-  useEffect(() => { if (!uid) return; cacheSet(uid, 'profiles', profiles); if (fsReady.current) fsSave(uid, 'profiles', profiles); }, [profiles, uid]);
-  useEffect(() => { if (!uid) return; cacheSet(uid, 'surveys', surveys);  if (fsReady.current) fsSave(uid, 'surveys', surveys);  }, [surveys, uid]);
-  useEffect(() => { if (!uid) return; cacheSet(uid, 'journals', journals); if (fsReady.current) fsSave(uid, 'journals', journals); }, [journals, uid]);
-  useEffect(() => { if (!uid) return; cacheSet(uid, 'groups', customGroups); if (fsReady.current) fsSave(uid, 'groups', customGroups); }, [customGroups, uid]);
+  // Persist on change (skipped entirely in demo mode).
+  useEffect(() => { if (DEMO_MODE || !uid) return; cacheSet(uid, 'profiles', profiles); if (fsReady.current) fsSave(uid, 'profiles', profiles); }, [profiles, uid]);
+  useEffect(() => { if (DEMO_MODE || !uid) return; cacheSet(uid, 'surveys', surveys);  if (fsReady.current) fsSave(uid, 'surveys', surveys);  }, [surveys, uid]);
+  useEffect(() => { if (DEMO_MODE || !uid) return; cacheSet(uid, 'journals', journals); if (fsReady.current) fsSave(uid, 'journals', journals); }, [journals, uid]);
+  useEffect(() => { if (DEMO_MODE || !uid) return; cacheSet(uid, 'groups', customGroups); if (fsReady.current) fsSave(uid, 'groups', customGroups); }, [customGroups, uid]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const saveProfile = useCallback(async (profile) => {
     const id = profile.id || genId();
     let photo = profile.photo || null;
-    if (photo && !photo.startsWith('http')) {
+    if (!DEMO_MODE && photo && !photo.startsWith('http')) {
       try { photo = await uploadPhoto(uid, id, photo); }
       catch (e) { console.warn('Photo upload failed:', e.message); }
     }
@@ -124,7 +129,7 @@ export function StoreProvider({ children }) {
     user, uid, syncing,
     profiles, surveys, journals, customGroups,
     saveProfile, deleteProfile, addSurvey, addJournal, addGroup, latestSurvey,
-    signOut: signOutUser,
+    signOut: () => (DEMO_MODE ? Promise.resolve() : signOutUser()),
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

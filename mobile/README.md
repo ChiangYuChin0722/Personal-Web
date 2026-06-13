@@ -49,8 +49,14 @@ create OAuth 2.0 Client IDs and paste them into
 
 ### 4. Run
 ```bash
-npx expo start          # scan QR with Expo Go, or press i / a
+npx expo start          # scan QR with Expo Go, or press i (iOS) / a (Android)
 ```
+
+#### Quick preview without OAuth (DEMO_MODE)
+To see the app running in a simulator before configuring Google sign-in, open
+`src/store.js` and set `export const DEMO_MODE = true;`. This skips login and
+loads sample friends/surveys/journals (no Firebase calls). Set it back to
+`false` for real sign-in + sync.
 
 ### 5. Build installable apps (no Mac needed)
 ```bash
