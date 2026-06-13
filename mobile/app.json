@@ -24,6 +24,6 @@
         "backgroundColor": "#0f0f12"
       }
     },
-    "plugins": ["expo-image-picker", "expo-web-browser"]
+    "plugins": ["expo-image-picker"]
   }
 }
