@@ -7,8 +7,9 @@ import { genId } from './fqcore';
 import { demoProfiles, demoSurveys, demoJournals } from './demoData';
 
 // Set to true to skip Google sign-in and load sample data — handy for previewing
-// the app in a simulator before OAuth is configured. Keep false for real use.
-export const DEMO_MODE = false;
+// the app in a simulator before OAuth is configured. Set to false for real use
+// (real Google sign-in + Firestore sync with the web app).
+export const DEMO_MODE = true;
 
 const StoreCtx = createContext(null);
 export const useStore = () => useContext(StoreCtx);
