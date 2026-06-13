@@ -1,6 +1,6 @@
 import './FriendPage.css';
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
-import { fsLoad, fsSave } from '../firebase';
+import { fsLoad, fsSave, uploadPhoto, signInWithGoogle, signOutUser, watchAuth } from '../firebase';
 
 // Handles Chinese IME: blocks Enter during composition (macOS fix)
 function IMEInput({ onEnterKey, onKeyDown, ...props }) {
@@ -328,13 +328,16 @@ function lsSet(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
-// Profiles: keep photos in localStorage only (Firestore strip)
-function localLoadProfiles() { return lsGet('fq_profiles', []); }
-function localSaveProfiles(p) {
-  try { localStorage.setItem('fq_profiles', JSON.stringify(p)); }
+// Per-user cache keys keep multiple Google accounts on the same browser separate.
+function ck(uid, name) { return `fq_${name}_${uid}`; }
+
+// Profiles cache (photos are now URLs, so they are small enough to keep).
+function localLoadProfiles(uid) { return lsGet(ck(uid, 'profiles'), []); }
+function localSaveProfiles(uid, p) {
+  try { localStorage.setItem(ck(uid, 'profiles'), JSON.stringify(p)); }
   catch (e) {
     const stripped = p.map(pr => ({ ...pr, photo: null }));
-    try { localStorage.setItem('fq_profiles', JSON.stringify(stripped)); } catch {}
+    try { localStorage.setItem(ck(uid, 'profiles'), JSON.stringify(stripped)); } catch {}
     console.warn('localStorage full — photos not saved', e);
   }
 }
@@ -823,7 +826,7 @@ function AnalyticsTrendChart({ surveys, journals, profileId }) {
 
 // ─── Topbar ────────────────────────────────────────────────────────────────────
 
-function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, onToggleDark }) {
+function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, onToggleDark, onSignOut }) {
   const t = (zh, en) => lang === 'zh' ? zh : en;
   return (
     <div className="fq-topbar">
@@ -852,6 +855,9 @@ function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, 
       <button className="fq-icon-btn" onClick={onToggleDark} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
         {darkMode ? '☀️' : '🌙'}
       </button>
+      <button className="fq-btn fq-btn-ghost fq-btn-sm" onClick={onSignOut} title="Sign out">
+        {t('登出', 'Sign out')}
+      </button>
       <a href="/dashboard" className="fq-topbar-back" style={{ marginLeft: 0 }}>
         ← Secret
       </a>
@@ -860,20 +866,23 @@ function Topbar({ view, onDashboard, onAddFriend, lang, onToggleLang, darkMode, 
 }
 
 
-// ─── Auth View ─────────────────────────────────────────────────────────────────
-const FQ_USER = "chianghebe";
-const FQ_PASS = "Hebe0722";
+// ─── Auth View (Google Sign-In) ─────────────────────────────────────────────────
 
-function AuthView({ onAuth }) {
-  const [user, setUser] = useState('');
-  const [pw,   setPw]   = useState('');
-  const [err,  setErr]  = useState('');
+function AuthView() {
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (user !== FQ_USER || pw !== FQ_PASS) { setErr('Incorrect username or password.'); return; }
-    sessionStorage.setItem('yc_auth', 'fq_ok');
-    onAuth();
+  async function handleGoogle() {
+    setErr(''); setBusy(true);
+    try {
+      await signInWithGoogle();
+      // onAuthStateChanged in FriendPage takes it from here.
+    } catch (e) {
+      if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+        setErr(e.message || 'Sign-in failed.');
+      }
+      setBusy(false);
+    }
   }
 
   return (
@@ -882,29 +891,22 @@ function AuthView({ onAuth }) {
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
         <div className="fq-auth-title">FQ SYSTEM</div>
         <div className="fq-auth-sub">Friendship Quantification v2.1</div>
-        <form onSubmit={handleSubmit}>
-          <input
-            className="fq-auth-input"
-            type="text"
-            placeholder="Username"
-            value={user}
-            onChange={e => { setUser(e.target.value); setErr(''); }}
-            autoFocus
-            autoComplete="off"
-            style={{ marginBottom: 8 }}
-          />
-          <input
-            className="fq-auth-input"
-            type="password"
-            placeholder="Password"
-            value={pw}
-            onChange={e => { setPw(e.target.value); setErr(''); }}
-          />
-          {err && <div className="fq-auth-err">{err}</div>}
-          <button type="submit" className="fq-btn fq-btn-primary" style={{ width:'100%', justifyContent:'center', marginTop: 4 }}>
-            SIGN IN
-          </button>
-        </form>
+        <button
+          type="button"
+          className="fq-btn fq-btn-primary"
+          onClick={handleGoogle}
+          disabled={busy}
+          style={{ width:'100%', justifyContent:'center', marginTop: 8, gap: 8, opacity: busy ? 0.6 : 1 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+          </svg>
+          {busy ? 'Signing in…' : 'Sign in with Google'}
+        </button>
+        {err && <div className="fq-auth-err">{err}</div>}
       </div>
     </div>
   );
@@ -2819,14 +2821,15 @@ function DetailView({ profile, surveys, journals, onEdit, onDelete, onStartSurve
 // ─── Main FriendPage ───────────────────────────────────────────────────────────
 
 export default function FriendPage() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem('yc_auth') === 'fq_ok');
+  const [user, setUser] = useState(undefined); // undefined = checking, null = signed out
+  const uid = user?.uid || null;
 
-  // Start with localStorage cache so UI is instant; Firestore will override after load
-  const [profiles,     setProfiles]     = useState(localLoadProfiles);
-  const [surveys,      setSurveys]      = useState(() => lsGet('fq_surveys', []));
-  const [journals,     setJournals]     = useState(() => lsGet('fq_journals', []));
-  const [customGroups, setCustomGroups] = useState(() => lsGet('fq_groups', []));
-  const [syncing, setSyncing] = useState(true); // true while fetching from Firestore
+  // Data starts empty; the per-user cache + Firestore fill it once signed in.
+  const [profiles,     setProfiles]     = useState([]);
+  const [surveys,      setSurveys]      = useState([]);
+  const [journals,     setJournals]     = useState([]);
+  const [customGroups, setCustomGroups] = useState([]);
+  const [syncing, setSyncing] = useState(false); // true while fetching from Firestore
 
   const [view, setView] = useState('dashboard');
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -2839,19 +2842,29 @@ export default function FriendPage() {
   // Track whether the initial Firestore load is done (so saves don't fire prematurely)
   const fsReady = useRef(false);
 
-  // Load from Firestore on mount
+  // Watch Google auth state
+  useEffect(() => watchAuth(u => setUser(u || null)), []);
+
+  // Load this user's data once signed in (re-runs if the account changes)
   useEffect(() => {
+    if (!uid) { fsReady.current = false; return; }
+    let cancelled = false;
+    fsReady.current = false;
+
     async function init() {
+      setSyncing(true);
       const [cp, cs, cj, cg] = await Promise.all([
-        fsLoad('fq', 'profiles'),
-        fsLoad('fq', 'surveys'),
-        fsLoad('fq', 'journals'),
-        fsLoad('fq', 'groups'),
+        fsLoad(uid, 'profiles'),
+        fsLoad(uid, 'surveys'),
+        fsLoad(uid, 'journals'),
+        fsLoad(uid, 'groups'),
       ]);
-      const localProfiles  = localLoadProfiles();
-      const localSurveys   = lsGet('fq_surveys',  []);
-      const localJournals  = lsGet('fq_journals', []);
-      const localGroups    = lsGet('fq_groups',   []);
+      if (cancelled) return;
+
+      const localProfiles  = localLoadProfiles(uid);
+      const localSurveys   = lsGet(ck(uid, 'surveys'),  []);
+      const localJournals  = lsGet(ck(uid, 'journals'), []);
+      const localGroups    = lsGet(ck(uid, 'groups'),   []);
 
       // Safety rule: never replace non-empty local data with empty cloud data.
       // Cloud wins only when it has at least as many items as local (or local is empty).
@@ -2863,49 +2876,49 @@ export default function FriendPage() {
       const finalJournals = safeMerge(cj, localJournals);
       const finalGroups   = safeMerge(cg, localGroups);
 
-      // Merge photos back (photos stay local only)
-      setProfiles(finalProfiles.map(p => ({
-        ...p,
-        photo: localProfiles.find(lp => lp.id === p.id)?.photo ?? null,
-      })));
+      setProfiles(finalProfiles);
       setSurveys(finalSurveys);
       setJournals(finalJournals);
       setCustomGroups(finalGroups);
 
       // Upload to Firestore whenever local has MORE data than cloud (covers first-time + recovery)
-      if (cp === null || localProfiles.length > (cp?.length ?? 0))
-        fsSave('fq', 'profiles', finalProfiles.map(p => ({ ...p, photo: null })));
-      if (cs === null || localSurveys.length  > (cs?.length ?? 0)) fsSave('fq', 'surveys',  finalSurveys);
-      if (cj === null || localJournals.length > (cj?.length ?? 0)) fsSave('fq', 'journals', finalJournals);
-      if (cg === null || localGroups.length   > (cg?.length ?? 0)) fsSave('fq', 'groups',   finalGroups);
+      if (cp === null || localProfiles.length > (cp?.length ?? 0)) fsSave(uid, 'profiles', finalProfiles);
+      if (cs === null || localSurveys.length  > (cs?.length ?? 0)) fsSave(uid, 'surveys',  finalSurveys);
+      if (cj === null || localJournals.length > (cj?.length ?? 0)) fsSave(uid, 'journals', finalJournals);
+      if (cg === null || localGroups.length   > (cg?.length ?? 0)) fsSave(uid, 'groups',   finalGroups);
 
       fsReady.current = true;
       setSyncing(false);
     }
     init();
-  }, []);
+    return () => { cancelled = true; };
+  }, [uid]);
 
   // Persist changes to localStorage + Firestore (only after initial load)
   useEffect(() => {
-    localSaveProfiles(profiles);
+    if (!uid) return;
+    localSaveProfiles(uid, profiles);
     if (!fsReady.current) return;
-    fsSave('fq', 'profiles', profiles.map(p => ({ ...p, photo: null })));
-  }, [profiles]);
+    fsSave(uid, 'profiles', profiles);
+  }, [profiles, uid]);
   useEffect(() => {
-    lsSet('fq_surveys', surveys);
+    if (!uid) return;
+    lsSet(ck(uid, 'surveys'), surveys);
     if (!fsReady.current) return;
-    fsSave('fq', 'surveys', surveys);
-  }, [surveys]);
+    fsSave(uid, 'surveys', surveys);
+  }, [surveys, uid]);
   useEffect(() => {
-    lsSet('fq_journals', journals);
+    if (!uid) return;
+    lsSet(ck(uid, 'journals'), journals);
     if (!fsReady.current) return;
-    fsSave('fq', 'journals', journals);
-  }, [journals]);
+    fsSave(uid, 'journals', journals);
+  }, [journals, uid]);
   useEffect(() => {
-    lsSet('fq_groups', customGroups);
+    if (!uid) return;
+    lsSet(ck(uid, 'groups'), customGroups);
     if (!fsReady.current) return;
-    fsSave('fq', 'groups', customGroups);
-  }, [customGroups]);
+    fsSave(uid, 'groups', customGroups);
+  }, [customGroups, uid]);
   useEffect(() => { localStorage.setItem('fq_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('fq_dark', String(darkMode)); }, [darkMode]);
 
@@ -2923,8 +2936,6 @@ export default function FriendPage() {
     }
     setLogTarget(null);
   }
-
-  function handleAuth() { setAuthed(true); }
 
   function goToDashboard() {
     setView('dashboard');
@@ -2948,11 +2959,19 @@ export default function FriendPage() {
     setView('survey');
   }
 
-  function handleSaveProfile(profile) {
+  async function handleSaveProfile(profile) {
     if (profile._newGroup) {
       setCustomGroups(prev => [...prev, profile._newGroup]);
     }
     const { _newGroup, _quickScore, ...cleanProfile } = profile;
+    // Upload a freshly-picked photo (data URL) to Storage so it syncs across devices.
+    if (cleanProfile.photo && cleanProfile.photo.startsWith('data:')) {
+      try {
+        cleanProfile.photo = await uploadPhoto(uid, cleanProfile.id, cleanProfile.photo);
+      } catch (e) {
+        console.warn('Photo upload failed:', e.message);
+      }
+    }
     if (editingProfile) {
       setProfiles(prev => prev.map(p => p.id === cleanProfile.id ? cleanProfile : p));
     } else {
@@ -3008,10 +3027,20 @@ export default function FriendPage() {
     setSelectedProfile(updatedProfile);
   }
 
-  if (!authed) {
+  if (user === undefined) {
     return (
       <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
-        <AuthView onAuth={handleAuth} />
+        <div className="fq-auth"><div className="fq-auth-box">
+          <div className="fq-auth-sub">Loading…</div>
+        </div></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className={`fq-root${darkMode ? '' : ' fq-light'}`}>
+        <AuthView />
       </div>
     );
   }
@@ -3034,6 +3063,7 @@ export default function FriendPage() {
         onToggleLang={toggleLang}
         darkMode={darkMode}
         onToggleDark={toggleDark}
+        onSignOut={() => signOutUser()}
       />
 
       {view === 'dashboard' && (
