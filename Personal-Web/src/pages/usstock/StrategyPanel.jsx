@@ -28,6 +28,7 @@ const PRESETS = {
 import { PriceChart } from "./Charts.jsx";
 import Collapsible from "./Collapsible.jsx";
 import { buildContext, classifyState, STATES } from "./state.js";
+import { fsLoad, fsSave, STRATEGIES_DOC } from "./cloud.js";
 
 const LS_W = "usstock_weights";
 const LS_UNI = "usstock_universe";
@@ -50,7 +51,7 @@ const SIGNAL = {
 
 const YEARS = ["1Y", "2Y", "5Y"];
 
-export default function StrategyPanel({ apiKey, fmpKey }) {
+export default function StrategyPanel({ apiKey, fmpKey, user }) {
   const [weights, setWeights] = useState(() => {
     try {
       return { ...DEFAULT_WEIGHTS, ...JSON.parse(localStorage.getItem(LS_W) || "{}") };
@@ -155,6 +156,21 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
       setLoading(false);
       setProgress(null);
     }
+  }
+
+  const [saveMsg, setSaveMsg] = useState("");
+  async function saveStrategy() {
+    if (!user) {
+      setSaveMsg("先在右上角用 Google 登入，才能把策略存到雲端。");
+      return;
+    }
+    const name = window.prompt("策略名稱？", "我的策略");
+    if (!name) return;
+    const entry = { name, weights, universe: uniText, topN, years, savedAt: new Date().toISOString() };
+    const existing = (await fsLoad(user.uid, STRATEGIES_DOC)) || [];
+    const next = Array.isArray(existing) ? [...existing, entry] : [entry];
+    fsSave(user.uid, STRATEGIES_DOC, next);
+    setSaveMsg(`✅ 已存「${name}」到「我的」。`);
   }
 
   function runBacktest() {
@@ -270,7 +286,11 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
           <button className="strat-btn bt" onClick={runBacktest} disabled={loading}>
             回測這個策略
           </button>
+          <button className="strat-btn save" onClick={saveStrategy} disabled={loading}>
+            💾 存成我的策略
+          </button>
         </div>
+        {saveMsg && <div className="strat-note">{saveMsg}</div>}
         {symbols.length < 2 && (
           <div className="strat-note">⚠️ 因子是「跨股票排名」，選股池至少要 2 檔以上才有意義（回測也是）。</div>
         )}
