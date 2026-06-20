@@ -127,7 +127,9 @@ export default function USStockPage() {
   }, []);
 
   useEffect(() => {
-    loadDemo("NVDA", "1Y");
+    // if a key is set, open straight into LIVE data; otherwise demo
+    if (apiKey.trim()) loadLive("NVDA", "1Y", apiKey);
+    else loadDemo("NVDA", "1Y");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -185,8 +187,9 @@ export default function USStockPage() {
 
   function handlePeriod(per) {
     setPeriod(per);
-    if (source === "live") loadLive(symbol, per, apiKey);
-    else if (source === "demo") loadDemo(symbol, per);
+    if (source === "csv") return;
+    if (apiKey.trim()) loadLive(symbol, per, apiKey);
+    else loadDemo(symbol, per);
   }
 
   function saveKey(v) {
@@ -422,6 +425,11 @@ export default function USStockPage() {
                 {m.startDate} → {m.endDate} · {m.bars} bars
               </span>
             </>
+          )}
+          {source === "demo" && apiKey.trim() && (
+            <button className="us-golive" onClick={() => { setSymbol(input.trim().toUpperCase() || symbol); loadLive(input.trim().toUpperCase() || symbol, period, apiKey); }}>
+              你有 key → 點這裡抓真實資料
+            </button>
           )}
         </div>
 

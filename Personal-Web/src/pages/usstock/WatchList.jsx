@@ -28,12 +28,14 @@ export default function WatchList({ current, apiKey, onPick }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uniText, current]);
 
-  // auto-refresh live once on open if a key is set (≤8 symbols)
+  // auto-refresh live once on open if a key is set (≤8 symbols). Delayed so the
+  // main analysis fetch goes first and isn't starved by the free 8/min limit.
   const autoDone = useRef(false);
   useEffect(() => {
     if (!autoDone.current && apiKey.trim() && symbols.length <= 8) {
       autoDone.current = true;
-      refreshLive();
+      const t = setTimeout(() => refreshLive(), 3000);
+      return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
