@@ -224,6 +224,44 @@ export function demoFundamentals(symbol) {
   };
 }
 
+// ---- Watchlist quotes ---------------------------------------------------
+// Demo quotes (instant) from the synthetic series.
+export function demoQuotes(symbols) {
+  return symbols.map((sym) => {
+    const s = demoSeries(sym); // default length — same series the single-stock view uses
+    const last = s[s.length - 1].close;
+    const prev = s[s.length - 2].close;
+    return { symbol: sym, price: last, changePct: last / prev - 1 };
+  });
+}
+
+// Live quotes via Twelve Data /quote (one request, comma-separated symbols).
+// Keep the list ≤8 to stay within the free 8-credits/min limit.
+export async function fetchQuotes(symbols, apiKey) {
+  const key = apiKey?.trim();
+  if (!key) throw new Error("需要 Twelve Data key");
+  const url = `https://api.twelvedata.com/quote?symbol=${symbols
+    .map((s) => encodeURIComponent(s))
+    .join(",")}&apikey=${encodeURIComponent(key)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  return symbols.map((sym) => {
+    const q = json[sym] || (symbols.length === 1 ? json : null);
+    if (q && !q.code && q.close) {
+      const price = parseFloat(q.close);
+      const chg =
+        q.percent_change != null
+          ? parseFloat(q.percent_change) / 100
+          : q.previous_close
+          ? price / parseFloat(q.previous_close) - 1
+          : 0;
+      return { symbol: sym, price, changePct: chg };
+    }
+    return { symbol: sym, price: null, changePct: null };
+  });
+}
+
 export function demoUniverse(symbols, bars = 340) {
   return symbols.map((sym) => ({
     symbol: sym,

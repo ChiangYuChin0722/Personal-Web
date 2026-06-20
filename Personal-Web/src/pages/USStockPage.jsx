@@ -9,6 +9,7 @@ import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatal
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
 import Collapsible from "./usstock/Collapsible.jsx";
 import CandleChart from "./usstock/CandleChart.jsx";
+import WatchList from "./usstock/WatchList.jsx";
 import { DrawdownChart, Gauge } from "./usstock/Charts.jsx";
 
 const LS_KEY = "usstock_apikey";
@@ -169,6 +170,16 @@ export default function USStockPage() {
     if (!sym) return;
     setSymbol(sym);
     loadLive(sym, period, apiKey);
+  }
+
+  // load a symbol picked from the watchlist (live if a key is set, else demo)
+  function pickSymbol(sym) {
+    const s = sym.trim().toUpperCase();
+    if (!s) return;
+    setInput(s);
+    setSymbol(s);
+    if (apiKey.trim()) loadLive(s, period, apiKey);
+    else loadDemo(s, period);
   }
 
   function handlePeriod(per) {
@@ -529,14 +540,43 @@ export default function USStockPage() {
           </Collapsible>
         )}
 
-        {/* ---------------- charts ---------------- */}
+        {/* ---------------- pro layout: chart + watchlist ---------------- */}
         {m && (
-          <Collapsible title="走勢圖 K線" sub={`OHLC · MA20/50 · 量 · 可拖曳縮放`}>
-            <CandleChart series={series} light={theme === "light"} />
-            <div className="us-chart-head" style={{ marginTop: 14 }}>
-              <span>Drawdown 回撤</span>
-              <span className="neg">MDD {pct(m.maxDrawdown)}</span>
+          <div className="pro-grid">
+            <div className="pro-chart">
+              <div className="pro-chart-head">
+                <span className="pro-sym">{source === "csv" ? "CSV" : symbol}</span>
+                {source !== "csv" && (
+                  <span className="pro-quote">
+                    ${num(m.last)}{" "}
+                    <span className={m.dayChangePct >= 0 ? "pos" : "neg"}>{signed(m.dayChangePct, 2)}</span>
+                  </span>
+                )}
+                <span className="pro-range">{m.startDate} → {m.endDate}</span>
+              </div>
+              <CandleChart series={series} light={theme === "light"} height={420} />
             </div>
+
+            <aside className="pro-side">
+              <WatchList current={symbol} apiKey={apiKey} onPick={pickSymbol} />
+              <div className="pro-stats">
+                <div className="pro-stats-title">關鍵數據</div>
+                <div className="pro-stat"><span>區間高</span><b>${num(Math.max(...series.map((d) => d.high)))}</b></div>
+                <div className="pro-stat"><span>區間低</span><b>${num(Math.min(...series.map((d) => d.low)))}</b></div>
+                <div className="pro-stat"><span>波動率</span><b>{pct(m.volatility)}</b></div>
+                <div className="pro-stat"><span>Beta</span><b>{num(m.beta)}</b></div>
+                <div className="pro-stat"><span>RSI</span><b>{num(m.rsi, 0)}</b></div>
+                <div className="pro-stat"><span>ATR</span><b>${num(m.atr)}</b></div>
+                <div className="pro-stat"><span>Sharpe</span><b>{num(m.sharpe)}</b></div>
+                <div className="pro-stat"><span>綜合分</span><b>{num(m.composite, 0)}</b></div>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* ---------------- drawdown ---------------- */}
+        {m && (
+          <Collapsible title="回撤 Drawdown" sub={`MDD ${pct(m.maxDrawdown)}`} defaultOpen={false}>
             <DrawdownChart dd={dd} />
           </Collapsible>
         )}
