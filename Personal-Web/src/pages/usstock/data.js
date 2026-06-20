@@ -135,13 +135,15 @@ export const DEFAULT_UNIVERSE = [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Live fetch of a whole universe, throttled to stay under the free rate limit.
-// onProgress(done, total) drives a progress bar. Returns { rows, errors }.
+// onProgress(done, total, waitSec) drives a progress bar; waitSec>0 means it's
+// counting down the per-minute rate-limit reset (so it doesn't look frozen).
+// Returns { rows, errors }.
 export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y", fmpKey = "") {
   const key = apiKey?.trim();
   const rows = [];
   const errors = [];
-  const BATCH = 7;
-  const GAP = 61000; // free tier resets per minute
+  const BATCH = 8; // Twelve Data free = 8 credits/min → ≤8 symbols run in one go
+  const GAP = 62; // seconds to wait for the free-tier minute to reset
   let done = 0;
   for (let i = 0; i < symbols.length; i += BATCH) {
     const batch = symbols.slice(i, i + BATCH);
@@ -158,8 +160,14 @@ export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y", 
     );
     results.forEach((r) => r && rows.push(r));
     done += batch.length;
-    onProgress?.(Math.min(done, symbols.length), symbols.length);
-    if (i + BATCH < symbols.length) await sleep(GAP);
+    onProgress?.(Math.min(done, symbols.length), symbols.length, 0);
+    // visible countdown while waiting for the rate-limit minute to reset
+    if (i + BATCH < symbols.length) {
+      for (let s = GAP; s > 0; s--) {
+        onProgress?.(Math.min(done, symbols.length), symbols.length, s);
+        await sleep(1000);
+      }
+    }
   }
   // optional fundamentals (separate FMP free key) — attach to price rows
   if (fmpKey?.trim()) {

@@ -123,7 +123,7 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
       const { rows: fetched, errors: errs } = await fetchUniverse(
         [...symbols, "QQQ"],
         apiKey,
-        (done, total) => setProgress({ done, total }),
+        (done, total, wait) => setProgress({ done, total, wait }),
         years,
         fmpKey
       );
@@ -234,7 +234,11 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
             用 demo 試跑（即時）
           </button>
           <button className="strat-btn live" onClick={runLive} disabled={loading}>
-            {loading && progress ? `抓取中 ${progress.done}/${progress.total}…` : "用我的 key 跑 live"}
+            {loading && progress
+              ? progress.wait
+                ? `限速等待 ${progress.wait}s…`
+                : `抓取中 ${progress.done}/${progress.total}…`
+              : "用我的 key 跑 live"}
           </button>
           <button className="strat-btn bt" onClick={runBacktest} disabled={loading}>
             回測這個策略
@@ -249,7 +253,12 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
           </div>
         )}
         {loading && progress && (
-          <div className="strat-note">免費 API 限速 8 次/分，約需 1–2 分鐘，請別關頁面。</div>
+          <div className="strat-note">
+            {progress.wait
+              ? `免費 API 限速 8 次/分，正在等額度重置 ${progress.wait}s（沒當機，請別關頁面）。`
+              : "抓取中…"}
+            　選股池 ≤7 檔可一次抓完、免等待。
+          </div>
         )}
         {errors.length > 0 && (
           <div className="strat-errs">
