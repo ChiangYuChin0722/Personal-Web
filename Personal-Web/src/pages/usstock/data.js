@@ -60,8 +60,11 @@ function recentQuarters(n = 3) {
   return out;
 }
 
+// Returns { values: {insider?, instOwn?}, notes: [string] }. notes surfaces the
+// real FMP message (e.g. "Exclusive Endpoint" on free plan) so failures explain
+// themselves instead of a generic "沒抓到".
 export async function fetchFlow(symbol, fmpKey) {
-  const out = {};
+  const out = { values: {}, notes: [] };
   const key = fmpKey?.trim();
   if (!key) return out;
   const sym = symbol.toUpperCase();
@@ -72,7 +75,10 @@ export async function fetchFlow(symbol, fmpKey) {
       `${FMP}/insider-trading/search?symbol=${sym}&page=0&limit=100&apikey=${key}`
     );
     const json = await res.json();
-    if (Array.isArray(json) && json.length) {
+    const errMsg = json && !Array.isArray(json) && (json["Error Message"] || json.message);
+    if (errMsg) {
+      out.notes.push(`Insider：${String(errMsg).slice(0, 90)}`);
+    } else if (Array.isArray(json) && json.length) {
       let net = 0;
       for (const t of json) {
         const qty = Number(t.securitiesTransacted) || 0;
@@ -81,30 +87,39 @@ export async function fetchFlow(symbol, fmpKey) {
         const isBuy = ad === "A" || type.startsWith("P"); // P-Purchase / A=acquired
         net += isBuy ? qty : -qty;
       }
-      out.insider = Math.round(net);
+      out.values.insider = Math.round(net);
+    } else {
+      out.notes.push("Insider：無近期內部人交易資料");
     }
-  } catch {
-    /* leave insider manual */
+  } catch (e) {
+    out.notes.push(`Insider：${e.message}`);
   }
 
-  // Institutional (13F): number of institutions holding, from the most recent
-  // available quarter (investorsHolding).
+  // Institutional (13F): number of institutions holding, most recent quarter.
+  let instErr = null;
   for (const { year, quarter } of recentQuarters()) {
     try {
       const res = await fetch(
         `${FMP}/institutional-ownership/symbol-positions-summary?symbol=${sym}&year=${year}&quarter=${quarter}&apikey=${key}`
       );
       const json = await res.json();
+      const errMsg = json && !Array.isArray(json) && (json["Error Message"] || json.message);
+      if (errMsg) {
+        instErr = String(errMsg).slice(0, 90);
+        continue;
+      }
       const row = Array.isArray(json) ? json[0] : json;
       const holders = row && (row.investorsHolding ?? row.investorsHoldingChange);
       if (holders != null && !Number.isNaN(Number(holders))) {
-        out.instOwn = Number(row.investorsHolding);
+        out.values.instOwn = Number(row.investorsHolding);
+        instErr = null;
         break;
       }
-    } catch {
-      /* try the next quarter */
+    } catch (e) {
+      instErr = e.message;
     }
   }
+  if (out.values.instOwn == null) out.notes.push(`機構：${instErr || "無可用季度資料"}`);
 
   return out;
 }

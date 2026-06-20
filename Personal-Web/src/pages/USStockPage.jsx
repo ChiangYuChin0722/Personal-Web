@@ -237,16 +237,17 @@ export default function USStockPage() {
     setFlowLoading(true);
     setFlowMsg("");
     try {
-      const got = await fetchFlow(sym, fmpKey);
-      const keys = Object.keys(got);
-      if (!keys.length) {
-        setFlowMsg(`${sym}: 沒抓到（key 無效、或該欄位在免費方案外）`);
-      } else {
-        const next = { ...flow, ...got };
+      const { values, notes } = await fetchFlow(sym, fmpKey);
+      const keys = Object.keys(values);
+      if (keys.length) {
+        const next = { ...flow, ...values };
         setFlow(next);
         localStorage.setItem(LS_FLOW, JSON.stringify(next));
-        setFlowMsg(`已自動更新：${keys.join(", ")}（其餘為付費/手動）`);
       }
+      const parts = [];
+      if (keys.length) parts.push(`✅ 已更新 ${keys.join(", ")}`);
+      if (notes.length) parts.push(notes.join("　|　"));
+      setFlowMsg(`${sym}：${parts.join("　|　") || "沒抓到"}`);
     } catch (e) {
       setFlowMsg(`抓取失敗：${e.message}`);
     } finally {
