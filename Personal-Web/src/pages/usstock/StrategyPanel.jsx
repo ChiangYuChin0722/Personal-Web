@@ -9,18 +9,17 @@ import {
   scoreUniverse,
   applySignals,
   marketRegime,
+  backtest,
   DEFAULT_WEIGHTS,
+  FACTOR_META,
+  FACTOR_ORDER,
 } from "./factors.js";
+import { PriceChart } from "./Charts.jsx";
 
 const LS_W = "usstock_weights";
 const LS_UNI = "usstock_universe";
 
-const FACTORS = [
-  { key: "mom", label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強" },
-  { key: "trend", label: "Trend", zh: "趨勢", desc: "現價 / MA50 — 是否站上均線" },
-  { key: "vol", label: "Volume", zh: "資金", desc: "近期量 / 均量 — 有沒有資金進來" },
-  { key: "rsi", label: "RSI", zh: "過熱", desc: "健康偏強加分、過熱(>70)扣分" },
-];
+const pct = (v, d = 1) => (v == null ? "—" : `${(v * 100).toFixed(d)}%`);
 
 function ScoreBar({ value, tone = "accent" }) {
   return (
@@ -36,7 +35,7 @@ const SIGNAL = {
   avoid: { txt: "避開", cls: "sig-avoid" },
 };
 
-export default function StrategyPanel({ apiKey, period }) {
+export default function StrategyPanel({ apiKey, fmpKey, period }) {
   const [weights, setWeights] = useState(() => {
     try {
       return { ...DEFAULT_WEIGHTS, ...JSON.parse(localStorage.getItem(LS_W) || "{}") };
@@ -48,14 +47,16 @@ export default function StrategyPanel({ apiKey, period }) {
     () => localStorage.getItem(LS_UNI) || DEFAULT_UNIVERSE.join(", ")
   );
   const [topN, setTopN] = useState(5);
-  const [result, setResult] = useState(null);
+  const [rows, setRows] = useState(null); // fetched price+fund rows
+  const [result, setResult] = useState(null); // { scored:[], active:[] }
   const [regime, setRegime] = useState(null);
   const [ranSource, setRanSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
   const [errors, setErrors] = useState([]);
+  const [bt, setBt] = useState(null);
 
-  const wSum = weights.mom + weights.trend + weights.vol + weights.rsi || 1;
+  const wSum = FACTOR_ORDER.reduce((s, k) => s + (weights[k] || 0), 0) || 1;
 
   function setW(key, val) {
     const next = { ...weights, [key]: Number(val) };
@@ -74,13 +75,14 @@ export default function StrategyPanel({ apiKey, period }) {
   }
 
   const compute = useCallback(
-    (rows) => {
-      const qqqRow = rows.find((r) => r.symbol === "QQQ");
-      const scoredRows = rows.filter((r) => r.symbol !== "QQQ");
-      const scored = applySignals(scoreUniverse(scoredRows, weights), topN);
-      setResult(scored);
-      const qseries = qqqRow ? qqqRow.series : null;
-      setRegime(qseries ? marketRegime(qseries, vixProxy(qseries)) : null);
+    (fetched) => {
+      setRows(fetched);
+      const scoredRows = fetched.filter((r) => r.symbol !== "QQQ");
+      const { scored, active } = scoreUniverse(scoredRows, weights);
+      setResult({ scored: applySignals(scored, topN), active });
+      const qqq = fetched.find((r) => r.symbol === "QQQ");
+      setRegime(qqq ? marketRegime(qqq.series, vixProxy(qqq.series)) : null);
+      setBt(null);
     },
     [weights, topN]
   );
@@ -88,8 +90,7 @@ export default function StrategyPanel({ apiKey, period }) {
   function runDemo() {
     setErrors([]);
     setLoading(true);
-    const rows = demoUniverse([...symbols, "QQQ"]);
-    compute(rows);
+    compute(demoUniverse([...symbols, "QQQ"]));
     setRanSource("demo");
     setLoading(false);
   }
@@ -103,20 +104,33 @@ export default function StrategyPanel({ apiKey, period }) {
     setLoading(true);
     setProgress({ done: 0, total: symbols.length + 1 });
     try {
-      const { rows, errors: errs } = await fetchUniverse(
+      const { rows: fetched, errors: errs } = await fetchUniverse(
         [...symbols, "QQQ"],
         apiKey,
         (done, total) => setProgress({ done, total }),
-        period
+        period,
+        fmpKey
       );
       setErrors(errs);
-      if (rows.length) compute(rows);
+      if (fetched.length) compute(fetched);
       setRanSource("live");
     } finally {
       setLoading(false);
       setProgress(null);
     }
   }
+
+  function runBacktest() {
+    const data = rows && rows.length ? rows : demoUniverse([...symbols, "QQQ"]);
+    setBt(backtest(data, weights, topN) || { error: true });
+  }
+
+  const active = result?.active || [];
+  const gridCols = `26px 54px 1.4fr ${active.map(() => "minmax(50px,1fr)").join(" ")} 50px`;
+  const eqSeries =
+    bt && !bt.error
+      ? bt.equity.map((v, i) => ({ date: bt.dates[i], open: v, high: v, low: v, close: v, volume: 0 }))
+      : null;
 
   return (
     <div className="us-strat">
@@ -130,7 +144,7 @@ export default function StrategyPanel({ apiKey, period }) {
           <span>→</span>
           <span><b>3 打分</b> 跨股票排名加權</span>
           <span>→</span>
-          <span><b>4 風控</b> Regime + 部位上限</span>
+          <span><b>4 風控</b> Regime + 回測 + 部位上限</span>
         </div>
       </div>
 
@@ -138,27 +152,31 @@ export default function StrategyPanel({ apiKey, period }) {
       <div className="strat-card">
         <div className="strat-card-head">
           <span>因子權重</span>
-          <span className="strat-hint">拉一拉看排名怎麼變 · 自動正規化成 100%</span>
+          <span className="strat-hint">拉一拉看排名怎麼變 · 自動正規化 · 品質/價值需 FMP key</span>
         </div>
         <div className="strat-weights">
-          {FACTORS.map((f) => (
-            <div key={f.key} className="wrow">
-              <div className="wrow-top">
-                <span className="wrow-name">
-                  {f.label} <span className="wrow-zh">{f.zh}</span>
-                </span>
-                <span className="wrow-pct">{Math.round((weights[f.key] / wSum) * 100)}%</span>
+          {FACTOR_ORDER.map((k) => {
+            const f = FACTOR_META[k];
+            return (
+              <div key={k} className="wrow">
+                <div className="wrow-top">
+                  <span className="wrow-name">
+                    {f.label} <span className="wrow-zh">{f.zh}</span>
+                    {f.fund && <span className="wrow-tag">需 FMP</span>}
+                  </span>
+                  <span className="wrow-pct">{Math.round(((weights[k] || 0) / wSum) * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={weights[k] || 0}
+                  onChange={(e) => setW(k, e.target.value)}
+                />
+                <div className="wrow-desc">{f.desc}</div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={weights[f.key]}
-                onChange={(e) => setW(f.key, e.target.value)}
-              />
-              <div className="wrow-desc">{f.desc}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -193,6 +211,9 @@ export default function StrategyPanel({ apiKey, period }) {
           <button className="strat-btn live" onClick={runLive} disabled={loading}>
             {loading && progress ? `抓取中 ${progress.done}/${progress.total}…` : "用我的 key 跑 live"}
           </button>
+          <button className="strat-btn bt" onClick={runBacktest} disabled={loading}>
+            回測這個策略
+          </button>
         </div>
         {progress && (
           <div className="strat-prog">
@@ -210,6 +231,39 @@ export default function StrategyPanel({ apiKey, period }) {
           </div>
         )}
       </div>
+
+      {/* backtest */}
+      {bt && (
+        <div className="strat-card strat-bt">
+          <div className="strat-card-head">
+            <span>回測 Backtest</span>
+            <span className="strat-hint">
+              每週重新評分、持有前 {topN} 名 · 用價格類因子 · {ranSource === "live" ? "真實" : "demo"} 歷史
+            </span>
+          </div>
+          {bt.error ? (
+            <div className="strat-note">資料不足以回測（需要更長歷史，試 1Y 以上）。</div>
+          ) : (
+            <>
+              {eqSeries && <PriceChart series={eqSeries} height={150} />}
+              <div className="bt-metrics">
+                <div className="bt-m"><span>年化 CAGR</span><b className={bt.cagr >= 0 ? "pos" : "neg"}>{pct(bt.cagr)}</b></div>
+                <div className="bt-m"><span>Sharpe</span><b className={bt.sharpe >= 1 ? "pos" : ""}>{bt.sharpe.toFixed(2)}</b></div>
+                <div className="bt-m"><span>最大回撤</span><b className="neg">{pct(bt.mdd)}</b></div>
+                <div className="bt-m"><span>勝率</span><b>{pct(bt.winRate, 0)}</b></div>
+                <div className="bt-m"><span>總報酬</span><b className={bt.totalReturn >= 0 ? "pos" : "neg"}>{pct(bt.totalReturn)}</b></div>
+                <div className="bt-m"><span>等權買持 CAGR</span><b>{pct(bt.benchCagr)}</b></div>
+              </div>
+              <div className="bt-verdict">
+                {bt.cagr > bt.benchCagr
+                  ? `✅ 策略 ${pct(bt.cagr)} 勝過「整池買著不動」${pct(bt.benchCagr)} — 選股有加值。`
+                  : `⚠️ 策略 ${pct(bt.cagr)} 沒贏過「整池買著不動」${pct(bt.benchCagr)} — 不如直接全買。`}
+                　共 {bt.nRebals} 次再平衡。
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* regime */}
       {regime && (
@@ -232,32 +286,38 @@ export default function StrategyPanel({ apiKey, period }) {
             <span>排名 Leaderboard</span>
             <span className="strat-hint">
               {ranSource === "demo" ? "DEMO 假資料" : "LIVE 真實資料"} · 前 {topN} 名 = 買進候選
+              {!active.includes("quality") && "（品質/價值未計入 — 需 FMP key）"}
             </span>
           </div>
-          <div className="board-cols">
+          <div className="board-cols" style={{ gridTemplateColumns: gridCols }}>
             <span className="bc-rank">#</span>
             <span className="bc-sym">代號</span>
             <span className="bc-total">總分</span>
-            <span className="bc-fac">動能</span>
-            <span className="bc-fac">趨勢</span>
-            <span className="bc-fac">資金</span>
-            <span className="bc-fac">過熱</span>
+            {active.map((k) => (
+              <span key={k} className="bc-fac">{FACTOR_META[k].zh}</span>
+            ))}
             <span className="bc-sig">訊號</span>
           </div>
-          {result.map((s) => {
+          {result.scored.map((s) => {
             const sig = SIGNAL[s.signal];
             return (
-              <div key={s.symbol} className={`board-row ${s.signal === "buy" ? "is-buy" : ""}`}>
+              <div
+                key={s.symbol}
+                className={`board-row ${s.signal === "buy" ? "is-buy" : ""}`}
+                style={{ gridTemplateColumns: gridCols }}
+              >
                 <span className="bc-rank">{s.rank}</span>
                 <span className="bc-sym">{s.symbol}</span>
                 <span className="bc-total">
                   <b>{s.total.toFixed(0)}</b>
                   <ScoreBar value={s.total} tone={s.signal === "buy" ? "good" : "accent"} />
                 </span>
-                <span className="bc-fac"><ScoreBar value={s.breakdown.mom} /><i>{s.breakdown.mom.toFixed(0)}</i></span>
-                <span className="bc-fac"><ScoreBar value={s.breakdown.trend} /><i>{s.breakdown.trend.toFixed(0)}</i></span>
-                <span className="bc-fac"><ScoreBar value={s.breakdown.vol} /><i>{s.breakdown.vol.toFixed(0)}</i></span>
-                <span className="bc-fac"><ScoreBar value={s.breakdown.rsi} /><i>{s.breakdown.rsi.toFixed(0)}</i></span>
+                {active.map((k) => (
+                  <span key={k} className="bc-fac">
+                    <ScoreBar value={s.breakdown[k] ?? 50} />
+                    <i>{(s.breakdown[k] ?? 50).toFixed(0)}</i>
+                  </span>
+                ))}
                 <span className="bc-sig"><span className={`sig ${sig.cls}`}>{sig.txt}</span></span>
               </div>
             );
@@ -268,9 +328,9 @@ export default function StrategyPanel({ apiKey, period }) {
         </div>
       )}
 
-      {!result && (
+      {!result && !bt && (
         <div className="us-empty">
-          按上面「用 demo 試跑」立刻看排名，或填好你的 Twelve Data key 跑真實資料。
+          按「用 demo 試跑」立刻看排名，或「回測這個策略」看歷史績效（Sharpe / 回撤 / 勝率）。
         </div>
       )}
     </div>

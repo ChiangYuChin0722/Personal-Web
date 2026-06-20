@@ -121,7 +121,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Live fetch of a whole universe, throttled to stay under the free rate limit.
 // onProgress(done, total) drives a progress bar. Returns { rows, errors }.
-export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y") {
+export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y", fmpKey = "") {
   const key = apiKey?.trim();
   const rows = [];
   const errors = [];
@@ -146,11 +146,59 @@ export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y") 
     onProgress?.(Math.min(done, symbols.length), symbols.length);
     if (i + BATCH < symbols.length) await sleep(GAP);
   }
+  // optional fundamentals (separate FMP free key) — attach to price rows
+  if (fmpKey?.trim()) {
+    await Promise.all(
+      rows.map(async (r) => {
+        if (r.symbol !== "QQQ") r.fund = await fetchFundamentals(r.symbol, fmpKey);
+      })
+    );
+  }
   return { rows, errors };
 }
 
+// Fundamentals (ROE / PE / gross margin) from FMP /stable/ratios-ttm.
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+export async function fetchFundamentals(symbol, fmpKey) {
+  const key = fmpKey?.trim();
+  if (!key) return null;
+  try {
+    const res = await fetch(
+      `${FMP}/ratios-ttm?symbol=${symbol.toUpperCase()}&apikey=${key}`
+    );
+    const json = await res.json();
+    const r = Array.isArray(json) ? json[0] : json;
+    if (!r || r["Error Message"]) return null;
+    return {
+      roe: toNum(r.returnOnEquityTTM ?? r.returnOnEquity),
+      pe: toNum(r.priceToEarningsRatioTTM ?? r.priceEarningsRatioTTM ?? r.peRatioTTM),
+      gm: toNum(r.grossProfitMarginTTM ?? r.grossProfitMargin),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function demoFundamentals(symbol) {
+  let h = 11;
+  for (const ch of symbol.toUpperCase()) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  h = Math.abs(h);
+  return {
+    roe: 0.08 + (h % 45) / 100, // 0.08 .. 0.53
+    pe: 12 + ((h >> 4) % 60), // 12 .. 72
+    gm: 0.3 + ((h >> 8) % 55) / 100, // 0.30 .. 0.85
+  };
+}
+
 export function demoUniverse(symbols) {
-  return symbols.map((sym) => ({ symbol: sym, series: demoSeries(sym) }));
+  return symbols.map((sym) => ({
+    symbol: sym,
+    series: demoSeries(sym),
+    fund: demoFundamentals(sym),
+  }));
 }
 
 // Rough VIX proxy from a benchmark series (annualised 20-day vol, ×100),

@@ -275,7 +275,7 @@ export default function USStockPage() {
           </button>
         </div>
 
-        {mode === "strategy" && <StrategyPanel apiKey={apiKey} period={period} />}
+        {mode === "strategy" && <StrategyPanel apiKey={apiKey} fmpKey={fmpKey} period={period} />}
 
         {mode === "single" && (
         <>
