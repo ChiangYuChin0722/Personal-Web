@@ -193,10 +193,10 @@ export function demoFundamentals(symbol) {
   };
 }
 
-export function demoUniverse(symbols) {
+export function demoUniverse(symbols, bars = 340) {
   return symbols.map((sym) => ({
     symbol: sym,
-    series: demoSeries(sym),
+    series: demoSeries(sym, bars),
     fund: demoFundamentals(sym),
   }));
 }
@@ -242,31 +242,32 @@ function mulberry32(seed) {
 
 const N_DEMO = 340;
 
-// One shared market (SPY) daily-return path — the common factor that ties every
-// demo ticker to the benchmark, so Beta / Alpha vs SPY are meaningful in demo mode.
-const MKT = (() => {
+// A shared market (SPY) daily-return path of length n — the common factor that
+// ties every demo ticker to the benchmark (Beta / Alpha stay meaningful).
+function marketReturns(n) {
   const rand = mulberry32(404);
   const r = [];
-  for (let i = 0; i < N_DEMO; i++) r.push(0.0004 + 0.009 * (rand() - 0.5) * 2);
+  for (let i = 0; i < n; i++) r.push(0.0004 + 0.009 * (rand() - 0.5) * 2);
   return r;
-})();
+}
 
-// Build a price series as: dailyReturn = beta * marketReturn + alpha + idio noise.
+// Build an n-day price series: dailyReturn = beta*marketReturn + alpha + noise.
 // SPY itself is { beta: 1, alpha: 0, idioVol: 0 } -> exactly the market path.
-function makeFactorSeries({ start, beta, alpha = 0, idioVol, seed }) {
+function makeFactorSeries({ start, beta, alpha = 0, idioVol, seed }, n = N_DEMO) {
   const rand = mulberry32(seed);
+  const mkt = marketReturns(n);
   const rows = [];
   let price = start;
-  for (let i = 0; i < N_DEMO; i++) {
+  for (let i = 0; i < n; i++) {
     const shock = (rand() - 0.5) * 2; // -1..1
-    const ret = beta * MKT[i] + alpha + idioVol * shock;
+    const ret = beta * mkt[i] + alpha + idioVol * shock;
     price = Math.max(1, price * (1 + ret));
     const intraday = (Math.abs(ret) + idioVol) * (0.4 + rand() * 0.6);
     const high = price * (1 + intraday * rand());
     const low = price * (1 - intraday * rand());
     const open = low + (high - low) * rand();
     rows.push({
-      date: dayLabel(N_DEMO - i),
+      date: dayLabel(n - i),
       open: round(open),
       high: round(Math.max(high, price, open)),
       low: round(Math.min(low, price, open)),
@@ -289,26 +290,40 @@ function dayLabel(back) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-export const DEMO = {
-  // high-beta growth names carry positive alpha so they visibly outperform SPY
-  NVDA: makeFactorSeries({ start: 95, beta: 1.6, alpha: 0.0009, idioVol: 0.014, seed: 101 }),
-  AAPL: makeFactorSeries({ start: 210, beta: 1.05, alpha: 0.0002, idioVol: 0.008, seed: 202 }),
-  TSLA: makeFactorSeries({ start: 240, beta: 1.8, alpha: 0.0004, idioVol: 0.02, seed: 303 }),
-  SPY: makeFactorSeries({ start: 520, beta: 1, alpha: 0, idioVol: 0, seed: 404 }),
+// tuned factor loadings for well-known names; others derived from the symbol.
+const DEMO_PARAMS = {
+  NVDA: { start: 95, beta: 1.6, alpha: 0.0009, idioVol: 0.014, seed: 101 },
+  AAPL: { start: 210, beta: 1.05, alpha: 0.0002, idioVol: 0.008, seed: 202 },
+  TSLA: { start: 240, beta: 1.8, alpha: 0.0004, idioVol: 0.02, seed: 303 },
+  SPY: { start: 520, beta: 1, alpha: 0, idioVol: 0, seed: 404 },
+  QQQ: { start: 480, beta: 1.05, alpha: 0.0003, idioVol: 0.004, seed: 505 },
 };
-
-export function demoSeries(symbol) {
+function demoParams(symbol) {
   const up = symbol.toUpperCase();
-  if (DEMO[up]) return DEMO[up];
-  // derive stable, plausible factor loadings from the symbol so any ticker
-  // yields a deterministic demo that is still correlated with the market.
+  if (DEMO_PARAMS[up]) return DEMO_PARAMS[up];
   let seed = 7;
   for (const ch of up) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
   const h = Math.abs(seed) || 7;
-  const beta = 0.8 + ((h % 120) / 100); // 0.8 .. 2.0
-  const alpha = (((h >> 7) % 11) - 4) * 0.0001; // -0.0004 .. +0.0006
-  const idioVol = 0.008 + ((h >> 3) % 16) * 0.001; // 0.008 .. 0.023
-  return makeFactorSeries({ start: 100, beta, alpha, idioVol, seed: h });
+  return {
+    start: 100,
+    beta: 0.8 + (h % 120) / 100, // 0.8 .. 2.0
+    alpha: (((h >> 7) % 11) - 4) * 0.0001, // -0.0004 .. +0.0006
+    idioVol: 0.008 + ((h >> 3) % 16) * 0.001, // 0.008 .. 0.023
+    seed: h,
+  };
+}
+
+export const DEMO = {
+  NVDA: makeFactorSeries(DEMO_PARAMS.NVDA),
+  AAPL: makeFactorSeries(DEMO_PARAMS.AAPL),
+  TSLA: makeFactorSeries(DEMO_PARAMS.TSLA),
+  SPY: makeFactorSeries(DEMO_PARAMS.SPY),
+};
+
+// n controls history length (default ~1.3y for single-stock; universe passes
+// PERIODS[period] so the backtest length follows the user's choice).
+export function demoSeries(symbol, n = N_DEMO) {
+  return makeFactorSeries(demoParams(symbol), n);
 }
 
 // ---- CSV parsing (manual fallback) --------------------------------------

@@ -1350,3 +1350,38 @@
 .usstock.light .us-search input {
   font-weight: 700;
 }
+
+/* strategy backtest-period selector */
+.strat-years {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.strat-years > span {
+  margin-right: 6px;
+}
+.strat-years button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.strat-years button:first-of-type {
+  border-radius: 6px 0 0 6px;
+}
+.strat-years button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.strat-years button:not(:first-of-type) {
+  border-left: none;
+}
+.strat-years button.active {
+  background: var(--panel2);
+  color: var(--accent);
+  border-color: var(--accent);
+}

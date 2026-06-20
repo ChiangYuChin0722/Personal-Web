@@ -4,6 +4,7 @@ import {
   demoUniverse,
   fetchUniverse,
   vixProxy,
+  PERIODS,
 } from "./data.js";
 import {
   scoreUniverse,
@@ -36,7 +37,9 @@ const SIGNAL = {
   avoid: { txt: "避開", cls: "sig-avoid" },
 };
 
-export default function StrategyPanel({ apiKey, fmpKey, period }) {
+const YEARS = ["1Y", "2Y", "5Y"];
+
+export default function StrategyPanel({ apiKey, fmpKey }) {
   const [weights, setWeights] = useState(() => {
     try {
       return { ...DEFAULT_WEIGHTS, ...JSON.parse(localStorage.getItem(LS_W) || "{}") };
@@ -48,6 +51,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
     () => localStorage.getItem(LS_UNI) || DEFAULT_UNIVERSE.join(", ")
   );
   const [topN, setTopN] = useState(5);
+  const [years, setYears] = useState("2Y"); // history / backtest length
   const [rows, setRows] = useState(null); // fetched price+fund rows
   const [result, setResult] = useState(null); // { scored:[], active:[] }
   const [regime, setRegime] = useState(null);
@@ -91,7 +95,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
   function runDemo() {
     setErrors([]);
     setLoading(true);
-    compute(demoUniverse([...symbols, "QQQ"]));
+    compute(demoUniverse([...symbols, "QQQ"], PERIODS[years]));
     setRanSource("demo");
     setLoading(false);
   }
@@ -109,7 +113,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
         [...symbols, "QQQ"],
         apiKey,
         (done, total) => setProgress({ done, total }),
-        period,
+        years,
         fmpKey
       );
       setErrors(errs);
@@ -122,7 +126,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
   }
 
   function runBacktest() {
-    const data = rows && rows.length ? rows : demoUniverse([...symbols, "QQQ"]);
+    const data = rows && rows.length ? rows : demoUniverse([...symbols, "QQQ"], PERIODS[years]);
     setBt(backtest(data, weights, topN) || { error: true });
   }
 
@@ -205,6 +209,16 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
             />
             名
           </label>
+          <div className="strat-years">
+            <span>回測期間</span>
+            {YEARS.map((y) => (
+              <button key={y} className={y === years ? "active" : ""} onClick={() => setYears(y)}>
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="strat-run">
           <button className="strat-btn demo" onClick={runDemo} disabled={loading}>
             用 demo 試跑（即時）
           </button>
@@ -215,6 +229,9 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
             回測這個策略
           </button>
         </div>
+        {symbols.length < 2 && (
+          <div className="strat-note">⚠️ 因子是「跨股票排名」，選股池至少要 2 檔以上才有意義（回測也是）。</div>
+        )}
         {progress && (
           <div className="strat-prog">
             <div className="strat-prog-fill" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
@@ -238,7 +255,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
           <div className="strat-card-head">
             <span>回測 Backtest</span>
             <span className="strat-hint">
-              每週重新評分、持有前 {topN} 名 · 用價格類因子 · {ranSource === "live" ? "真實" : "demo"} 歷史
+              {years} · 每週重新評分、持有前 {topN} 名 · 價格類因子 · {ranSource === "live" ? "真實" : "demo"} 歷史
             </span>
           </div>
           {bt.error ? (
