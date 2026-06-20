@@ -5,11 +5,13 @@ import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
 import { interpret } from "./usstock/interpret.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
+import Collapsible from "./usstock/Collapsible.jsx";
 import { PriceChart, DrawdownChart, Gauge } from "./usstock/Charts.jsx";
 
 const LS_KEY = "usstock_apikey";
 const LS_FMP = "usstock_fmpkey";
 const LS_FLOW = "usstock_flow";
+const LS_THEME = "usstock_theme";
 const LS_SEL = "usstock_selected";
 const BENCH = "SPY";
 
@@ -65,7 +67,14 @@ const SRC_TAG = {
 };
 
 export default function USStockPage() {
+  const [theme, setTheme] = useState(() => localStorage.getItem(LS_THEME) || "dark");
   const [mode, setMode] = useState("single"); // single | strategy
+
+  function toggleTheme() {
+    const t = theme === "dark" ? "light" : "dark";
+    setTheme(t);
+    localStorage.setItem(LS_THEME, t);
+  }
   const [symbol, setSymbol] = useState("NVDA");
   const [input, setInput] = useState("NVDA");
   const [period, setPeriod] = useState("1Y");
@@ -249,7 +258,7 @@ export default function USStockPage() {
   const guide = useMemo(() => interpret(m), [m]);
 
   return (
-    <div className="usstock">
+    <div className={`usstock ${theme === "light" ? "light" : ""}`}>
       <div className="us-wrap">
         {/* ---------------- header ---------------- */}
         <header className="us-topbar">
@@ -260,9 +269,14 @@ export default function USStockPage() {
               <p>US Equities · 小型對沖基金式監控面板</p>
             </div>
           </div>
-          <a href="/dashboard" className="us-back">
-            ← dashboard
-          </a>
+          <div className="us-topright">
+            <button className="us-theme" onClick={toggleTheme} title="切換明亮 / 暗黑">
+              {theme === "dark" ? "☀️ 明亮" : "🌙 暗黑"}
+            </button>
+            <a href="/dashboard" className="us-back">
+              ← dashboard
+            </a>
+          </div>
         </header>
 
         {/* ---------------- mode tabs ---------------- */}
@@ -371,12 +385,7 @@ export default function USStockPage() {
 
         {/* ---------------- plain-language guide ---------------- */}
         {guide && (
-          <div className="us-guide">
-            <div className="us-guide-head">
-              <span className="us-guide-title">📖 白話解讀</span>
-              <span className="us-guide-sub">看不懂上面數字？先讀這裡 · 教學非投資建議</span>
-            </div>
-
+          <Collapsible variant="guide" title="📖 白話解讀" sub="看不懂數字？先讀這裡 · 教學非投資建議">
             <div className="us-mood">{guide.mood}</div>
 
             <div className="us-arch">
@@ -416,12 +425,12 @@ export default function USStockPage() {
                 ))}
               </ul>
             )}
-          </div>
+          </Collapsible>
         )}
 
         {/* ---------------- charts ---------------- */}
         {m && (
-          <div className="us-card us-chartcard">
+          <Collapsible title="走勢圖" sub={`Price · Bollinger · Drawdown ${pct(m.maxDrawdown)}`}>
             <div className="us-chart-head">
               <span>Price · Bollinger(20,2)</span>
               <span className="us-bb">
@@ -434,7 +443,7 @@ export default function USStockPage() {
               <span className="neg">MDD {pct(m.maxDrawdown)}</span>
             </div>
             <DrawdownChart dd={dd} />
-          </div>
+          </Collapsible>
         )}
 
         {/* ---------------- selectable strategies (sidebar + main) ---------------- */}
@@ -504,11 +513,7 @@ export default function USStockPage() {
         )}
 
         {/* ---------------- flow ---------------- */}
-        <section className="group us-flow">
-          <div className="group-head">
-            <span className="group-title">Flow · Options · Positioning</span>
-            <span className="group-zh">資金流 / 選擇權</span>
-          </div>
+        <Collapsible title="Flow · Options · Positioning" sub="資金流 / 選擇權 · 進階" defaultOpen={false}>
           <p className="us-flow-note">
             <b className="tag-auto">AUTO</b> = FMP 免費 key 自動抓 ·
             <b className="tag-manual">手動</b> = 自己填 ·
@@ -557,7 +562,7 @@ export default function USStockPage() {
               );
             })}
           </div>
-        </section>
+        </Collapsible>
         </>
         )}
 

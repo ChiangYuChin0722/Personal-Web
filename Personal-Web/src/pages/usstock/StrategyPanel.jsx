@@ -15,6 +15,7 @@ import {
   FACTOR_ORDER,
 } from "./factors.js";
 import { PriceChart } from "./Charts.jsx";
+import Collapsible from "./Collapsible.jsx";
 
 const LS_W = "usstock_weights";
 const LS_UNI = "usstock_universe";
@@ -135,8 +136,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
   return (
     <div className="us-strat">
       {/* how it works */}
-      <div className="strat-how">
-        <div className="strat-how-title">因子評分系統怎麼運作</div>
+      <Collapsible variant="guide" title="因子評分系統怎麼運作" sub="假設 → 因子 → 打分 → 風控" defaultOpen={false}>
         <div className="strat-steps">
           <span><b>1 假設</b> 強者恆強</span>
           <span>→</span>
@@ -146,7 +146,7 @@ export default function StrategyPanel({ apiKey, fmpKey, period }) {
           <span>→</span>
           <span><b>4 風控</b> Regime + 回測 + 部位上限</span>
         </div>
-      </div>
+      </Collapsible>
 
       {/* weights */}
       <div className="strat-card">

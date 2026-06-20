@@ -117,7 +117,7 @@ export function Gauge({ value, lo = 30, hi = 70, min = 0, max = 100 }) {
   if (value == null) return null;
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
   return (
-    <div style={{ position: "relative", height: 6, borderRadius: 3, background: "#1e293b", overflow: "hidden" }}>
+    <div style={{ position: "relative", height: 6, borderRadius: 3, background: "var(--panel2)", overflow: "hidden" }}>
       <div
         style={{
           position: "absolute",
@@ -125,7 +125,7 @@ export function Gauge({ value, lo = 30, hi = 70, min = 0, max = 100 }) {
           width: `${((hi - lo) / max) * 100}%`,
           top: 0,
           bottom: 0,
-          background: "#334155",
+          background: "var(--border)",
         }}
       />
       <div
