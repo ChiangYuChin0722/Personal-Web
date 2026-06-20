@@ -109,6 +109,62 @@ export async function fetchFlow(symbol, fmpKey) {
   return out;
 }
 
+// ---- Universe scoring data ----------------------------------------------
+// Curated AI / 半導體 / 成長 default universe (kept small for free-tier rate
+// limits: Twelve Data free = 8 req/min).
+export const DEFAULT_UNIVERSE = [
+  "NVDA", "AMD", "AVGO", "TSM", "MU", "ASML",
+  "MSFT", "GOOGL", "META", "AMZN", "TSLA", "PLTR",
+];
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Live fetch of a whole universe, throttled to stay under the free rate limit.
+// onProgress(done, total) drives a progress bar. Returns { rows, errors }.
+export async function fetchUniverse(symbols, apiKey, onProgress, period = "1Y") {
+  const key = apiKey?.trim();
+  const rows = [];
+  const errors = [];
+  const BATCH = 7;
+  const GAP = 61000; // free tier resets per minute
+  let done = 0;
+  for (let i = 0; i < symbols.length; i += BATCH) {
+    const batch = symbols.slice(i, i + BATCH);
+    const results = await Promise.all(
+      batch.map(async (sym) => {
+        try {
+          const s = await fetchSeries(sym, period, key);
+          return { symbol: sym, series: s };
+        } catch (e) {
+          errors.push({ symbol: sym, msg: e.message });
+          return null;
+        }
+      })
+    );
+    results.forEach((r) => r && rows.push(r));
+    done += batch.length;
+    onProgress?.(Math.min(done, symbols.length), symbols.length);
+    if (i + BATCH < symbols.length) await sleep(GAP);
+  }
+  return { rows, errors };
+}
+
+export function demoUniverse(symbols) {
+  return symbols.map((sym) => ({ symbol: sym, series: demoSeries(sym) }));
+}
+
+// Rough VIX proxy from a benchmark series (annualised 20-day vol, ×100),
+// used when a real VIX quote isn't available (demo, or free tier without it).
+export function vixProxy(series) {
+  if (!series || series.length < 21) return null;
+  const c = series.map((d) => d.close);
+  const r = [];
+  for (let i = c.length - 20; i < c.length; i++) r.push(c[i] / c[i - 1] - 1);
+  const m = r.reduce((a, b) => a + b, 0) / r.length;
+  const sd = Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / (r.length - 1));
+  return Math.round(sd * Math.sqrt(252) * 100 * 10) / 10;
+}
+
 export async function fetchSeries(symbol, period, apiKey) {
   const key = apiKey?.trim() || "demo";
   const url = `${BASE}?symbol=${encodeURIComponent(

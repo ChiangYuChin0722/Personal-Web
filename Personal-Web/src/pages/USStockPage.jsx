@@ -4,6 +4,7 @@ import { fetchSeries, fetchFlow, demoSeries, parseCSV, PERIODS } from "./usstock
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
 import { interpret } from "./usstock/interpret.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
+import StrategyPanel from "./usstock/StrategyPanel.jsx";
 import { PriceChart, DrawdownChart, Gauge } from "./usstock/Charts.jsx";
 
 const LS_KEY = "usstock_apikey";
@@ -64,6 +65,7 @@ const SRC_TAG = {
 };
 
 export default function USStockPage() {
+  const [mode, setMode] = useState("single"); // single | strategy
   const [symbol, setSymbol] = useState("NVDA");
   const [input, setInput] = useState("NVDA");
   const [period, setPeriod] = useState("1Y");
@@ -263,6 +265,20 @@ export default function USStockPage() {
           </a>
         </header>
 
+        {/* ---------------- mode tabs ---------------- */}
+        <div className="us-tabs">
+          <button className={mode === "single" ? "active" : ""} onClick={() => setMode("single")}>
+            個股分析
+          </button>
+          <button className={mode === "strategy" ? "active" : ""} onClick={() => setMode("strategy")}>
+            策略評分
+          </button>
+        </div>
+
+        {mode === "strategy" && <StrategyPanel apiKey={apiKey} period={period} />}
+
+        {mode === "single" && (
+        <>
         {/* ---------------- controls ---------------- */}
         <div className="us-controls">
           <div className="us-search">
@@ -542,11 +558,13 @@ export default function USStockPage() {
             })}
           </div>
         </section>
+        </>
+        )}
 
         <footer className="us-footer">
           <span>
-            Sharpe/MDD/Beta 等由 {source === "csv" ? "你的 CSV" : "Twelve Data"} 日線即時計算 ·
-            非投資建議
+            指標由 {mode === "strategy" ? "因子評分" : source === "csv" ? "你的 CSV" : "Twelve Data"} 即時計算 ·
+            教學，非投資建議
           </span>
           <span>rf {pct(rf, 0)}</span>
         </footer>
