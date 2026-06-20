@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && mkdir -p ../docs/dashboard ../docs/dashboard/friend && cp ../docs/index.html ../docs/dashboard/index.html && sed -i 's/<title>YuChin<\\/title>/<title>dashboard<\\/title>/' ../docs/dashboard/index.html && cp ../docs/index.html ../docs/dashboard/friend/index.html && sed -i 's/<title>YuChin<\\/title>/<title>friend<\\/title>/' ../docs/dashboard/friend/index.html",
+    "build": "vite build && mkdir -p ../docs/dashboard ../docs/dashboard/friend ../docs/USstock && cp ../docs/index.html ../docs/dashboard/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>dashboard</title>}' ../docs/dashboard/index.html && cp ../docs/index.html ../docs/dashboard/friend/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>friend</title>}' ../docs/dashboard/friend/index.html && cp ../docs/index.html ../docs/USstock/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>Quant Dashboard</title>}' ../docs/USstock/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20.19"
   },
   "dependencies": {
     "firebase": "^12.12.0",
