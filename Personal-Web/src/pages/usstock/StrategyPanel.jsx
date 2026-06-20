@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   DEFAULT_UNIVERSE,
   demoUniverse,
@@ -28,6 +28,7 @@ const PRESETS = {
 import { PriceChart } from "./Charts.jsx";
 import Collapsible from "./Collapsible.jsx";
 import { buildContext, classifyState, STATES } from "./state.js";
+import { fsLoad, fsSave, STRATEGIES_DOC } from "./cloud.js";
 
 const LS_W = "usstock_weights";
 const LS_UNI = "usstock_universe";
@@ -50,7 +51,7 @@ const SIGNAL = {
 
 const YEARS = ["1Y", "2Y", "5Y"];
 
-export default function StrategyPanel({ apiKey, fmpKey }) {
+export default function StrategyPanel({ apiKey, fmpKey, user }) {
   const [weights, setWeights] = useState(() => {
     try {
       return { ...DEFAULT_WEIGHTS, ...JSON.parse(localStorage.getItem(LS_W) || "{}") };
@@ -157,10 +158,67 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
     }
   }
 
+  const [saveMsg, setSaveMsg] = useState("");
+  async function saveStrategy() {
+    if (!user) {
+      setSaveMsg("先在右上角用 Google 登入，才能把策略存到雲端。");
+      return;
+    }
+    const name = window.prompt("策略名稱？", "我的策略");
+    if (!name) return;
+    const entry = { name, weights, universe: uniText, topN, years, savedAt: new Date().toISOString() };
+    const existing = (await fsLoad(user.uid, STRATEGIES_DOC)) || [];
+    const next = Array.isArray(existing) ? [...existing, entry] : [entry];
+    fsSave(user.uid, STRATEGIES_DOC, next);
+    setSaveMsg(`✅ 已存「${name}」到「我的」。`);
+  }
+
   function runBacktest() {
     const data = rows && rows.length ? rows : demoUniverse([...symbols, "QQQ"], PERIODS[years]);
     setBt(backtest(data, weights, topN) || { error: true });
   }
+
+  // share the current strategy as a link (encodes weights + universe + topN + years)
+  function shareStrategy() {
+    try {
+      const payload = { w: weights, u: uniText, n: topN, y: years };
+      const enc = btoa(encodeURIComponent(JSON.stringify(payload)));
+      const url = `${window.location.origin}/USstock#s=${enc}`;
+      navigator.clipboard?.writeText(url);
+      setSaveMsg("🔗 已複製分享連結！別人開這個連結就會載入這個策略。");
+    } catch {
+      setSaveMsg("分享連結產生失敗。");
+    }
+  }
+
+  // on mount: decode a shared strategy from the URL hash, then auto-run; or
+  // auto-run after loading a saved strategy.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    const hash = window.location.hash;
+    const m = hash.match(/#s=([^&]+)/);
+    if (m) {
+      try {
+        const p = JSON.parse(decodeURIComponent(atob(m[1])));
+        if (p.w) setWeights(p.w);
+        if (p.u) setUniText(p.u);
+        if (p.n) setTopN(p.n);
+        if (p.y) setYears(p.y);
+        history.replaceState(null, "", window.location.pathname);
+        setTimeout(() => runDemo(), 50);
+      } catch {
+        /* ignore bad link */
+      }
+      return;
+    }
+    if (sessionStorage.getItem("usstock_autorun")) {
+      sessionStorage.removeItem("usstock_autorun");
+      setTimeout(() => runDemo(), 50); // instant + never rate-limited; user can then click live
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const active = result?.active || [];
   const gridCols = `26px 54px 1.4fr ${active.map(() => "minmax(50px,1fr)").join(" ")} 50px`;
@@ -270,7 +328,14 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
           <button className="strat-btn bt" onClick={runBacktest} disabled={loading}>
             回測這個策略
           </button>
+          <button className="strat-btn save" onClick={saveStrategy} disabled={loading}>
+            💾 存成我的策略
+          </button>
+          <button className="strat-btn share" onClick={shareStrategy} disabled={loading}>
+            🔗 分享連結
+          </button>
         </div>
+        {saveMsg && <div className="strat-note">{saveMsg}</div>}
         {symbols.length < 2 && (
           <div className="strat-note">⚠️ 因子是「跨股票排名」，選股池至少要 2 檔以上才有意義（回測也是）。</div>
         )}

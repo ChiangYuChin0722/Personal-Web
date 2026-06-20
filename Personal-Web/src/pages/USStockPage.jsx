@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import "./USStockPage.css";
 import { fetchSeries, fetchFundamentals, demoSeries, parseCSV, PERIODS, vixProxy } from "./usstock/data.js";
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
@@ -8,6 +8,11 @@ import { classify, SCHOOLS, stars, techRating } from "./usstock/state.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
 import ScreenerPanel from "./usstock/ScreenerPanel.jsx";
+import AccountPanel from "./usstock/AccountPanel.jsx";
+import {
+  signInWithGoogle, signOutUser, watchAuth, fsLoad, fsSave,
+  gatherSettings, applySettings, SETTINGS_DOC, STRATEGIES_DOC,
+} from "./usstock/cloud.js";
 import Collapsible from "./usstock/Collapsible.jsx";
 import CandleChart from "./usstock/CandleChart.jsx";
 import WatchList from "./usstock/WatchList.jsx";
@@ -74,7 +79,70 @@ const SRC_TAG = {
 
 export default function USStockPage() {
   const [theme, setTheme] = useState(() => localStorage.getItem(LS_THEME) || "dark");
-  const [mode, setMode] = useState("single"); // single | strategy
+  const [mode, setMode] = useState(
+    () => sessionStorage.getItem("usstock_mode") || localStorage.getItem("usstock_home") || "single"
+  ); // single | screener | strategy | account
+  const [user, setUser] = useState(null);
+  const [recent, setRecent] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("usstock_recent") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  function changeMode(m) {
+    setMode(m);
+    sessionStorage.setItem("usstock_mode", m);
+  }
+
+  // ---- auth + cloud settings sync ----
+  useEffect(() => {
+    const unsub = watchAuth((u) => {
+      setUser(u);
+      if (!u) return;
+      const flag = `usstock_synced_${u.uid}`;
+      if (sessionStorage.getItem(flag)) return; // already synced this session
+      fsLoad(u.uid, SETTINGS_DOC).then((cloud) => {
+        sessionStorage.setItem(flag, "1");
+        if (cloud && Object.keys(cloud).length) {
+          applySettings(cloud); // pull cloud → localStorage, then re-read everything
+          window.location.reload();
+        } else {
+          fsSave(u.uid, SETTINGS_DOC, gatherSettings()); // first login → push current
+        }
+      });
+    });
+    return unsub;
+  }, []);
+
+  // auto-push settings to cloud while logged in
+  const lastSync = useRef("");
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      const snap = JSON.stringify(gatherSettings());
+      if (snap !== lastSync.current) {
+        lastSync.current = snap;
+        fsSave(user.uid, SETTINGS_DOC, gatherSettings());
+      }
+    }, 4000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  // load a saved strategy: write to localStorage + reopen in strategy mode + auto-run
+  function loadStrategy(s) {
+    if (s.weights) localStorage.setItem("usstock_weights", JSON.stringify(s.weights));
+    if (s.universe) localStorage.setItem("usstock_universe", s.universe);
+    sessionStorage.setItem("usstock_mode", "strategy");
+    sessionStorage.setItem("usstock_autorun", "1");
+    if (user) {
+      // mark synced + push now so the cloud pull on reload can't overwrite the load
+      sessionStorage.setItem(`usstock_synced_${user.uid}`, "1");
+      fsSave(user.uid, SETTINGS_DOC, gatherSettings());
+    }
+    window.location.reload();
+  }
 
   function toggleTheme() {
     const t = theme === "dark" ? "light" : "dark";
@@ -273,6 +341,16 @@ export default function USStockPage() {
   }
 
   // ---- compute ----
+  // track recently-viewed tickers
+  useEffect(() => {
+    if (!symbol || source === "csv") return;
+    setRecent((prev) => {
+      const next = [symbol, ...prev.filter((s) => s !== symbol)].slice(0, 8);
+      localStorage.setItem("usstock_recent", JSON.stringify(next));
+      return next;
+    });
+  }, [symbol, source]);
+
   const m = useMemo(() => (series ? computeMetrics(series, bench, rf) : null), [series, bench, rf]);
   const dd = useMemo(() => (series ? drawdownSeries(series) : []), [series]);
   const guide = useMemo(() => interpret(m), [m]);
@@ -304,6 +382,20 @@ export default function USStockPage() {
             </div>
           </div>
           <div className="us-topright">
+            {user ? (
+              <button className="us-user" onClick={() => changeMode("account")} title="我的">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="us-user-ph">{(user.displayName || "U")[0]}</span>
+                )}
+                <span className="us-user-name">{(user.displayName || "我的").split(" ")[0]}</span>
+              </button>
+            ) : (
+              <button className="us-login" onClick={signInWithGoogle}>
+                <span className="acct-g">G</span> 登入
+              </button>
+            )}
             <button className="us-theme" onClick={toggleTheme} title="切換明亮 / 暗黑">
               {theme === "dark" ? "☀️ 明亮" : "🌙 暗黑"}
             </button>
@@ -315,25 +407,29 @@ export default function USStockPage() {
 
         {/* ---------------- mode tabs (sticky) ---------------- */}
         <div className="us-tabs">
-          <button className={mode === "single" ? "active" : ""} onClick={() => setMode("single")}>
+          <button className={mode === "single" ? "active" : ""} onClick={() => changeMode("single")}>
             個股分析
           </button>
-          <button className={mode === "screener" ? "active" : ""} onClick={() => setMode("screener")}>
+          <button className={mode === "screener" ? "active" : ""} onClick={() => changeMode("screener")}>
             篩選器
           </button>
-          <button className={mode === "strategy" ? "active" : ""} onClick={() => setMode("strategy")}>
+          <button className={mode === "strategy" ? "active" : ""} onClick={() => changeMode("strategy")}>
             策略評分
+          </button>
+          <button className={mode === "account" ? "active" : ""} onClick={() => changeMode("account")}>
+            我的
           </button>
         </div>
 
-        {mode === "strategy" && <StrategyPanel apiKey={apiKey} fmpKey={fmpKey} period={period} />}
+        {mode === "account" && <AccountPanel user={user} onLoadStrategy={loadStrategy} />}
+        {mode === "strategy" && <StrategyPanel apiKey={apiKey} fmpKey={fmpKey} user={user} />}
         {mode === "screener" && (
           <ScreenerPanel
             apiKey={apiKey}
             fmpKey={fmpKey}
             onPick={(s) => {
               pickSymbol(s);
-              setMode("single");
+              changeMode("single");
             }}
           />
         )}
@@ -404,6 +500,16 @@ export default function USStockPage() {
                 取消
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ---------------- recently viewed ---------------- */}
+        {recent.length > 1 && (
+          <div className="us-recent">
+            <span className="us-recent-k">最近看過</span>
+            {recent.map((s) => (
+              <button key={s} className={s === symbol ? "active" : ""} onClick={() => pickSymbol(s)}>{s}</button>
+            ))}
           </div>
         )}
 
