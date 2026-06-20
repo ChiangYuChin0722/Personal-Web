@@ -3,7 +3,10 @@
 // total -> rank -> buy/hold/avoid signal. Plus a market-regime risk overlay.
 // Education, NOT investment advice.
 
-import { rsi, sharpe, volatility, priceZScore, dailyReturns, correlation } from "./quant.js";
+import {
+  rsi, sharpe, volatility, priceZScore, dailyReturns, correlation,
+  maxDrawdown, calmar, sortino, adx, alpha, beta, relativeStrength,
+} from "./quant.js";
 
 const closes = (s) => s.map((d) => d.close);
 
@@ -76,7 +79,7 @@ function avgVol(series, n, skip = 0) {
 }
 
 // ---- raw factor values for one stock ----
-export function rawFactors(series, fund) {
+export function rawFactors(series, fund, bench) {
   const c = closes(series);
   const last = c[c.length - 1];
   const r20 = ret(series, 20);
@@ -98,26 +101,47 @@ export function rawFactors(series, fund) {
   const sharpeVal = sharpe(series);
   const annVol = volatility(series);
   const zscore = priceZScore(series, 60);
+  const mdd = maxDrawdown(series).mdd;
+  const calmarV = calmar(series);
+  const sortinoV = sortino(series);
+  const adxV = adx(series);
+  // benchmark-relative factors (vs the universe basket)
+  const relStr = bench ? relativeStrength(series, bench, 60) : null;
+  const alphaV = bench ? alpha(series, bench) : null;
+  const betaV = bench ? beta(series, bench) : null;
   return {
     last, mom, trend, vol, rsi: rsiVal, aboveMA50: trend > 0, ma50,
     roe, pe: value, gm, quality,
     sharpe: sharpeVal, annVol, zscore,
+    mdd, calmar: calmarV, sortino: sortinoV, adx: adxV,
+    relStr, alpha: alphaV, beta: betaV,
   };
 }
 
 // metadata for every factor (drives sliders + leaderboard columns)
 export const FACTOR_META = {
-  mom: { label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強（也就是相對強度）" },
+  mom: { label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強" },
   trend: { label: "Trend", zh: "趨勢", desc: "現價 / MA50 — 是否站上均線" },
   vol: { label: "Volume", zh: "資金", desc: "近期量 / 均量 — 資金流入" },
   rsi: { label: "RSI", zh: "過熱", desc: "健康偏強加分、過熱(>70)扣分" },
-  sharpe: { label: "Sharpe", zh: "風險報酬", desc: "每單位風險的報酬，越高越好（效率）" },
-  lowvol: { label: "Low Vol", zh: "低波動", desc: "波動越低分越高（防禦因子）" },
-  meanrev: { label: "Mean-Rev", zh: "均值回歸", desc: "越超賣(Z-score 越低)分越高 — 撿便宜" },
+  sharpe: { label: "Sharpe", zh: "風險報酬", desc: "每單位風險的報酬，越高越好" },
+  lowvol: { label: "Low Vol", zh: "低波動", desc: "波動越低分越高（防禦）" },
+  meanrev: { label: "Mean-Rev", zh: "均值回歸", desc: "越超賣(Z 越低)分越高 — 撿便宜" },
+  relstr: { label: "Rel Strength", zh: "相對強度", desc: "近60日贏過籃子多少（強勢股）" },
+  lowdd: { label: "Low DD", zh: "低回撤", desc: "最大回撤越小分越高（防禦）" },
+  calmar: { label: "Calmar", zh: "卡瑪", desc: "報酬 ÷ 最大回撤，越高越好" },
+  sortino: { label: "Sortino", zh: "索提諾", desc: "只算下跌風險的報酬，越高越好" },
+  adx: { label: "ADX", zh: "趨勢強度", desc: "趨勢越明確分越高（>25 有趨勢）" },
+  lowbeta: { label: "Low Beta", zh: "低Beta", desc: "與大盤連動越低分越高（防禦）" },
+  alpha: { label: "Alpha", zh: "超額報酬", desc: "扣掉籃子後自己多賺的部分" },
   quality: { label: "Quality", zh: "品質", desc: "ROE + 毛利 — 賺錢效率（需 FMP）", fund: true },
   value: { label: "Value", zh: "價值", desc: "PE 越低越好（需 FMP）", fund: true },
 };
-export const FACTOR_ORDER = ["mom", "trend", "vol", "rsi", "sharpe", "lowvol", "meanrev", "quality", "value"];
+export const FACTOR_ORDER = [
+  "mom", "trend", "vol", "rsi", "sharpe", "lowvol", "meanrev",
+  "relstr", "lowdd", "calmar", "sortino", "adx", "lowbeta", "alpha",
+  "quality", "value",
+];
 
 // ---- cross-sectional percentile scoring (0..100) ----
 function pctRankScores(values) {
@@ -141,6 +165,7 @@ function rsiScore(v) {
 export const DEFAULT_WEIGHTS = {
   mom: 30, trend: 20, vol: 15, rsi: 10,
   sharpe: 0, lowvol: 0, meanrev: 0,
+  relstr: 0, lowdd: 0, calmar: 0, sortino: 0, adx: 0, lowbeta: 0, alpha: 0,
   quality: 15, value: 10,
 };
 
@@ -153,14 +178,22 @@ const FACTOR_CALC = {
   sharpe: { get: (f) => f.sharpe, dir: 1 },
   lowvol: { get: (f) => f.annVol, dir: -1 }, // lower volatility = higher score
   meanrev: { get: (f) => f.zscore, dir: -1 }, // more oversold (low Z) = higher score
+  relstr: { get: (f) => f.relStr, dir: 1 },
+  lowdd: { get: (f) => f.mdd, dir: 1 }, // mdd is negative; closer to 0 = higher
+  calmar: { get: (f) => f.calmar, dir: 1 },
+  sortino: { get: (f) => f.sortino, dir: 1 },
+  adx: { get: (f) => f.adx, dir: 1 },
+  lowbeta: { get: (f) => f.beta, dir: -1 },
+  alpha: { get: (f) => f.alpha, dir: 1 },
   quality: { get: (f) => f.quality, dir: 1 },
   value: { get: (f) => f.pe, dir: -1 },
 };
 
 // rows: [{ symbol, series, fund? }]. Returns { scored, active } where active is
 // the list of factor keys that actually contributed (had weight + data).
-export function scoreUniverse(rows, weights = DEFAULT_WEIGHTS) {
-  const raw = rows.map((r) => ({ symbol: r.symbol, f: rawFactors(r.series, r.fund) }));
+export function scoreUniverse(rows, weights = DEFAULT_WEIGHTS, bench = null) {
+  const mkt = bench || basketSeries(rows);
+  const raw = rows.map((r) => ({ symbol: r.symbol, f: rawFactors(r.series, r.fund, mkt) }));
 
   // per-factor 0..100 score arrays
   const scores = {};

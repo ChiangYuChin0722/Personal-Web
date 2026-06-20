@@ -19,8 +19,8 @@
 }
 
 .us-wrap {
-  max-width: 1160px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 /* two-column body: selector sidebar + selected cards */
@@ -1979,3 +1979,12 @@
 }
 .us-golive:hover { filter: brightness(1.08); }
 .usstock.light .us-golive { color: #fff; }
+
+/* drawdown header inside pro-chart */
+.pro-dd-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 14px 0 4px;
+}

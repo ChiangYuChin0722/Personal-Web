@@ -20,9 +20,10 @@ import {
 
 // weight presets — quick ways to build a strategy
 const PRESETS = {
-  動能: { mom: 30, trend: 20, vol: 15, rsi: 10, sharpe: 0, lowvol: 0, meanrev: 0, quality: 15, value: 10 },
-  防禦: { mom: 5, trend: 15, vol: 0, rsi: 0, sharpe: 30, lowvol: 35, meanrev: 5, quality: 10, value: 0 },
-  全因子: { mom: 12, trend: 12, vol: 11, rsi: 11, sharpe: 11, lowvol: 11, meanrev: 11, quality: 11, value: 10 },
+  動能: { mom: 30, trend: 20, vol: 10, rsi: 5, relstr: 20, adx: 15 },
+  防禦: { sharpe: 25, lowvol: 30, lowdd: 20, lowbeta: 15, calmar: 10 },
+  價值: { value: 35, quality: 30, lowdd: 15, sortino: 10, meanrev: 10 },
+  全因子: FACTOR_ORDER.reduce((o, k) => ((o[k] = 1), o), {}),
 };
 import { PriceChart } from "./Charts.jsx";
 import Collapsible from "./Collapsible.jsx";

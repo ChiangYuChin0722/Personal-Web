@@ -577,6 +577,11 @@ export default function USStockPage() {
                 <span className="pro-range">{m.startDate} → {m.endDate}</span>
               </div>
               <CandleChart series={series} light={theme === "light"} height={420} />
+              <div className="pro-dd-head">
+                <span>回撤 Drawdown</span>
+                <span className="neg">MDD {pct(m.maxDrawdown)}</span>
+              </div>
+              <DrawdownChart dd={dd} />
             </div>
 
             <aside className="pro-side">
@@ -622,13 +627,6 @@ export default function USStockPage() {
               )}
             </aside>
           </div>
-        )}
-
-        {/* ---------------- drawdown ---------------- */}
-        {m && (
-          <Collapsible title="回撤 Drawdown" sub={`MDD ${pct(m.maxDrawdown)}`} defaultOpen={false}>
-            <DrawdownChart dd={dd} />
-          </Collapsible>
         )}
 
         {/* ---------------- selectable strategies (sidebar + main) ---------------- */}
