@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "FQ System",
+    "slug": "fq-system",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "fqsystem",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0f12"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chianghebe.fqsystem"
+    },
+    "android": {
+      "package": "com.chianghebe.fqsystem",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0f0f12"
+      }
+    },
+    "plugins": ["expo-image-picker"]
+  }
+}

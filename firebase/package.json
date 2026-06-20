@@ -1,0 +1,13 @@
+{
+  "name": "fq-migrate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One-time migration of FQ System data from shared fq/* to users/{uid}/fq/*",
+  "scripts": {
+    "migrate": "node migrate.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

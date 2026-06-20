@@ -1,5 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+} from 'firebase/auth';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCq9yxdN8e9-d9DMeg85dkCUgYTgEP2PUA",
@@ -10,23 +14,59 @@ const firebaseConfig = {
   appId: "1:679401909982:web:6cdc1188f30fea09ffdc4f",
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const app     = initializeApp(firebaseConfig);
+const db      = getFirestore(app);
+const auth    = getAuth(app);
+const storage = getStorage(app);
+
+export { auth };
+
+// ─── Auth (Google) ────────────────────────────────────────────────────────────
+
+export function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
+}
+
+export function signOutUser() {
+  return signOut(auth);
+}
+
+// Subscribe to auth changes. Returns an unsubscribe fn.
+export function watchAuth(cb) {
+  return onAuthStateChanged(auth, cb);
+}
+
+// ─── Per-user Firestore (users/{uid}/fq/{key}) ──────────────────────────────────
 
 // Load an array from Firestore. Returns null on miss or error.
-export async function fsLoad(collection, key) {
+export async function fsLoad(uid, key) {
+  if (!uid) return null;
   try {
-    const snap = await getDoc(doc(db, collection, key));
+    const snap = await getDoc(doc(db, 'users', uid, 'fq', key));
     if (snap.exists()) return snap.data().items ?? null;
     return null;
   } catch (e) {
-    console.warn(`Firestore load ${collection}/${key}:`, e.message);
+    console.warn(`Firestore load ${uid}/${key}:`, e.message);
     return null;
   }
 }
 
 // Save an array to Firestore (fire-and-forget).
-export function fsSave(collection, key, items) {
-  setDoc(doc(db, collection, key), { items, updatedAt: new Date().toISOString() })
-    .catch(e => console.warn(`Firestore save ${collection}/${key}:`, e.message));
+export function fsSave(uid, key, items) {
+  if (!uid) return;
+  setDoc(doc(db, 'users', uid, 'fq', key), { items, updatedAt: new Date().toISOString() })
+    .catch(e => console.warn(`Firestore save ${uid}/${key}:`, e.message));
+}
+
+// ─── Photo storage (Firebase Storage) ───────────────────────────────────────────
+
+// Upload a base64 data-URL photo to Storage and return its download URL.
+// If the value is already a remote URL (or empty), it is returned unchanged so
+// re-saving an existing profile does not re-upload.
+export async function uploadPhoto(uid, profileId, dataUrl) {
+  if (!uid || !dataUrl || !dataUrl.startsWith('data:')) return dataUrl ?? null;
+  const r = ref(storage, `users/${uid}/photos/${profileId}`);
+  await uploadString(r, dataUrl, 'data_url');
+  return await getDownloadURL(r);
 }
