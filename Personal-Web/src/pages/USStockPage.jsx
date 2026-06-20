@@ -4,9 +4,10 @@ import { fetchSeries, fetchFundamentals, demoSeries, parseCSV, PERIODS, vixProxy
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
 import { marketRegime } from "./usstock/factors.js";
 import { interpret } from "./usstock/interpret.js";
-import { classify, SCHOOLS, stars } from "./usstock/state.js";
+import { classify, SCHOOLS, stars, techRating } from "./usstock/state.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
+import ScreenerPanel from "./usstock/ScreenerPanel.jsx";
 import Collapsible from "./usstock/Collapsible.jsx";
 import CandleChart from "./usstock/CandleChart.jsx";
 import WatchList from "./usstock/WatchList.jsx";
@@ -309,10 +310,13 @@ export default function USStockPage() {
           </div>
         </header>
 
-        {/* ---------------- mode tabs ---------------- */}
+        {/* ---------------- mode tabs (sticky) ---------------- */}
         <div className="us-tabs">
           <button className={mode === "single" ? "active" : ""} onClick={() => setMode("single")}>
             個股分析
+          </button>
+          <button className={mode === "screener" ? "active" : ""} onClick={() => setMode("screener")}>
+            篩選器
           </button>
           <button className={mode === "strategy" ? "active" : ""} onClick={() => setMode("strategy")}>
             策略評分
@@ -320,6 +324,16 @@ export default function USStockPage() {
         </div>
 
         {mode === "strategy" && <StrategyPanel apiKey={apiKey} fmpKey={fmpKey} period={period} />}
+        {mode === "screener" && (
+          <ScreenerPanel
+            apiKey={apiKey}
+            fmpKey={fmpKey}
+            onPick={(s) => {
+              pickSymbol(s);
+              setMode("single");
+            }}
+          />
+        )}
 
         {mode === "single" && (
         <>
@@ -558,6 +572,25 @@ export default function USStockPage() {
             </div>
 
             <aside className="pro-side">
+              {state && (() => {
+                const tr = techRating(m, state.ctx);
+                const pos = Math.round((tr.score + 1) * 50); // 0..100
+                return (
+                  <div className="pro-tech">
+                    <div className="pro-tech-title">技術評級</div>
+                    <div className={`pro-tech-verdict tone-${tr.tone}`}>{tr.label}</div>
+                    <div className="pro-tech-meter">
+                      <div className="pro-tech-track">
+                        <span className="seg sell" />
+                        <span className="seg neu" />
+                        <span className="seg buy" />
+                        <span className="pro-tech-mark" style={{ left: `calc(${pos}% - 2px)` }} />
+                      </div>
+                      <div className="pro-tech-ends"><span>賣出</span><span>中立</span><span>買入</span></div>
+                    </div>
+                  </div>
+                );
+              })()}
               <WatchList current={symbol} apiKey={apiKey} onPick={pickSymbol} />
               <div className="pro-stats">
                 <div className="pro-stats-title">關鍵數據</div>

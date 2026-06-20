@@ -136,6 +136,30 @@ export function evaluateSchool(c, schoolKey) {
   return { school, rules, score, tier, buy, sell, action };
 }
 
+// TradingView-style technical rating: aggregate several indicators into a
+// -1..+1 score and a 強力賣出/賣出/中立/買入/強力買入 verdict.
+export function techRating(m, ctx) {
+  let s = 0;
+  let n = 0;
+  const add = (v) => {
+    s += v;
+    n++;
+  };
+  if (ctx.ma20 != null) add(ctx.price > ctx.ma20 ? 1 : -1);
+  if (ctx.ma50 != null) add(ctx.price > ctx.ma50 ? 1 : -1);
+  if (ctx.ma200 != null) add(ctx.price > ctx.ma200 ? 1 : -1);
+  if (ctx.ma20 != null && ctx.ma50 != null) add(ctx.ma20 > ctx.ma50 ? 1 : -1);
+  if (m.rsi != null) add(m.rsi < 30 ? 1 : m.rsi > 70 ? -1 : 0);
+  if (m.macd) add(m.macd.histogram > 0 ? 1 : -1);
+  if (m.mom20 != null) add(m.mom20 > 0 ? 1 : -1);
+  if (m.adx != null && m.adx > 25 && m.mom60 != null) add(m.mom60 > 0 ? 1 : -1);
+  const score = n ? s / n : 0;
+  const label =
+    score > 0.5 ? "強力買入" : score > 0.15 ? "買入" : score < -0.5 ? "強力賣出" : score < -0.15 ? "賣出" : "中立";
+  const tone = score > 0.15 ? "good" : score < -0.15 ? "bad" : "neutral";
+  return { score, label, tone };
+}
+
 // Convenience: state + default-school signal from a series.
 export function classify(series, schoolKey = "momentum") {
   const c = buildContext(series);
