@@ -414,16 +414,20 @@ export default function USStockPage() {
 
             <div className="state-schools">
               <span className="state-schools-k">流派</span>
-              {Object.values(SCHOOLS).map((s) => (
-                <button
-                  key={s.key}
-                  className={s.key === school ? "active" : ""}
-                  onClick={() => pickSchool(s.key)}
-                  title={s.desc}
-                >
-                  {s.label}
-                </button>
-              ))}
+              {Object.values(SCHOOLS).map((s) => {
+                const fit = state.state.fit.includes(s.key);
+                return (
+                  <button
+                    key={s.key}
+                    className={`${s.key === school ? "active" : ""} ${fit ? "fit" : ""}`}
+                    onClick={() => pickSchool(s.key)}
+                    title={fit ? `${s.desc}（適合目前狀態）` : s.desc}
+                  >
+                    {s.label}{fit ? " ✦" : ""}
+                  </button>
+                );
+              })}
+              <span className="state-schools-tip">✦ = 適合目前狀態</span>
             </div>
 
             <div className="state-score">
@@ -451,6 +455,14 @@ export default function USStockPage() {
             <div className="state-foot">
               <span><b>{state.eval.school.label}</b> 買：{state.eval.school.buyText}　·　賣：{state.eval.school.sellText}</span>
             </div>
+            {!state.state.fit.includes(school) && (
+              <div className="state-hint">
+                💡 這檔現在是「{state.state.zh}」，
+                {state.state.fit.length
+                  ? `比較適合 ${state.state.fit.map((k) => SCHOOLS[k].label).join("、")}。你選的「${state.eval.school.label}」要等「${state.eval.school.buyText}」才出手——目前不符合，所以「不碰」是正常的，不是壞掉。`
+                  : "多數流派都不建議進場，觀望為宜。"}
+              </div>
+            )}
           </div>
         )}
 

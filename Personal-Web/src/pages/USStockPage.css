@@ -1570,3 +1570,28 @@
 .bc-state.tone-warn { color: var(--warn); }
 .bc-state.tone-bad { color: var(--neg); }
 .bc-state.tone-neutral { color: var(--muted); }
+
+/* state: school-fit hint */
+.state-hint {
+  margin-top: 10px;
+  padding: 9px 12px;
+  background: rgba(96, 165, 250, 0.08);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--txt);
+}
+
+/* state: fit-school marker */
+.state-schools button.fit {
+  border-color: rgba(52, 211, 153, 0.5);
+}
+.state-schools button.fit:not(.active) {
+  color: var(--pos);
+}
+.state-schools-tip {
+  font-size: 10px;
+  color: var(--dim);
+  margin-left: auto;
+}

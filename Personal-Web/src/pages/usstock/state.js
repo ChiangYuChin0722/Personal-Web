@@ -29,15 +29,16 @@ export function buildContext(series) {
   };
 }
 
+// fit = which schools (流派) naturally suit this state.
 export const STATES = {
-  breakout: { label: "BREAKOUT", zh: "突破", stars: 4, tone: "good", desc: "剛突破前高 / 衝出布林上軌，動能啟動。順勢偏多，但小心假突破。" },
-  uptrend: { label: "UPTREND", zh: "上升趨勢", stars: 5, tone: "great", desc: "均線多頭排列（MA20>50>200）、趨勢明確。最舒服的續抱狀態。" },
-  pullback: { label: "PULLBACK", zh: "回調", stars: 3, tone: "ok", desc: "大趨勢仍偏多但短線拉回。常是順勢加碼的機會，但要等止穩。" },
-  range: { label: "RANGE", zh: "盤整", stars: 2, tone: "neutral", desc: "沒方向、區間來回（ADX 低）。適合低買高賣，真突破才追。" },
-  overheated: { label: "OVERHEATED", zh: "過熱", stars: 1, tone: "warn", desc: "RSI 過高、漲過頭。追高容易被回檔修理，等拉回比較安全。" },
-  downtrend: { label: "DOWNTREND", zh: "下降趨勢", stars: 1, tone: "bad", desc: "均線空頭排列、趨勢往下。新手先避開，別接刀。" },
-  capitulation: { label: "CAPITULATION", zh: "恐慌", stars: 2, tone: "bad", desc: "急殺、RSI 極低。風險高，但也是長線潛在反彈區，需分批 + 嚴設停損。" },
-  neutral: { label: "NEUTRAL", zh: "中性", stars: 2, tone: "neutral", desc: "訊號不明確，觀望為宜。" },
+  breakout: { label: "BREAKOUT", zh: "突破", stars: 4, tone: "good", fit: ["momentum", "trend"], desc: "剛突破前高 / 衝出布林上軌，動能啟動。順勢偏多，但小心假突破。" },
+  uptrend: { label: "UPTREND", zh: "上升趨勢", stars: 5, tone: "great", fit: ["momentum", "trend"], desc: "均線多頭排列（MA20>50>200）、趨勢明確。最舒服的續抱狀態。" },
+  pullback: { label: "PULLBACK", zh: "回調", stars: 3, tone: "ok", fit: ["trend", "meanrev"], desc: "大趨勢仍偏多但短線拉回。常是順勢加碼的機會，但要等止穩。" },
+  range: { label: "RANGE", zh: "盤整", stars: 2, tone: "neutral", fit: ["meanrev"], desc: "沒方向、區間來回（ADX 低）。適合低買高賣，真突破才追。" },
+  overheated: { label: "OVERHEATED", zh: "過熱", stars: 1, tone: "warn", fit: [], desc: "RSI 過高、漲過頭。追高容易被回檔修理，等拉回比較安全。" },
+  downtrend: { label: "DOWNTREND", zh: "下降趨勢", stars: 1, tone: "bad", fit: [], desc: "均線空頭排列、趨勢往下。新手先避開，別接刀。" },
+  capitulation: { label: "CAPITULATION", zh: "恐慌", stars: 2, tone: "bad", fit: ["meanrev"], desc: "急殺、RSI 極低。風險高，但也是長線潛在反彈區，需分批 + 嚴設停損。" },
+  neutral: { label: "NEUTRAL", zh: "中性", stars: 2, tone: "neutral", fit: [], desc: "訊號不明確，觀望為宜。" },
 };
 
 export function classifyState(c) {
