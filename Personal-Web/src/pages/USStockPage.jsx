@@ -14,6 +14,7 @@ import {
   gatherSettings, applySettings, SETTINGS_DOC, STRATEGIES_DOC,
 } from "./usstock/cloud.js";
 import Collapsible from "./usstock/Collapsible.jsx";
+import { useLang, L } from "./usstock/lang.jsx";
 import CandleChart from "./usstock/CandleChart.jsx";
 import WatchList from "./usstock/WatchList.jsx";
 import { DrawdownChart, Gauge } from "./usstock/Charts.jsx";
@@ -33,6 +34,7 @@ const signed = (v, d = 1) => (v == null ? "—" : `${v >= 0 ? "+" : ""}${(v * 10
 
 // Selected-metric card: live value + "這是什麼" + "怎麼看".
 function MetricExplain({ item, m }) {
+  const { t, lang } = useLang();
   const tone = item.tone(m);
   const sub = item.sub ? item.sub(m) : "";
   return (
@@ -40,7 +42,7 @@ function MetricExplain({ item, m }) {
       <div className="explain-top">
         <div className="explain-id">
           <span className="explain-name">{item.name}</span>
-          <span className="explain-zh">{item.zh}</span>
+          {lang === "zh" && <span className="explain-zh">{item.zh}</span>}
         </div>
         <div className="explain-valwrap">
           <span className={`explain-val tone-${tone}`}>{item.val(m)}</span>
@@ -48,10 +50,10 @@ function MetricExplain({ item, m }) {
         </div>
       </div>
       {item.gauge && <div className="explain-gauge"><Gauge value={item.gauge(m)} /></div>}
-      <p className="explain-what">{item.what}</p>
+      <p className="explain-what">{L(item.what)}</p>
       <p className="explain-how">
-        <span className="explain-how-k">怎麼看</span>
-        {item.how}
+        <span className="explain-how-k">{t("How to read", "怎麼看")}</span>
+        {L(item.how)}
       </p>
     </div>
   );
@@ -78,6 +80,7 @@ const SRC_TAG = {
 };
 
 export default function USStockPage() {
+  const { t, lang, setLang } = useLang();
   const [theme, setTheme] = useState(() => localStorage.getItem(LS_THEME) || "dark");
   const [mode, setMode] = useState(
     () => sessionStorage.getItem("usstock_mode") || localStorage.getItem("usstock_home") || "single"
@@ -378,26 +381,29 @@ export default function USStockPage() {
             <span className="us-logo">◧</span>
             <div>
               <h1>Quant Dashboard</h1>
-              <p>US Equities · 小型對沖基金式監控面板</p>
+              <p>{t("US Equities · hedge-fund-style monitor", "US Equities · 小型對沖基金式監控面板")}</p>
             </div>
           </div>
           <div className="us-topright">
+            <button className="us-lang" onClick={() => setLang(lang === "zh" ? "en" : "zh")} title="Language">
+              {lang === "zh" ? "EN" : "中"}
+            </button>
             {user ? (
-              <button className="us-user" onClick={() => changeMode("account")} title="我的">
+              <button className="us-user" onClick={() => changeMode("account")} title={t("Account", "我的")}>
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" referrerPolicy="no-referrer" />
                 ) : (
                   <span className="us-user-ph">{(user.displayName || "U")[0]}</span>
                 )}
-                <span className="us-user-name">{(user.displayName || "我的").split(" ")[0]}</span>
+                <span className="us-user-name">{(user.displayName || t("Me", "我的")).split(" ")[0]}</span>
               </button>
             ) : (
               <button className="us-login" onClick={signInWithGoogle}>
-                <span className="acct-g">G</span> 登入
+                <span className="acct-g">G</span> {t("Sign in", "登入")}
               </button>
             )}
-            <button className="us-theme" onClick={toggleTheme} title="切換明亮 / 暗黑">
-              {theme === "dark" ? "☀️ 明亮" : "🌙 暗黑"}
+            <button className="us-theme" onClick={toggleTheme} title={t("Toggle light / dark", "切換明亮 / 暗黑")}>
+              {theme === "dark" ? t("☀️ Light", "☀️ 明亮") : t("🌙 Dark", "🌙 暗黑")}
             </button>
             <a href="/dashboard" className="us-back">
               ← dashboard
@@ -408,16 +414,16 @@ export default function USStockPage() {
         {/* ---------------- mode tabs (sticky) ---------------- */}
         <div className="us-tabs">
           <button className={mode === "single" ? "active" : ""} onClick={() => changeMode("single")}>
-            個股分析
+            {t("Analysis", "個股分析")}
           </button>
           <button className={mode === "screener" ? "active" : ""} onClick={() => changeMode("screener")}>
-            篩選器
+            {t("Screener", "篩選器")}
           </button>
           <button className={mode === "strategy" ? "active" : ""} onClick={() => changeMode("strategy")}>
-            策略評分
+            {t("Strategy", "策略評分")}
           </button>
           <button className={mode === "account" ? "active" : ""} onClick={() => changeMode("account")}>
-            我的
+            {t("Account", "我的")}
           </button>
         </div>
 
@@ -447,7 +453,7 @@ export default function USStockPage() {
               spellCheck={false}
             />
             <button className="us-go" onClick={handleGo} disabled={loading}>
-              {loading ? "…" : "Analyze"}
+              {loading ? "…" : t("Analyze", "分析")}
             </button>
           </div>
 
@@ -464,7 +470,7 @@ export default function USStockPage() {
           </div>
 
           <button className="us-link" onClick={() => setShowKey((s) => !s)}>
-            {apiKey ? "🔑 key set" : "🔑 add key"}
+            {apiKey ? t("🔑 key set", "🔑 已設定") : t("🔑 add key", "🔑 加 key")}
           </button>
           <button className="us-link" onClick={() => setCsvOpen((s) => !s)}>
             ⇪ CSV
@@ -506,7 +512,7 @@ export default function USStockPage() {
         {/* ---------------- recently viewed ---------------- */}
         {recent.length > 1 && (
           <div className="us-recent">
-            <span className="us-recent-k">最近看過</span>
+            <span className="us-recent-k">{t("Recent", "最近看過")}</span>
             {recent.map((s) => (
               <button key={s} className={s === symbol ? "active" : ""} onClick={() => pickSymbol(s)}>{s}</button>
             ))}
@@ -534,7 +540,7 @@ export default function USStockPage() {
           )}
           {source === "demo" && apiKey.trim() && (
             <button className="us-golive" onClick={() => { setSymbol(input.trim().toUpperCase() || symbol); loadLive(input.trim().toUpperCase() || symbol, period, apiKey); }}>
-              你有 key → 點這裡抓真實資料
+              {t("You have a key → fetch live data", "你有 key → 點這裡抓真實資料")}
             </button>
           )}
         </div>
@@ -545,11 +551,11 @@ export default function USStockPage() {
         {regime && (
           <div className={`us-regime tone-${regime.tone}`}>
             <span className="us-regime-dot" />
-            <span className="us-regime-label">市場環境：{regime.level}</span>
+            <span className="us-regime-label">{t("Market regime", "市場環境")}：{L(regime.level)}</span>
             <span className="us-regime-meta">
-              SPY {regime.aboveMA200 == null ? "—" : regime.aboveMA200 ? "在 MA200 之上" : "跌破 MA200"} · VIX≈{regime.vix ?? "—"}
+              SPY {regime.aboveMA200 == null ? "—" : regime.aboveMA200 ? t("above MA200", "在 MA200 之上") : t("below MA200", "跌破 MA200")} · VIX≈{regime.vix ?? "—"}
             </span>
-            <span className="us-regime-guide">{regime.posCap}</span>
+            <span className="us-regime-guide">{L(regime.posCap)}</span>
           </div>
         )}
 
@@ -753,7 +759,7 @@ export default function USStockPage() {
                 const allOn = ids.every((id) => selected.includes(id));
                 const someOn = ids.some((id) => selected.includes(id));
                 return (
-                  <div key={g.cat} className="sb-group">
+                  <div key={g.cat.en} className="sb-group">
                     <label className="sb-cat">
                       <input
                         type="checkbox"
@@ -761,7 +767,7 @@ export default function USStockPage() {
                         ref={(el) => el && (el.indeterminate = !allOn && someOn)}
                         onChange={() => toggleCat(g)}
                       />
-                      <span>{g.cat}</span>
+                      <span>{L(g.cat)}</span>
                     </label>
                     {g.items.map((it) => (
                       <label key={it.id} className="sb-item">
@@ -771,7 +777,7 @@ export default function USStockPage() {
                           onChange={() => toggleMetric(it.id)}
                         />
                         <span className="sb-name">{it.name}</span>
-                        <span className="sb-zh">{it.zh}</span>
+                        {lang === "zh" && <span className="sb-zh">{it.zh}</span>}
                       </label>
                     ))}
                   </div>
@@ -781,14 +787,14 @@ export default function USStockPage() {
 
             <div className="us-main">
               {selected.length === 0 && (
-                <div className="us-empty">← 從左邊勾選你想看的策略，這裡會顯示「數值 + 這是什麼 + 怎麼看」</div>
+                <div className="us-empty">{t("← Tick the metrics you want on the left; each shows value + what it is + how to read it", "← 從左邊勾選你想看的策略，這裡會顯示「數值 + 這是什麼 + 怎麼看」")}</div>
               )}
               {CATALOG.map((g) => {
                 const items = g.items.filter((it) => selected.includes(it.id));
                 if (!items.length) return null;
                 return (
-                  <div key={g.cat} className="main-group">
-                    <div className="main-cat">{g.cat}</div>
+                  <div key={g.cat.en} className="main-group">
+                    <div className="main-cat">{L(g.cat)}</div>
                     <div className="explain-grid">
                       {items.map((it) => (
                         <MetricExplain key={it.id} item={it} m={m} />
@@ -856,8 +862,9 @@ export default function USStockPage() {
 
         <footer className="us-footer">
           <span>
-            指標由 {mode === "strategy" ? "因子評分" : source === "csv" ? "你的 CSV" : "Twelve Data"} 即時計算 ·
-            教學，非投資建議
+            {t("Computed live from ", "指標由 ")}
+            {mode === "strategy" ? t("factor scores", "因子評分") : source === "csv" ? t("your CSV", "你的 CSV") : "Twelve Data"}
+            {t(" · educational, not investment advice", " 即時計算 · 教學，非投資建議")}
           </span>
           <span>rf {pct(rf, 0)}</span>
         </footer>

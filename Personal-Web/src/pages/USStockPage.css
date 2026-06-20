@@ -2167,3 +2167,17 @@
 }
 .acct-pref-opts button.active { color: var(--accent); border-color: var(--accent); background: var(--panel2); }
 .acct-pref-hint { font-size: 11px; color: var(--dim); }
+
+/* language toggle */
+.us-lang {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 11px;
+  cursor: pointer;
+  min-width: 34px;
+}
+.us-lang:hover { color: var(--accent); border-color: var(--accent); }

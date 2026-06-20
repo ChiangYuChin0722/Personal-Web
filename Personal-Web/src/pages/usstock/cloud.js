@@ -18,6 +18,7 @@ export const SETTINGS_KEYS = [
   "usstock_universe",
   "usstock_home",
   "usstock_watchlists",
+  "usstock_lang",
 ];
 
 export const SETTINGS_DOC = "usstock_settings";

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && mkdir -p ../docs/dashboard ../docs/dashboard/friend ../docs/USstock && cp ../docs/index.html ../docs/dashboard/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>dashboard</title>}' ../docs/dashboard/index.html && cp ../docs/index.html ../docs/dashboard/friend/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>friend</title>}' ../docs/dashboard/friend/index.html && cp ../docs/index.html ../docs/USstock/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>Quant Dashboard</title>}' ../docs/USstock/index.html && mkdir -p ../docs/project && cp ../docs/index.html ../docs/project/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>Projects · YuChin</title>}' ../docs/project/index.html",
+    "build": "vite build && mkdir -p ../docs/dashboard ../docs/dashboard/friend ../docs/USstock && cp ../docs/index.html ../docs/dashboard/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>dashboard</title>}' ../docs/dashboard/index.html && cp ../docs/index.html ../docs/dashboard/friend/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>friend</title>}' ../docs/dashboard/friend/index.html && cp ../docs/index.html ../docs/USstock/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>Quant Dashboard</title>}' ../docs/USstock/index.html && mkdir -p ../docs/project && cp ../docs/index.html ../docs/project/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>Projects · YuChin</title>}' ../docs/project/index.html && mkdir -p ../docs/cv && cp ../docs/index.html ../docs/cv/index.html && perl -i -pe 's{<title>YuChin</title>}{<title>CV · YuChin</title>}' ../docs/cv/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -16,7 +16,8 @@
     "firebase": "^12.12.0",
     "lightweight-charts": "4.2.3",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "three": "0.184.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
