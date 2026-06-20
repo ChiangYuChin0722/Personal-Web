@@ -11,4 +11,15 @@ export default defineConfig({
   server: {
     historyApiFallback: true,
   },
+  // Pre-bundle the three.js postprocessing addons on server start so adding/using them
+  // never triggers a mid-session dep re-optimize (which corrupts HMR → black canvas).
+  optimizeDeps: {
+    include: [
+      "three",
+      "three/addons/postprocessing/EffectComposer.js",
+      "three/addons/postprocessing/RenderPass.js",
+      "three/addons/postprocessing/UnrealBloomPass.js",
+      "three/addons/postprocessing/OutputPass.js",
+    ],
+  },
 });

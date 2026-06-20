@@ -120,22 +120,22 @@ export function rawFactors(series, fund, bench) {
 
 // metadata for every factor (drives sliders + leaderboard columns)
 export const FACTOR_META = {
-  mom: { label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強" },
-  trend: { label: "Trend", zh: "趨勢", desc: "現價 / MA50 — 是否站上均線" },
-  vol: { label: "Volume", zh: "資金", desc: "近期量 / 均量 — 資金流入" },
-  rsi: { label: "RSI", zh: "過熱", desc: "健康偏強加分、過熱(>70)扣分" },
-  sharpe: { label: "Sharpe", zh: "風險報酬", desc: "每單位風險的報酬，越高越好" },
-  lowvol: { label: "Low Vol", zh: "低波動", desc: "波動越低分越高（防禦）" },
-  meanrev: { label: "Mean-Rev", zh: "均值回歸", desc: "越超賣(Z 越低)分越高 — 撿便宜" },
-  relstr: { label: "Rel Strength", zh: "相對強度", desc: "近60日贏過籃子多少（強勢股）" },
-  lowdd: { label: "Low DD", zh: "低回撤", desc: "最大回撤越小分越高（防禦）" },
-  calmar: { label: "Calmar", zh: "卡瑪", desc: "報酬 ÷ 最大回撤，越高越好" },
-  sortino: { label: "Sortino", zh: "索提諾", desc: "只算下跌風險的報酬，越高越好" },
-  adx: { label: "ADX", zh: "趨勢強度", desc: "趨勢越明確分越高（>25 有趨勢）" },
-  lowbeta: { label: "Low Beta", zh: "低Beta", desc: "與大盤連動越低分越高（防禦）" },
-  alpha: { label: "Alpha", zh: "超額報酬", desc: "扣掉籃子後自己多賺的部分" },
-  quality: { label: "Quality", zh: "品質", desc: "ROE + 毛利 — 賺錢效率（需 FMP）", fund: true },
-  value: { label: "Value", zh: "價值", desc: "PE 越低越好（需 FMP）", fund: true },
+  mom: { label: "Momentum", zh: "動能", desc: { en: "20/60-day gain — winners keep winning", zh: "20/60 日漲幅 — 強者恆強" } },
+  trend: { label: "Trend", zh: "趨勢", desc: { en: "Price / MA50 — is it above the average", zh: "現價 / MA50 — 是否站上均線" } },
+  vol: { label: "Volume", zh: "資金", desc: { en: "Recent vol / avg vol — money flowing in", zh: "近期量 / 均量 — 資金流入" } },
+  rsi: { label: "RSI", zh: "過熱", desc: { en: "Healthy-strong adds, overheated(>70) deducts", zh: "健康偏強加分、過熱(>70)扣分" } },
+  sharpe: { label: "Sharpe", zh: "風險報酬", desc: { en: "Return per unit of risk — higher is better", zh: "每單位風險的報酬，越高越好" } },
+  lowvol: { label: "Low Vol", zh: "低波動", desc: { en: "Lower volatility scores higher (defensive)", zh: "波動越低分越高（防禦）" } },
+  meanrev: { label: "Mean-Rev", zh: "均值回歸", desc: { en: "More oversold (lower Z) scores higher — bargains", zh: "越超賣(Z 越低)分越高 — 撿便宜" } },
+  relstr: { label: "Rel Strength", zh: "相對強度", desc: { en: "How much it beat the basket over 60d (leaders)", zh: "近60日贏過籃子多少（強勢股）" } },
+  lowdd: { label: "Low DD", zh: "低回撤", desc: { en: "Smaller max drawdown scores higher (defensive)", zh: "最大回撤越小分越高（防禦）" } },
+  calmar: { label: "Calmar", zh: "卡瑪", desc: { en: "Return ÷ max drawdown — higher is better", zh: "報酬 ÷ 最大回撤，越高越好" } },
+  sortino: { label: "Sortino", zh: "索提諾", desc: { en: "Return counting only downside risk — higher better", zh: "只算下跌風險的報酬，越高越好" } },
+  adx: { label: "ADX", zh: "趨勢強度", desc: { en: "Clearer trend scores higher (>25 = trending)", zh: "趨勢越明確分越高（>25 有趨勢）" } },
+  lowbeta: { label: "Low Beta", zh: "低Beta", desc: { en: "Lower market correlation scores higher (defensive)", zh: "與大盤連動越低分越高（防禦）" } },
+  alpha: { label: "Alpha", zh: "超額報酬", desc: { en: "What it earns on its own after the basket", zh: "扣掉籃子後自己多賺的部分" } },
+  quality: { label: "Quality", zh: "品質", desc: { en: "ROE + gross margin — earning efficiency (needs FMP)", zh: "ROE + 毛利 — 賺錢效率（需 FMP）" }, fund: true },
+  value: { label: "Value", zh: "價值", desc: { en: "Lower PE is better (needs FMP)", zh: "PE 越低越好（需 FMP）" }, fund: true },
 };
 export const FACTOR_ORDER = [
   "mom", "trend", "vol", "rsi", "sharpe", "lowvol", "meanrev",
@@ -265,20 +265,29 @@ export function marketRegime(qqqSeries, vix) {
 
   let level, guidance, tone, posCap;
   if (aboveMA200 === false || (vix != null && vix > 30)) {
-    level = "Risk-Off · 防禦";
-    guidance = "QQQ 跌破 MA200 或 VIX>30 → 減倉、暫停新的做多，只留最強的部位。";
+    level = { en: "Risk-Off · Defensive", zh: "Risk-Off · 防禦" };
+    guidance = {
+      en: "Basket below MA200 or VIX>30 → trim, pause new longs, keep only the strongest positions.",
+      zh: "QQQ 跌破 MA200 或 VIX>30 → 減倉、暫停新的做多，只留最強的部位。",
+    };
     tone = "bad";
-    posCap = "建議總部位 ≤ 40%";
+    posCap = { en: "Suggested total exposure ≤ 40%", zh: "建議總部位 ≤ 40%" };
   } else if (vix != null && vix >= 20) {
-    level = "Caution · 謹慎";
-    guidance = "VIX 20–30 → 波動升高，部位略縮、嚴設停損，別追高。";
+    level = { en: "Caution", zh: "Caution · 謹慎" };
+    guidance = {
+      en: "VIX 20–30 → volatility rising, shrink positions a bit, set tight stops, don't chase.",
+      zh: "VIX 20–30 → 波動升高，部位略縮、嚴設停損，別追高。",
+    };
     tone = "ok";
-    posCap = "建議總部位 ≤ 70%";
+    posCap = { en: "Suggested total exposure ≤ 70%", zh: "建議總部位 ≤ 70%" };
   } else {
-    level = "Risk-On · 偏多";
-    guidance = "QQQ 在 MA200 之上、VIX<20 → 環境偏多，可正常布局前段排名。";
+    level = { en: "Risk-On", zh: "Risk-On · 偏多" };
+    guidance = {
+      en: "Basket above MA200, VIX<20 → favourable backdrop, deploy the top-ranked names normally.",
+      zh: "QQQ 在 MA200 之上、VIX<20 → 環境偏多，可正常布局前段排名。",
+    };
     tone = "good";
-    posCap = "總部位可達 100%";
+    posCap = { en: "Total exposure up to 100%", zh: "總部位可達 100%" };
   }
   return { aboveMA200, vix, ma200, last, level, guidance, tone, posCap };
 }

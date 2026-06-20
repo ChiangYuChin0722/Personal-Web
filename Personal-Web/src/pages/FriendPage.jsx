@@ -29,7 +29,6 @@ const DEFAULT_GROUPS = [
   { id:'hs',     zh:'高中',   en:'High School', color:'#60A5FA' },
   { id:'uni',    zh:'大學',   en:'University',  color:'#34D399' },
   { id:'work',   zh:'工作',   en:'Work',        color:'#F97316' },
-  { id:'fam',    zh:'家人',   en:'Family',      color:'#F472B6' },
   { id:'online', zh:'網友',   en:'Online',      color:'#A855F7' },
   { id:'other',  zh:'其他',   en:'Other',       color:'#94A3B8' },
 ];
