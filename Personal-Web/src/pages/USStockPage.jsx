@@ -3,6 +3,7 @@ import "./USStockPage.css";
 import { fetchSeries, fetchFlow, demoSeries, parseCSV, PERIODS } from "./usstock/data.js";
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
 import { interpret } from "./usstock/interpret.js";
+import { classify, SCHOOLS, stars } from "./usstock/state.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
 import Collapsible from "./usstock/Collapsible.jsx";
@@ -12,6 +13,7 @@ const LS_KEY = "usstock_apikey";
 const LS_FMP = "usstock_fmpkey";
 const LS_FLOW = "usstock_flow";
 const LS_THEME = "usstock_theme";
+const LS_SCHOOL = "usstock_school";
 const LS_SEL = "usstock_selected";
 const BENCH = "SPY";
 
@@ -257,6 +259,16 @@ export default function USStockPage() {
   const dd = useMemo(() => (series ? drawdownSeries(series) : []), [series]);
   const guide = useMemo(() => interpret(m), [m]);
 
+  const [school, setSchool] = useState(() => localStorage.getItem(LS_SCHOOL) || "momentum");
+  function pickSchool(k) {
+    setSchool(k);
+    localStorage.setItem(LS_SCHOOL, k);
+  }
+  const state = useMemo(
+    () => (series && series.length > 30 ? classify(series, school) : null),
+    [series, school]
+  );
+
   return (
     <div className={`usstock ${theme === "light" ? "light" : ""}`}>
       <div className="us-wrap">
@@ -382,6 +394,64 @@ export default function USStockPage() {
         </div>
 
         {error && <div className="us-error">{error}</div>}
+
+        {/* ---------------- market state machine ---------------- */}
+        {state && (
+          <div className={`us-state tone-${state.state.tone}`}>
+            <div className="state-top">
+              <div className="state-id">
+                <span className="state-badge">
+                  {state.state.label} <span className="state-zh">{state.state.zh}</span>
+                </span>
+                <span className="state-stars">{stars(state.state.stars)}</span>
+              </div>
+              <div className={`state-action tone-${state.eval.action.tone}`}>
+                {state.eval.action.txt}
+              </div>
+            </div>
+            <p className="state-desc">{state.state.desc}</p>
+
+            <div className="state-schools">
+              <span className="state-schools-k">流派</span>
+              {Object.values(SCHOOLS).map((s) => (
+                <button
+                  key={s.key}
+                  className={s.key === school ? "active" : ""}
+                  onClick={() => pickSchool(s.key)}
+                  title={s.desc}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="state-score">
+              <div className="state-rules">
+                {state.eval.rules.map((r) => (
+                  <div key={r.label} className={`state-rule ${r.ok ? "ok" : "no"}`}>
+                    <span className="state-rule-mark">{r.ok ? "✓" : "✕"}</span>
+                    <span className="state-rule-label">{r.label}</span>
+                    <span className="state-rule-pts">{r.ok ? `+${r.pts}` : "0"}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="state-total">
+                <div className={`state-total-num tone-${state.eval.tier.tone}`}>
+                  {state.eval.score}
+                  <span>/100</span>
+                </div>
+                <div className={`state-tier tone-${state.eval.tier.tone}`}>{state.eval.tier.txt}</div>
+                <div className="state-triggers">
+                  <span className={state.eval.buy ? "trg-on" : "trg-off"}>買 {state.eval.buy ? "✓" : "—"}</span>
+                  <span className={state.eval.sell ? "trg-sell" : "trg-off"}>賣 {state.eval.sell ? "✓" : "—"}</span>
+                </div>
+              </div>
+            </div>
+            <div className="state-foot">
+              <span><b>{state.eval.school.label}</b> 買：{state.eval.school.buyText}　·　賣：{state.eval.school.sellText}</span>
+            </div>
+          </div>
+        )}
 
         {/* ---------------- plain-language guide ---------------- */}
         {guide && (

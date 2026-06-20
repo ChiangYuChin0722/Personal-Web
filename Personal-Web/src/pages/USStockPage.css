@@ -1385,3 +1385,188 @@
   color: var(--accent);
   border-color: var(--accent);
 }
+
+/* ---------------- market state machine ---------------- */
+.us-state {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.us-state.tone-great { border-left-color: #4ade80; }
+.us-state.tone-good { border-left-color: var(--pos); }
+.us-state.tone-ok { border-left-color: var(--warn); }
+.us-state.tone-warn { border-left-color: var(--warn); }
+.us-state.tone-bad { border-left-color: var(--neg); }
+.us-state.tone-neutral { border-left-color: var(--muted); }
+.state-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.state-id {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.state-badge {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.state-zh {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.state-stars {
+  font-size: 15px;
+  color: var(--warn);
+  letter-spacing: 2px;
+}
+.state-action {
+  font-size: 15px;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 8px;
+  background: var(--panel2);
+}
+.state-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 8px 0 12px;
+}
+.state-schools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.state-schools-k {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+  margin-right: 4px;
+}
+.state-schools button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.state-schools button.active {
+  background: var(--panel2);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.state-score {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 16px;
+  align-items: center;
+}
+.state-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.state-rule {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+}
+.state-rule-mark {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.state-rule.ok .state-rule-mark { background: rgba(52, 211, 153, 0.18); color: var(--pos); }
+.state-rule.no .state-rule-mark { background: var(--panel2); color: var(--dim); }
+.state-rule.no .state-rule-label { color: var(--dim); }
+.state-rule-label { flex: 1; }
+.state-rule-pts {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--muted);
+}
+.state-rule.ok .state-rule-pts { color: var(--pos); }
+.state-total {
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+.state-total-num {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.state-total-num span {
+  font-size: 13px;
+  color: var(--dim);
+  font-weight: 600;
+}
+.state-tier {
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+.state-triggers {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.trg-on { color: var(--pos); }
+.trg-sell { color: var(--neg); }
+.trg-off { color: var(--dim); }
+.state-foot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.state-foot b { color: var(--txt); }
+
+@media (max-width: 680px) {
+  .state-score { grid-template-columns: 1fr; }
+}
+
+/* leaderboard state tag */
+.bc-state {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 2px;
+  letter-spacing: 0;
+}
+.bc-state.tone-great { color: #4ade80; }
+.bc-state.tone-good { color: var(--pos); }
+.bc-state.tone-ok { color: var(--warn); }
+.bc-state.tone-warn { color: var(--warn); }
+.bc-state.tone-bad { color: var(--neg); }
+.bc-state.tone-neutral { color: var(--muted); }

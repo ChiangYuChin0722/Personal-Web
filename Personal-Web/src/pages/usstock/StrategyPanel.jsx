@@ -17,6 +17,7 @@ import {
 } from "./factors.js";
 import { PriceChart } from "./Charts.jsx";
 import Collapsible from "./Collapsible.jsx";
+import { buildContext, classifyState, STATES } from "./state.js";
 
 const LS_W = "usstock_weights";
 const LS_UNI = "usstock_universe";
@@ -54,6 +55,7 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
   const [years, setYears] = useState("2Y"); // history / backtest length
   const [rows, setRows] = useState(null); // fetched price+fund rows
   const [result, setResult] = useState(null); // { scored:[], active:[] }
+  const [states, setStates] = useState({}); // symbol -> state key
   const [regime, setRegime] = useState(null);
   const [ranSource, setRanSource] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,6 +87,15 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
       const scoredRows = fetched.filter((r) => r.symbol !== "QQQ");
       const { scored, active } = scoreUniverse(scoredRows, weights);
       setResult({ scored: applySignals(scored, topN), active });
+      const sm = {};
+      scoredRows.forEach((r) => {
+        try {
+          sm[r.symbol] = classifyState(buildContext(r.series));
+        } catch {
+          sm[r.symbol] = "neutral";
+        }
+      });
+      setStates(sm);
       const qqq = fetched.find((r) => r.symbol === "QQQ");
       setRegime(qqq ? marketRegime(qqq.series, vixProxy(qqq.series)) : null);
       setBt(null);
@@ -324,7 +335,14 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
                 style={{ gridTemplateColumns: gridCols }}
               >
                 <span className="bc-rank">{s.rank}</span>
-                <span className="bc-sym">{s.symbol}</span>
+                <span className="bc-sym">
+                  {s.symbol}
+                  {states[s.symbol] && (
+                    <span className={`bc-state tone-${STATES[states[s.symbol]].tone}`}>
+                      {STATES[states[s.symbol]].zh}
+                    </span>
+                  )}
+                </span>
                 <span className="bc-total">
                   <b>{s.total.toFixed(0)}</b>
                   <ScoreBar value={s.total} tone={s.signal === "buy" ? "good" : "accent"} />
