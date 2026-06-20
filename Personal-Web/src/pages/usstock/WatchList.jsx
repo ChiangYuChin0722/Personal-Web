@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DEFAULT_UNIVERSE, demoQuotes, fetchQuotes } from "./data.js";
 
 const LS_UNI = "usstock_universe";
@@ -27,6 +27,16 @@ export default function WatchList({ current, apiKey, onPick }) {
     setSrc("demo");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uniText, current]);
+
+  // auto-refresh live once on open if a key is set (≤8 symbols)
+  const autoDone = useRef(false);
+  useEffect(() => {
+    if (!autoDone.current && apiKey.trim() && symbols.length <= 8) {
+      autoDone.current = true;
+      refreshLive();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
 
   function saveUni(v) {
     setUniText(v);

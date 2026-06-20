@@ -3,9 +3,32 @@
 // total -> rank -> buy/hold/avoid signal. Plus a market-regime risk overlay.
 // Education, NOT investment advice.
 
-import { rsi, sharpe, volatility, priceZScore } from "./quant.js";
+import { rsi, sharpe, volatility, priceZScore, dailyReturns, correlation } from "./quant.js";
 
 const closes = (s) => s.map((d) => d.close);
+
+// ---- Phase 2: correlation matrix (diversification) ----
+export function correlationMatrix(rows) {
+  const items = rows.filter((r) => r.symbol !== "QQQ");
+  const rets = items.map((r) => dailyReturns(r.series));
+  const n = items.length;
+  const matrix = [];
+  for (let i = 0; i < n; i++) {
+    matrix[i] = [];
+    for (let j = 0; j < n; j++) {
+      matrix[i][j] = i === j ? 1 : correlation(rets[i], rets[j]);
+    }
+  }
+  // average off-diagonal correlation = how clustered the basket is
+  let sum = 0;
+  let cnt = 0;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++) {
+      sum += matrix[i][j];
+      cnt++;
+    }
+  return { symbols: items.map((r) => r.symbol), matrix, avg: cnt ? sum / cnt : 0 };
+}
 
 function ma(series, n) {
   const c = closes(series);
@@ -278,6 +301,14 @@ export function backtest(rows, weights, topN, rebalDays = 5) {
   const years = (eqDates.length - 1) / periodsPerYear;
   const finalEq = equity[equity.length - 1];
   const benchFinal = benchEquity[benchEquity.length - 1];
+  const winRate = rets.length ? rets.filter((x) => x > 0).length / rets.length : 0;
+  // Kelly position sizing: f* = W − (1−W)/R, R = avgWin/avgLoss
+  const wins = rets.filter((x) => x > 0);
+  const losses = rets.filter((x) => x < 0);
+  const avgWin = wins.length ? avg(wins) : 0;
+  const avgLoss = losses.length ? Math.abs(avg(losses)) : 0;
+  const R = avgLoss ? avgWin / avgLoss : 0;
+  const kelly = R ? winRate - (1 - winRate) / R : 0;
   return {
     equity,
     benchEquity,
@@ -287,7 +318,10 @@ export function backtest(rows, weights, topN, rebalDays = 5) {
     totalReturn: finalEq - 1,
     sharpe: sd(rets) ? (avg(rets) / sd(rets)) * Math.sqrt(periodsPerYear) : 0,
     mdd: maxDD(equity),
-    winRate: rets.length ? rets.filter((x) => x > 0).length / rets.length : 0,
+    winRate,
     benchCagr: years > 0 ? benchFinal ** (1 / years) - 1 : 0,
+    rr: R,
+    kelly: Math.max(0, Math.min(1, kelly)),
+    kellyHalf: Math.max(0, Math.min(1, kelly / 2)),
   };
 }

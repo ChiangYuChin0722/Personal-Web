@@ -11,10 +11,18 @@ import {
   applySignals,
   marketRegime,
   backtest,
+  correlationMatrix,
   DEFAULT_WEIGHTS,
   FACTOR_META,
   FACTOR_ORDER,
 } from "./factors.js";
+
+// weight presets — quick ways to build a strategy
+const PRESETS = {
+  動能: { mom: 30, trend: 20, vol: 15, rsi: 10, sharpe: 0, lowvol: 0, meanrev: 0, quality: 15, value: 10 },
+  防禦: { mom: 5, trend: 15, vol: 0, rsi: 0, sharpe: 30, lowvol: 35, meanrev: 5, quality: 10, value: 0 },
+  全因子: { mom: 12, trend: 12, vol: 11, rsi: 11, sharpe: 11, lowvol: 11, meanrev: 11, quality: 11, value: 10 },
+};
 import { PriceChart } from "./Charts.jsx";
 import Collapsible from "./Collapsible.jsx";
 import { buildContext, classifyState, STATES } from "./state.js";
@@ -57,6 +65,7 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
   const [result, setResult] = useState(null); // { scored:[], active:[] }
   const [states, setStates] = useState({}); // symbol -> state key
   const [regime, setRegime] = useState(null);
+  const [corr, setCorr] = useState(null);
   const [ranSource, setRanSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
@@ -67,6 +76,11 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
 
   function setW(key, val) {
     const next = { ...weights, [key]: Number(val) };
+    setWeights(next);
+    localStorage.setItem(LS_W, JSON.stringify(next));
+  }
+  function applyPreset(name) {
+    const next = { ...PRESETS[name] };
     setWeights(next);
     localStorage.setItem(LS_W, JSON.stringify(next));
   }
@@ -98,6 +112,7 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
       setStates(sm);
       const qqq = fetched.find((r) => r.symbol === "QQQ");
       setRegime(qqq ? marketRegime(qqq.series, vixProxy(qqq.series)) : null);
+      setCorr(scoredRows.length >= 2 ? correlationMatrix(fetched) : null);
       setBt(null);
     },
     [weights, topN]
@@ -168,6 +183,12 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
         <div className="strat-card-head">
           <span>因子權重</span>
           <span className="strat-hint">拉一拉看排名怎麼變 · 自動正規化 · 品質/價值需 FMP key</span>
+        </div>
+        <div className="strat-presets">
+          <span className="strat-presets-k">預設</span>
+          {Object.keys(PRESETS).map((p) => (
+            <button key={p} onClick={() => applyPreset(p)}>{p === "全因子" ? "全因子 ✦" : p}</button>
+          ))}
         </div>
         <div className="strat-weights">
           {FACTOR_ORDER.map((k) => {
@@ -297,6 +318,14 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
                   : `⚠️ 策略 ${pct(bt.cagr)} 沒贏過「整池買著不動」${pct(bt.benchCagr)} — 不如直接全買。`}
                 　共 {bt.nRebals} 次再平衡。
               </div>
+              <div className="bt-kelly">
+                <div className="bt-k"><span>報酬/風險 R</span><b>{bt.rr.toFixed(2)}</b><i>平均賺 ÷ 平均賠</i></div>
+                <div className="bt-k"><span>Kelly 倉位</span><b className="pos">{pct(bt.kelly, 0)}</b><i>數學最佳下注比例</i></div>
+                <div className="bt-k"><span>半 Kelly（穩健）</span><b>{pct(bt.kellyHalf, 0)}</b><i>實務多用一半，較不暴衝</i></div>
+              </div>
+              <div className="bt-note">
+                Kelly = 勝率 − (1−勝率)/R。它告訴你「每次該押總資金的幾 %」——全 Kelly 波動大，多數人用半 Kelly。
+              </div>
             </>
           )}
         </div>
@@ -313,6 +342,44 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
           </div>
           <div className="regime-guide">{regime.guidance}</div>
           <div className="regime-cap">{regime.posCap}　·　單筆停損 &lt;2%　·　單一股票 &lt;20%</div>
+        </div>
+      )}
+
+      {/* correlation heatmap */}
+      {corr && corr.symbols.length >= 2 && (
+        <div className="strat-card">
+          <div className="strat-card-head">
+            <span>相關性熱圖 Correlation</span>
+            <span className="strat-hint">
+              平均相關 {corr.avg.toFixed(2)} ·{" "}
+              {corr.avg > 0.7 ? "太集中、分散效果差" : corr.avg > 0.4 ? "中等" : "分散得不錯"}
+            </span>
+          </div>
+          <p className="strat-corr-note">紅=一起漲跌（同進同退、分散差）· 藍=各走各的（分散好）。挑相關低的搭配能降低風險。</p>
+          <div className="corr-wrap">
+            <table className="corr-table">
+              <thead>
+                <tr>
+                  <th />
+                  {corr.symbols.map((s) => <th key={s}>{s}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {corr.matrix.map((row, i) => (
+                  <tr key={corr.symbols[i]}>
+                    <th>{corr.symbols[i]}</th>
+                    {row.map((v, j) => {
+                      const a = Math.min(0.85, Math.abs(v));
+                      const bg = v >= 0 ? `rgba(239,68,68,${a})` : `rgba(59,130,246,${a})`;
+                      return (
+                        <td key={j} style={{ background: bg }}>{v.toFixed(2)}</td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

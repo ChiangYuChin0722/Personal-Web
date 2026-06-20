@@ -603,6 +603,15 @@ export default function USStockPage() {
                 <div className="pro-stat"><span>Sharpe</span><b>{num(m.sharpe)}</b></div>
                 <div className="pro-stat"><span>綜合分</span><b>{num(m.composite, 0)}</b></div>
               </div>
+              {m.atr != null && (
+                <div className="pro-rr">
+                  <div className="pro-rr-title">風險報酬 R/R<span>停損 1.5×ATR · 目標 3×ATR</span></div>
+                  <div className="pro-rr-row"><span>進場</span><b>${num(m.last)}</b></div>
+                  <div className="pro-rr-row"><span>停損</span><b className="neg">${num(m.last - 1.5 * m.atr)}</b></div>
+                  <div className="pro-rr-row"><span>目標</span><b className="pos">${num(m.last + 3 * m.atr)}</b></div>
+                  <div className="pro-rr-row big"><span>報酬:風險</span><b className="pos">2.0 : 1</b></div>
+                </div>
+              )}
             </aside>
           </div>
         )}
