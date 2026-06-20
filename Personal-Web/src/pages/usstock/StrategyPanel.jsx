@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   DEFAULT_UNIVERSE,
   demoUniverse,
@@ -178,6 +178,48 @@ export default function StrategyPanel({ apiKey, fmpKey, user }) {
     setBt(backtest(data, weights, topN) || { error: true });
   }
 
+  // share the current strategy as a link (encodes weights + universe + topN + years)
+  function shareStrategy() {
+    try {
+      const payload = { w: weights, u: uniText, n: topN, y: years };
+      const enc = btoa(encodeURIComponent(JSON.stringify(payload)));
+      const url = `${window.location.origin}/USstock#s=${enc}`;
+      navigator.clipboard?.writeText(url);
+      setSaveMsg("🔗 已複製分享連結！別人開這個連結就會載入這個策略。");
+    } catch {
+      setSaveMsg("分享連結產生失敗。");
+    }
+  }
+
+  // on mount: decode a shared strategy from the URL hash, then auto-run; or
+  // auto-run after loading a saved strategy.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    const hash = window.location.hash;
+    const m = hash.match(/#s=([^&]+)/);
+    if (m) {
+      try {
+        const p = JSON.parse(decodeURIComponent(atob(m[1])));
+        if (p.w) setWeights(p.w);
+        if (p.u) setUniText(p.u);
+        if (p.n) setTopN(p.n);
+        if (p.y) setYears(p.y);
+        history.replaceState(null, "", window.location.pathname);
+        setTimeout(() => runDemo(), 50);
+      } catch {
+        /* ignore bad link */
+      }
+      return;
+    }
+    if (sessionStorage.getItem("usstock_autorun")) {
+      sessionStorage.removeItem("usstock_autorun");
+      setTimeout(() => runDemo(), 50); // instant + never rate-limited; user can then click live
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const active = result?.active || [];
   const gridCols = `26px 54px 1.4fr ${active.map(() => "minmax(50px,1fr)").join(" ")} 50px`;
   const eqSeries =
@@ -288,6 +330,9 @@ export default function StrategyPanel({ apiKey, fmpKey, user }) {
           </button>
           <button className="strat-btn save" onClick={saveStrategy} disabled={loading}>
             💾 存成我的策略
+          </button>
+          <button className="strat-btn share" onClick={shareStrategy} disabled={loading}>
+            🔗 分享連結
           </button>
         </div>
         {saveMsg && <div className="strat-note">{saveMsg}</div>}

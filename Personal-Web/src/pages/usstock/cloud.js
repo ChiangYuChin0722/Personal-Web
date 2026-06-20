@@ -16,6 +16,8 @@ export const SETTINGS_KEYS = [
   "usstock_selected",
   "usstock_weights",
   "usstock_universe",
+  "usstock_home",
+  "usstock_watchlists",
 ];
 
 export const SETTINGS_DOC = "usstock_settings";

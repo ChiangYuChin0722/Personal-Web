@@ -6,6 +6,17 @@ import { signInWithGoogle, signOutUser, fsLoad, fsSave, STRATEGIES_DOC } from ".
 export default function AccountPanel({ user, onLoadStrategy }) {
   const [strats, setStrats] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [home, setHome] = useState(() => localStorage.getItem("usstock_home") || "single");
+
+  const HOME_OPTS = [
+    { k: "single", label: "個股分析" },
+    { k: "screener", label: "篩選器" },
+    { k: "strategy", label: "策略評分" },
+  ];
+  function pickHome(k) {
+    setHome(k);
+    localStorage.setItem("usstock_home", k);
+  }
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +70,18 @@ export default function AccountPanel({ user, onLoadStrategy }) {
       </div>
 
       <div className="acct-sync">☁️ 你的設定已雲端同步（主題、選股池、因子權重、選的指標、流派…）</div>
+
+      <div className="acct-pref">
+        <span className="acct-pref-k">預設首頁</span>
+        <div className="acct-pref-opts">
+          {HOME_OPTS.map((o) => (
+            <button key={o.k} className={o.k === home ? "active" : ""} onClick={() => pickHome(o.k)}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <span className="acct-pref-hint">下次打開 /USstock 直接進這個分頁</span>
+      </div>
 
       <div className="acct-strats">
         <div className="acct-strats-head">我的策略{strats.length > 0 ? `（${strats.length}）` : ""}</div>

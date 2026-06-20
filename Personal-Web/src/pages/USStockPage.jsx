@@ -79,8 +79,17 @@ const SRC_TAG = {
 
 export default function USStockPage() {
   const [theme, setTheme] = useState(() => localStorage.getItem(LS_THEME) || "dark");
-  const [mode, setMode] = useState(() => sessionStorage.getItem("usstock_mode") || "single"); // single | screener | strategy | account
+  const [mode, setMode] = useState(
+    () => sessionStorage.getItem("usstock_mode") || localStorage.getItem("usstock_home") || "single"
+  ); // single | screener | strategy | account
   const [user, setUser] = useState(null);
+  const [recent, setRecent] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("usstock_recent") || "[]");
+    } catch {
+      return [];
+    }
+  });
 
   function changeMode(m) {
     setMode(m);
@@ -121,11 +130,17 @@ export default function USStockPage() {
     return () => clearInterval(id);
   }, [user]);
 
-  // load a saved strategy: write to localStorage + reopen in strategy mode
+  // load a saved strategy: write to localStorage + reopen in strategy mode + auto-run
   function loadStrategy(s) {
     if (s.weights) localStorage.setItem("usstock_weights", JSON.stringify(s.weights));
     if (s.universe) localStorage.setItem("usstock_universe", s.universe);
     sessionStorage.setItem("usstock_mode", "strategy");
+    sessionStorage.setItem("usstock_autorun", "1");
+    if (user) {
+      // mark synced + push now so the cloud pull on reload can't overwrite the load
+      sessionStorage.setItem(`usstock_synced_${user.uid}`, "1");
+      fsSave(user.uid, SETTINGS_DOC, gatherSettings());
+    }
     window.location.reload();
   }
 
@@ -326,6 +341,16 @@ export default function USStockPage() {
   }
 
   // ---- compute ----
+  // track recently-viewed tickers
+  useEffect(() => {
+    if (!symbol || source === "csv") return;
+    setRecent((prev) => {
+      const next = [symbol, ...prev.filter((s) => s !== symbol)].slice(0, 8);
+      localStorage.setItem("usstock_recent", JSON.stringify(next));
+      return next;
+    });
+  }, [symbol, source]);
+
   const m = useMemo(() => (series ? computeMetrics(series, bench, rf) : null), [series, bench, rf]);
   const dd = useMemo(() => (series ? drawdownSeries(series) : []), [series]);
   const guide = useMemo(() => interpret(m), [m]);
@@ -475,6 +500,16 @@ export default function USStockPage() {
                 取消
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ---------------- recently viewed ---------------- */}
+        {recent.length > 1 && (
+          <div className="us-recent">
+            <span className="us-recent-k">最近看過</span>
+            {recent.map((s) => (
+              <button key={s} className={s === symbol ? "active" : ""} onClick={() => pickSymbol(s)}>{s}</button>
+            ))}
           </div>
         )}
 
