@@ -86,7 +86,13 @@ export default function CandleChart({ series, height = 380, light = false }) {
     };
     chart.subscribeCrosshairMove(onMove);
 
-    const ro = new ResizeObserver(() => chart.applyOptions({ width: el.clientWidth }));
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      if (w > 0) {
+        chart.applyOptions({ width: w });
+        chart.timeScale().fitContent(); // refill bars across the new width
+      }
+    });
     ro.observe(el);
     chart.applyOptions({ width: el.clientWidth });
 

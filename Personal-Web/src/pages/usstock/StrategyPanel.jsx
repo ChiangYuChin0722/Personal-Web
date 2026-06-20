@@ -12,6 +12,7 @@ import {
   marketRegime,
   backtest,
   correlationMatrix,
+  basketSeries,
   DEFAULT_WEIGHTS,
   FACTOR_META,
   FACTOR_ORDER,
@@ -110,8 +111,10 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
         }
       });
       setStates(sm);
+      // regime from QQQ if present, else from the universe's own equal-weight basket
       const qqq = fetched.find((r) => r.symbol === "QQQ");
-      setRegime(qqq ? marketRegime(qqq.series, vixProxy(qqq.series)) : null);
+      const mkt = qqq ? qqq.series : basketSeries(fetched);
+      setRegime(mkt ? marketRegime(mkt, vixProxy(mkt)) : null);
       setCorr(scoredRows.length >= 2 ? correlationMatrix(fetched) : null);
       setBt(null);
     },
@@ -133,10 +136,12 @@ export default function StrategyPanel({ apiKey, fmpKey }) {
     }
     setErrors([]);
     setLoading(true);
-    setProgress({ done: 0, total: symbols.length + 1 });
+    // QQQ omitted on purpose: regime is computed from the universe basket, so a
+    // ≤8-symbol universe fetches in a single batch with no rate-limit wait.
+    setProgress({ done: 0, total: symbols.length });
     try {
       const { rows: fetched, errors: errs } = await fetchUniverse(
-        [...symbols, "QQQ"],
+        symbols,
         apiKey,
         (done, total, wait) => setProgress({ done, total, wait }),
         years,

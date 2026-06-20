@@ -7,6 +7,28 @@ import { rsi, sharpe, volatility, priceZScore, dailyReturns, correlation } from 
 
 const closes = (s) => s.map((d) => d.close);
 
+// Equal-weight basket "index" of the universe — a free, no-extra-fetch market
+// proxy for the regime engine (so we don't need a separate QQQ request).
+export function basketSeries(rows) {
+  const items = rows.filter((r) => r.symbol !== "QQQ" && r.series?.length);
+  if (!items.length) return null;
+  const minLen = Math.min(...items.map((r) => r.series.length));
+  if (minLen < 5) return null;
+  const out = [];
+  for (let i = 0; i < minLen; i++) {
+    let sum = 0;
+    for (const r of items) {
+      const s = r.series;
+      const base = s[s.length - minLen].close;
+      sum += base ? s[s.length - minLen + i].close / base : 1;
+    }
+    const v = (sum / items.length) * 100;
+    const date = items[0].series[items[0].series.length - minLen + i].date;
+    out.push({ date, open: v, high: v, low: v, close: v, volume: 0 });
+  }
+  return out;
+}
+
 // ---- Phase 2: correlation matrix (diversification) ----
 export function correlationMatrix(rows) {
   const items = rows.filter((r) => r.symbol !== "QQQ");

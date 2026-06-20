@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { DEFAULT_UNIVERSE, demoUniverse, fetchUniverse, PERIODS } from "./data.js";
 import { computeMetrics } from "./quant.js";
 import { buildContext, classifyState, STATES } from "./state.js";
+import { basketSeries } from "./factors.js";
 
 const LS_UNI = "usstock_universe";
 
@@ -44,7 +45,7 @@ export default function ScreenerPanel({ apiKey, fmpKey, onPick }) {
 
   const process = useCallback((fetched) => {
     const qqq = fetched.find((r) => r.symbol === "QQQ");
-    const bench = qqq ? qqq.series : null;
+    const bench = qqq ? qqq.series : basketSeries(fetched);
     const out = fetched
       .filter((r) => r.symbol !== "QQQ")
       .map((r) => {
@@ -85,10 +86,11 @@ export default function ScreenerPanel({ apiKey, fmpKey, onPick }) {
     }
     setErrors([]);
     setLoading(true);
-    setProgress({ done: 0, total: symbols.length + 1 });
+    // QQQ omitted: relative metrics use the universe basket; ≤8 → one batch, no wait
+    setProgress({ done: 0, total: symbols.length });
     try {
       const { rows: fetched, errors: errs } = await fetchUniverse(
-        [...symbols, "QQQ"],
+        symbols,
         apiKey,
         (done, total, wait) => setProgress({ done, total, wait }),
         years,
