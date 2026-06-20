@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "./USStockPage.css";
-import { fetchSeries, fetchFlow, demoSeries, parseCSV, PERIODS } from "./usstock/data.js";
+import { fetchSeries, fetchFundamentals, demoSeries, parseCSV, PERIODS } from "./usstock/data.js";
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
 import { interpret } from "./usstock/interpret.js";
 import { classify, SCHOOLS, stars } from "./usstock/state.js";
@@ -52,8 +52,8 @@ function MetricExplain({ item, m }) {
 // src: "auto" = auto-fetchable from FMP free key, "paid" = needs paid feed
 // (Unusual Whales etc.), "manual" = enter by hand. Honest about each.
 const FLOW_FIELDS = [
-  { key: "insider", label: "Insider (net)", zh: "內部人淨買賣", suffix: "", src: "auto", warn: (v) => v < 0 },
-  { key: "instOwn", label: "Institutional", zh: "機構持股(家數)", suffix: "", src: "auto", warn: () => false },
+  { key: "insider", label: "Insider (net)", zh: "內部人淨買賣", suffix: "", src: "paid", warn: (v) => v < 0 },
+  { key: "instOwn", label: "Institutional", zh: "機構持股(家數)", suffix: "", src: "paid", warn: () => false },
   { key: "shortInt", label: "Short Interest %", zh: "放空比例", suffix: "%", src: "manual", warn: (v) => v >= 20 },
   { key: "daysToCover", label: "Days to Cover", zh: "軋空天數", suffix: "", src: "manual", warn: (v) => v >= 5 },
   { key: "ivRank", label: "IV Rank", zh: "隱含波動位階", suffix: "", src: "paid", warn: (v) => v >= 70 || v <= 20 },
@@ -226,10 +226,11 @@ export default function USStockPage() {
     persistSel([]);
   }
 
-  // Auto-fill the fetchable flow fields (Insider / Institutional) from FMP.
-  async function loadFlow() {
+  // Test the FMP key against the free ratios-ttm endpoint (the same data that
+  // powers the Quality/Value factors in 策略評分). Insider/13F need a paid plan.
+  async function testFmp() {
     if (!fmpKey.trim()) {
-      setFlowMsg("需要 FMP 免費 key 才能自動抓 Insider/機構");
+      setFlowMsg("先填 FMP key（免費）");
       return;
     }
     const sym = source === "csv" ? input.trim().toUpperCase() : symbol;
@@ -237,19 +238,18 @@ export default function USStockPage() {
     setFlowLoading(true);
     setFlowMsg("");
     try {
-      const { values, notes } = await fetchFlow(sym, fmpKey);
-      const keys = Object.keys(values);
-      if (keys.length) {
-        const next = { ...flow, ...values };
-        setFlow(next);
-        localStorage.setItem(LS_FLOW, JSON.stringify(next));
+      const f = await fetchFundamentals(sym, fmpKey);
+      if (f && (f.roe != null || f.pe != null)) {
+        setFlowMsg(
+          `✅ ${sym} key 正常：ROE ${f.roe != null ? (f.roe * 100).toFixed(0) + "%" : "—"} · PE ${
+            f.pe != null ? f.pe.toFixed(1) : "—"
+          } · 毛利 ${f.gm != null ? (f.gm * 100).toFixed(0) + "%" : "—"}　→「策略評分」的品質/價值已可用。`
+        );
+      } else {
+        setFlowMsg(`${sym}：沒拿到基本面（key 無效，或免費方案受限）。`);
       }
-      const parts = [];
-      if (keys.length) parts.push(`✅ 已更新 ${keys.join(", ")}`);
-      if (notes.length) parts.push(notes.join("　|　"));
-      setFlowMsg(`${sym}：${parts.join("　|　") || "沒抓到"}`);
     } catch (e) {
-      setFlowMsg(`抓取失敗：${e.message}`);
+      setFlowMsg(`測試失敗：${e.message}`);
     } finally {
       setFlowLoading(false);
     }
@@ -586,9 +586,8 @@ export default function USStockPage() {
         {/* ---------------- flow ---------------- */}
         <Collapsible title="Flow · Options · Positioning" sub="資金流 / 選擇權 · 進階" defaultOpen={false}>
           <p className="us-flow-note">
-            <b className="tag-auto">AUTO</b> = FMP 免費 key 自動抓 ·
             <b className="tag-manual">手動</b> = 自己填 ·
-            <b className="tag-paid">付費</b> = 需付費源（Unusual Whales 等），免費抓不到。資料存在你瀏覽器。
+            <b className="tag-paid">付費</b> = 需付費資料（含 FMP 的 Insider/13F、Unusual Whales 的 GEX/暗池），免費抓不到。資料存在你瀏覽器。
           </p>
 
           <div className="us-flow-fetch">
@@ -596,11 +595,11 @@ export default function USStockPage() {
               type="text"
               value={fmpKey}
               onChange={(e) => saveFmpKey(e.target.value)}
-              placeholder="FMP API key（免費）→ 自動抓 Insider / 機構"
+              placeholder="FMP API key（免費）→ 啟用「策略評分」的 品質/價值 因子"
               spellCheck={false}
             />
-            <button onClick={loadFlow} disabled={flowLoading}>
-              {flowLoading ? "…" : "抓取 AUTO 欄位"}
+            <button onClick={testFmp} disabled={flowLoading}>
+              {flowLoading ? "…" : "測試 FMP key"}
             </button>
             <a href="https://site.financialmodelingprep.com/developer/docs" target="_blank" rel="noreferrer">
               取得免費 key →

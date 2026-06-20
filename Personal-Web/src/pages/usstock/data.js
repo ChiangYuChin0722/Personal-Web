@@ -187,8 +187,16 @@ export async function fetchFundamentals(symbol, fmpKey) {
     const json = await res.json();
     const r = Array.isArray(json) ? json[0] : json;
     if (!r || r["Error Message"]) return null;
+    // ratios-ttm has no returnOnEquityTTM field — derive it from per-share data
+    // (ROE = net income per share / book value per share).
+    let roe = toNum(r.returnOnEquityTTM ?? r.returnOnEquity);
+    if (roe == null) {
+      const nips = toNum(r.netIncomePerShareTTM);
+      const bvps = toNum(r.bookValuePerShareTTM);
+      if (nips != null && bvps) roe = nips / bvps;
+    }
     return {
-      roe: toNum(r.returnOnEquityTTM ?? r.returnOnEquity),
+      roe,
       pe: toNum(r.priceToEarningsRatioTTM ?? r.priceEarningsRatioTTM ?? r.peRatioTTM),
       gm: toNum(r.grossProfitMarginTTM ?? r.grossProfitMargin),
     };
