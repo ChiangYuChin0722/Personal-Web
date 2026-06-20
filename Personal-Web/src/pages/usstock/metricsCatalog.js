@@ -199,6 +199,40 @@ export const CATALOG = [
       },
     ],
   },
+  {
+    cat: "進階 Advanced",
+    items: [
+      {
+        id: "composite",
+        name: "Composite Score",
+        zh: "綜合評分",
+        what: "把趨勢、動能、風險報酬、RSI 健康度、回撤合成一個 0–100 的「整體體質分」。",
+        how: ">75 體質很強、50–75 中等、<40 偏弱。一個數字快速判斷這檔好不好。",
+        val: (m) => num(m.composite, 0),
+        tone: (m) =>
+          m.composite == null ? "neutral" : m.composite >= 75 ? "great" : m.composite >= 55 ? "good" : m.composite >= 40 ? "ok" : "bad",
+      },
+      {
+        id: "zscore",
+        name: "Z-Score (60d)",
+        zh: "價格 Z 分數",
+        what: "現價離自己 60 日均價幾個標準差。衡量「漲/跌過頭」的程度。",
+        how: ">+2 漲太多(留意回檔)、<−2 跌太深(可能超賣反彈)、−1~+1 正常。均值回歸常看這個。",
+        val: (m) => num(m.zscore60, 2),
+        tone: (m) =>
+          m.zscore60 == null ? "neutral" : Math.abs(m.zscore60) > 2 ? "warn" : "neutral",
+      },
+      {
+        id: "relStrength",
+        name: "Relative Strength",
+        zh: "相對強度 vs SPY",
+        what: "近 60 日的報酬「贏大盤多少」。RS 正=比大盤強、負=比大盤弱。",
+        how: ">0 強勢股(資金偏好)、<0 弱勢股。法人選股最愛挑 RS 高的。",
+        val: (m) => (m.relStrength == null ? "—" : signed(m.relStrength)),
+        tone: (m) => (m.relStrength == null ? "neutral" : m.relStrength > 0 ? "good" : "bad"),
+      },
+    ],
+  },
 ];
 
 // flat id -> item lookup
@@ -207,6 +241,9 @@ CATALOG.forEach((g) => g.items.forEach((it) => (CATALOG_BY_ID[it.id] = { ...it, 
 
 // sensible starter set (mirrors the "你現在就能用的 dashboard" list)
 export const DEFAULT_SELECTED = [
+  "composite",
+  "relStrength",
+  "zscore",
   "cagr",
   "alpha",
   "maxDrawdown",

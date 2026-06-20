@@ -301,6 +301,53 @@ export function bollinger(series, period = 20, mult = 2) {
   return { mid, upper, lower, pctB, last: { mid: mid[last], upper: upper[last], lower: lower[last] } };
 }
 
+function sma(series, n) {
+  const c = closes(series);
+  if (c.length < n) return null;
+  let s = 0;
+  for (let i = c.length - n; i < c.length; i++) s += c[i];
+  return s / n;
+}
+
+// Z-score of the last close vs its own window mean (std-devs from mean).
+// >2 = stretched high (mean-revert risk), <-2 = stretched low.
+export function priceZScore(series, window = 60) {
+  const c = closes(series);
+  if (c.length < window) return null;
+  const w = c.slice(-window);
+  const m = w.reduce((a, b) => a + b, 0) / window;
+  const sd = Math.sqrt(w.reduce((a, b) => a + (b - m) ** 2, 0) / window);
+  if (!sd) return null;
+  return (c[c.length - 1] - m) / sd;
+}
+
+// Relative strength vs benchmark: excess return over `lookback` days.
+export function relativeStrength(series, bench, lookback = 60) {
+  const a = momentum(series, lookback);
+  const b = momentum(bench, lookback);
+  if (a == null || b == null) return null;
+  return a - b; // >0 outperforming the benchmark
+}
+
+const clamp = (x) => Math.max(0, Math.min(100, x));
+
+// Market-neutral 0-100 "overall health" blending trend / momentum /
+// risk-adjusted / RSI-health / drawdown. Distinct from the style scorecards.
+export function compositeScore(series, m) {
+  const price = m.last;
+  const ma50 = sma(series, 50);
+  const ma200 = sma(series, 200);
+  const trend =
+    ma50 == null ? 50 : price > ma50 ? (ma200 == null || price > ma200 ? 100 : 70) : ma200 != null && price > ma200 ? 40 : 10;
+  const mom = clamp(50 + (m.mom60 ?? 0) * 250); // +20% -> 100
+  const sharpe = clamp((m.sharpe ?? 0) * 33);
+  const rsiHealth =
+    m.rsi == null ? 50 : m.rsi >= 45 && m.rsi <= 65 ? 100 : m.rsi > 65 ? clamp(100 - (m.rsi - 65) * 3) : clamp(40 + m.rsi);
+  const ddHealth = clamp(100 + (m.maxDrawdown ?? 0) * 250); // -40% -> 0
+  const score = 0.3 * trend + 0.25 * mom + 0.2 * sharpe + 0.1 * rsiHealth + 0.15 * ddHealth;
+  return Math.round(score);
+}
+
 // Compute the full metric pack for a series (+ optional benchmark).
 export function computeMetrics(series, bench, rf = 0.04) {
   const c = closes(series);
@@ -310,7 +357,7 @@ export function computeMetrics(series, bench, rf = 0.04) {
   const { mdd } = maxDrawdown(series);
   const md = macd(series);
   const bb = bollinger(series);
-  return {
+  const out = {
     last,
     dayChangePct: last / prev - 1,
     bars: series.length,
@@ -341,5 +388,10 @@ export function computeMetrics(series, bench, rf = 0.04) {
       return a != null ? a / last : null;
     })(),
     bollinger: bb,
+    // advanced (phase 1)
+    zscore60: priceZScore(series, 60),
+    relStrength: hasBench ? relativeStrength(series, bench, 60) : null,
   };
+  out.composite = compositeScore(series, out);
+  return out;
 }

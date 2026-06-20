@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "./USStockPage.css";
-import { fetchSeries, fetchFundamentals, demoSeries, parseCSV, PERIODS } from "./usstock/data.js";
+import { fetchSeries, fetchFundamentals, demoSeries, parseCSV, PERIODS, vixProxy } from "./usstock/data.js";
 import { computeMetrics, drawdownSeries } from "./usstock/quant.js";
+import { marketRegime } from "./usstock/factors.js";
 import { interpret } from "./usstock/interpret.js";
 import { classify, SCHOOLS, stars } from "./usstock/state.js";
 import { CATALOG, CATALOG_BY_ID, DEFAULT_SELECTED } from "./usstock/metricsCatalog.js";
 import StrategyPanel from "./usstock/StrategyPanel.jsx";
 import Collapsible from "./usstock/Collapsible.jsx";
-import { PriceChart, DrawdownChart, Gauge } from "./usstock/Charts.jsx";
+import CandleChart from "./usstock/CandleChart.jsx";
+import { DrawdownChart, Gauge } from "./usstock/Charts.jsx";
 
 const LS_KEY = "usstock_apikey";
 const LS_FMP = "usstock_fmpkey";
@@ -269,6 +271,10 @@ export default function USStockPage() {
     () => (series && series.length > 30 ? classify(series, school) : null),
     [series, school]
   );
+  const regime = useMemo(
+    () => (bench && bench.length > 50 ? marketRegime(bench, vixProxy(bench)) : null),
+    [bench]
+  );
 
   return (
     <div className={`usstock ${theme === "light" ? "light" : ""}`}>
@@ -396,6 +402,18 @@ export default function USStockPage() {
 
         {error && <div className="us-error">{error}</div>}
 
+        {/* ---------------- regime engine (market backdrop) ---------------- */}
+        {regime && (
+          <div className={`us-regime tone-${regime.tone}`}>
+            <span className="us-regime-dot" />
+            <span className="us-regime-label">市場環境：{regime.level}</span>
+            <span className="us-regime-meta">
+              SPY {regime.aboveMA200 == null ? "—" : regime.aboveMA200 ? "在 MA200 之上" : "跌破 MA200"} · VIX≈{regime.vix ?? "—"}
+            </span>
+            <span className="us-regime-guide">{regime.posCap}</span>
+          </div>
+        )}
+
         {/* ---------------- market state machine ---------------- */}
         {state && (
           <div className={`us-state tone-${state.state.tone}`}>
@@ -513,16 +531,10 @@ export default function USStockPage() {
 
         {/* ---------------- charts ---------------- */}
         {m && (
-          <Collapsible title="走勢圖" sub={`Price · Bollinger · Drawdown ${pct(m.maxDrawdown)}`}>
-            <div className="us-chart-head">
-              <span>Price · Bollinger(20,2)</span>
-              <span className="us-bb">
-                %B {m.bollinger ? num(m.bollinger.pctB, 2) : "—"}
-              </span>
-            </div>
-            <PriceChart series={series} bollinger={m.bollinger} />
-            <div className="us-chart-head" style={{ marginTop: 12 }}>
-              <span>Drawdown</span>
+          <Collapsible title="走勢圖 K線" sub={`OHLC · MA20/50 · 量 · 可拖曳縮放`}>
+            <CandleChart series={series} light={theme === "light"} />
+            <div className="us-chart-head" style={{ marginTop: 14 }}>
+              <span>Drawdown 回撤</span>
               <span className="neg">MDD {pct(m.maxDrawdown)}</span>
             </div>
             <DrawdownChart dd={dd} />
