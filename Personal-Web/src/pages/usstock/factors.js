@@ -3,7 +3,7 @@
 // total -> rank -> buy/hold/avoid signal. Plus a market-regime risk overlay.
 // Education, NOT investment advice.
 
-import { rsi } from "./quant.js";
+import { rsi, sharpe, volatility, priceZScore } from "./quant.js";
 
 const closes = (s) => s.map((d) => d.close);
 
@@ -49,19 +49,30 @@ export function rawFactors(series, fund) {
   const gm = fund?.gm ?? null;
   const quality = roe == null && gm == null ? null : (roe ?? 0) + (gm ?? 0) * 0.3;
   const value = fund?.pe != null && fund.pe > 0 ? fund.pe : null;
-  return { last, mom, trend, vol, rsi: rsiVal, aboveMA50: trend > 0, ma50, roe, pe: value, gm, quality };
+  // extra price-only factors
+  const sharpeVal = sharpe(series);
+  const annVol = volatility(series);
+  const zscore = priceZScore(series, 60);
+  return {
+    last, mom, trend, vol, rsi: rsiVal, aboveMA50: trend > 0, ma50,
+    roe, pe: value, gm, quality,
+    sharpe: sharpeVal, annVol, zscore,
+  };
 }
 
 // metadata for every factor (drives sliders + leaderboard columns)
 export const FACTOR_META = {
-  mom: { label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強" },
+  mom: { label: "Momentum", zh: "動能", desc: "20/60 日漲幅 — 強者恆強（也就是相對強度）" },
   trend: { label: "Trend", zh: "趨勢", desc: "現價 / MA50 — 是否站上均線" },
   vol: { label: "Volume", zh: "資金", desc: "近期量 / 均量 — 資金流入" },
   rsi: { label: "RSI", zh: "過熱", desc: "健康偏強加分、過熱(>70)扣分" },
+  sharpe: { label: "Sharpe", zh: "風險報酬", desc: "每單位風險的報酬，越高越好（效率）" },
+  lowvol: { label: "Low Vol", zh: "低波動", desc: "波動越低分越高（防禦因子）" },
+  meanrev: { label: "Mean-Rev", zh: "均值回歸", desc: "越超賣(Z-score 越低)分越高 — 撿便宜" },
   quality: { label: "Quality", zh: "品質", desc: "ROE + 毛利 — 賺錢效率（需 FMP）", fund: true },
   value: { label: "Value", zh: "價值", desc: "PE 越低越好（需 FMP）", fund: true },
 };
-export const FACTOR_ORDER = ["mom", "trend", "vol", "rsi", "quality", "value"];
+export const FACTOR_ORDER = ["mom", "trend", "vol", "rsi", "sharpe", "lowvol", "meanrev", "quality", "value"];
 
 // ---- cross-sectional percentile scoring (0..100) ----
 function pctRankScores(values) {
@@ -82,7 +93,11 @@ function rsiScore(v) {
   return Math.max(0, 100 - (v - 65) * 3.2); // 過熱：扣分
 }
 
-export const DEFAULT_WEIGHTS = { mom: 30, trend: 20, vol: 15, rsi: 10, quality: 15, value: 10 };
+export const DEFAULT_WEIGHTS = {
+  mom: 30, trend: 20, vol: 15, rsi: 10,
+  sharpe: 0, lowvol: 0, meanrev: 0,
+  quality: 15, value: 10,
+};
 
 // how each factor maps a raw value to a comparable number (dir<0 = lower better)
 const FACTOR_CALC = {
@@ -90,6 +105,9 @@ const FACTOR_CALC = {
   trend: { get: (f) => f.trend, dir: 1 },
   vol: { get: (f) => f.vol, dir: 1 },
   rsi: { special: (f) => rsiScore(f.rsi) },
+  sharpe: { get: (f) => f.sharpe, dir: 1 },
+  lowvol: { get: (f) => f.annVol, dir: -1 }, // lower volatility = higher score
+  meanrev: { get: (f) => f.zscore, dir: -1 }, // more oversold (low Z) = higher score
   quality: { get: (f) => f.quality, dir: 1 },
   value: { get: (f) => f.pe, dir: -1 },
 };
