@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 
-// Terminal-style boot intro that plays before the galaxy hero.
+// Terminal-style boot intro. Waits for one click to begin so the AudioContext
+// is unlocked by a user gesture — that is what lets the typewriter ticks be heard
+// (browsers block audio that starts without a gesture).
 const LINES = [
   { t: "INITIALIZING CHIANGVERSE...", c: "boot-main" },
   { gap: true },
@@ -11,29 +13,30 @@ const LINES = [
 ];
 
 export default function BootSequence({ onDone }) {
+  const [armed, setArmed] = useState(false); // becomes true on the first click (audio unlocked)
   const [done, setDone] = useState([]); // completed lines
   const [cur, setCur] = useState(null); // { t, c } currently typing
   const [fading, setFading] = useState(false);
   const finishRef = useRef(() => {});
-  const sndRef = useRef(null); // lazy Web Audio for typewriter ticks
+  const sndRef = useRef(null); // Web Audio for typewriter ticks (created in the click gesture)
 
-  // short terminal "tick" per character (silent until the AudioContext is allowed to run)
+  // short terminal "tick" per character
   const tick = () => {
     try {
-      let s = sndRef.current;
-      if (!s) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; s = sndRef.current = new AC(); }
-      if (s.state === "suspended") s.resume().catch(() => {});
-      if (s.state !== "running") return;
+      const s = sndRef.current;
+      if (!s || s.state !== "running") return;
       const o = s.createOscillator(), g = s.createGain();
       o.type = "square"; o.frequency.value = 1100 + Math.random() * 500;
-      g.gain.setValueAtTime(0.0001, s.currentTime); g.gain.exponentialRampToValueAtTime(0.03, s.currentTime + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, s.currentTime + 0.05);
+      g.gain.setValueAtTime(0.0001, s.currentTime); g.gain.exponentialRampToValueAtTime(0.04, s.currentTime + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, s.currentTime + 0.05);
       o.connect(g); g.connect(s.destination); o.start(); o.stop(s.currentTime + 0.06);
     } catch { /* noop */ }
   };
 
   finishRef.current = () => { setFading(true); window.setTimeout(onDone, 650); };
 
+  // typewriter — runs once the user has clicked to begin
   useEffect(() => {
+    if (!armed) return;
     let cancelled = false;
     const timers = [];
     const after = (ms, fn) => { const id = window.setTimeout(() => { if (!cancelled) fn(); }, ms); timers.push(id); };
@@ -52,19 +55,33 @@ export default function BootSequence({ onDone }) {
       };
       typeChar();
     };
-    after(450, nextLine);
-    return () => { cancelled = true; timers.forEach(window.clearTimeout); try { sndRef.current?.close(); } catch { /* noop */ } };
-  }, []);
+    after(350, nextLine);
+    return () => { cancelled = true; timers.forEach(window.clearTimeout); };
+  }, [armed]);
 
-  const skip = () => { sndRef.current?.resume?.().catch(() => {}); setFading(true); window.setTimeout(onDone, 250); };
+  useEffect(() => () => { try { sndRef.current?.close(); } catch { /* noop */ } }, []);
+
+  // first click: unlock audio (create the context inside the gesture) + start typing
+  const begin = () => {
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) { sndRef.current = new AC(); sndRef.current.resume?.().catch(() => {}); } } catch { /* noop */ }
+    setArmed(true);
+  };
+  const skip = () => { setFading(true); window.setTimeout(onDone, 250); };
 
   return (
-    <div className={"boot-root" + (fading ? " boot-fade" : "")} onClick={skip}>
-      <div className="boot-inner">
-        {done.map((l, i) => (l.gap ? <div className="boot-gap" key={i} /> : <div className={l.c} key={i}>{l.c === "boot-sub" ? l.t : "> " + l.t}</div>))}
-        {cur && <div className={cur.c}>{cur.c === "boot-sub" ? cur.t : "> " + cur.t}<span className="boot-caret" /></div>}
-      </div>
-      <div className="boot-skip">點擊跳過 · click to skip</div>
+    <div className={"boot-root" + (fading ? " boot-fade" : "")} onClick={() => (armed ? skip() : begin())}>
+      {!armed ? (
+        <div className="boot-inner boot-begin">
+          <div className="boot-main">&gt; CHIANGVERSE TERMINAL</div>
+          <div className="boot-begin-hint">點擊進入 · click to begin<span className="boot-caret" /></div>
+        </div>
+      ) : (
+        <div className="boot-inner">
+          {done.map((l, i) => (l.gap ? <div className="boot-gap" key={i} /> : <div className={l.c} key={i}>{l.c === "boot-sub" ? l.t : "> " + l.t}</div>))}
+          {cur && <div className={cur.c}>{cur.c === "boot-sub" ? cur.t : "> " + cur.t}<span className="boot-caret" /></div>}
+        </div>
+      )}
+      {armed && <div className="boot-skip">點擊跳過 · click to skip</div>}
     </div>
   );
 }

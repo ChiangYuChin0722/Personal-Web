@@ -25,6 +25,9 @@
 .boot-caret { display: inline-block; width: 0.55em; height: 1.05em; margin-left: 3px; background: currentColor; vertical-align: -2px; animation: bootBlink 1s step-end infinite; }
 @keyframes bootBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 .boot-skip { position: absolute; bottom: 28px; left: 0; right: 0; text-align: center; font-size: 11px; letter-spacing: 2px; color: #44507a; }
+.boot-begin { text-align: center; cursor: pointer; }
+.boot-begin-hint { margin-top: 18px; font-size: clamp(13px, 1.9vw, 15px); letter-spacing: 2px; color: #8aa0ff; animation: bootPulse 2s ease-in-out infinite; }
+@keyframes bootPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 
 .cv-err {
   position: absolute; top: 70px; left: 20px; right: 20px; z-index: 30;
