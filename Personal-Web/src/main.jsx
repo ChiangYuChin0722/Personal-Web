@@ -6,6 +6,7 @@ import FunPage from "./pages/FunPage.jsx";
 import FriendPage from "./pages/FriendPage.jsx";
 import USStockPage from "./pages/USStockPage.jsx";
 import ProjectPage from "./pages/ProjectPage.jsx";
+import NotFound from "./pages/NotFound.jsx";
 import { LangProvider } from "./pages/usstock/lang.jsx";
 
 // Three.js is heavy — load the Chiangverse (the 3D galaxy homepage) lazily as its own chunk.
@@ -22,14 +23,16 @@ const USStock = () => (
 );
 
 // The Chiangverse galaxy IS the homepage. The classic CV/portfolio site lives at /cv.
-let Page = Chiangverse;
+const lp = path.toLowerCase();
+let Page;
 if (path.startsWith("/dashboard/fun")) Page = FunPage;
 else if (path.startsWith("/dashboard/friend")) Page = FriendPage;
 else if (path.startsWith("/dashboard")) Page = SecretPage;
-else if (path.toLowerCase().startsWith("/usstock")) Page = USStock;
-else if (path.toLowerCase().startsWith("/project")) Page = ProjectPage;
-else if (path.toLowerCase().startsWith("/cv") || path.toLowerCase().startsWith("/home"))
-  Page = App;
+else if (lp.startsWith("/usstock")) Page = USStock;
+else if (lp.startsWith("/project")) Page = ProjectPage;
+else if (lp.startsWith("/cv") || lp.startsWith("/home")) Page = App;
+else if (path === "/" || path === "" || lp === "/index.html") Page = Chiangverse;
+else Page = NotFound; // unknown route → space-themed 404
 
 const loadingFallback = (
   <div

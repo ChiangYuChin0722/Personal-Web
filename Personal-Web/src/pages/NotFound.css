@@ -1,0 +1,36 @@
+.nf-root {
+  position: fixed; inset: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: radial-gradient(120% 120% at 50% 30%, #14193a 0%, #080a1a 55%, #04050f 100%);
+  color: #eaf0ff; font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+}
+.nf-stars {
+  position: absolute; inset: -50%;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 70% 60%, #cdd6ff, transparent),
+    radial-gradient(1px 1px at 40% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 85% 25%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 55% 15%, #bcd2ff, transparent),
+    radial-gradient(1px 1px at 30% 55%, #fff, transparent);
+  background-size: 320px 320px; opacity: 0.5; animation: nfDrift 60s linear infinite;
+}
+@keyframes nfDrift { from { transform: translate(0, 0); } to { transform: translate(-160px, -160px); } }
+.nf-inner { position: relative; z-index: 1; padding: 24px; max-width: 640px; animation: nfFade 0.8s ease both; }
+@keyframes nfFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.nf-code {
+  font-size: clamp(90px, 22vw, 200px); font-weight: 800; line-height: 0.9; letter-spacing: 6px;
+  background: linear-gradient(180deg, #9fb4ff, #5566cc); -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 60px rgba(120, 150, 255, 0.35);
+}
+.nf-tag { margin-top: 10px; font-size: 12px; letter-spacing: 5px; color: #6fa0ff; }
+.nf-title { margin: 14px 0 6px; font-size: clamp(20px, 4.5vw, 34px); font-weight: 700; }
+.nf-sub { margin: 0; font-size: 15px; color: #9fb0d8; letter-spacing: 0.5px; }
+.nf-btn {
+  display: inline-block; margin-top: 30px; padding: 12px 30px; border-radius: 999px;
+  font-size: 14px; letter-spacing: 1px; color: #eaf2ff; text-decoration: none;
+  background: linear-gradient(180deg, rgba(120, 150, 255, 0.28), rgba(50, 70, 150, 0.28));
+  border: 1px solid rgba(140, 170, 255, 0.55); backdrop-filter: blur(8px);
+  box-shadow: 0 0 24px rgba(110, 150, 255, 0.35); transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.nf-btn:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(110, 150, 255, 0.6); }

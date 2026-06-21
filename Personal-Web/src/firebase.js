@@ -59,6 +59,37 @@ export function fsSave(uid, key, items) {
     .catch(e => console.warn(`Firestore save ${uid}/${key}:`, e.message));
 }
 
+// ─── Public Chiangverse shooter leaderboard (public/cv_shooter) ────────────────
+
+// Top N fastest "clear all targets" runs, ascending by time. Null on error.
+export async function lbTop(n = 5) {
+  try {
+    const snap = await getDoc(doc(db, 'public', 'cv_shooter'));
+    const scores = (snap.exists() && snap.data().scores) || [];
+    return scores.slice().sort((a, b) => a.timeMs - b.timeMs).slice(0, n);
+  } catch (e) {
+    console.warn('lbTop:', e.message);
+    return null;
+  }
+}
+
+// Append a run and keep the global top 20. Returns the new top 5, or null on error.
+export async function lbSubmit(entry) {
+  try {
+    const ref = doc(db, 'public', 'cv_shooter');
+    const snap = await getDoc(ref);
+    const scores = (snap.exists() && snap.data().scores) || [];
+    scores.push(entry);
+    scores.sort((a, b) => a.timeMs - b.timeMs);
+    const top = scores.slice(0, 20);
+    await setDoc(ref, { scores: top });
+    return top.slice(0, 5);
+  } catch (e) {
+    console.warn('lbSubmit:', e.message);
+    return null;
+  }
+}
+
 // ─── Photo storage (Firebase Storage) ───────────────────────────────────────────
 
 // Upload a base64 data-URL photo to Storage and return its download URL.
